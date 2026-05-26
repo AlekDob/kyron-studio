@@ -61,8 +61,10 @@ export async function getCurrentUser(): Promise<StudioUser | null> {
   return verifyReviewCookie(raw);
 }
 
-export function loginUrl(): string {
-  return (
-    process.env.KYRON_STUDIO_LOGIN_URL ?? "https://kyronedu.it/it/studio/login"
-  );
+export function loginUrl(next?: string): string {
+  const base = "/login";
+  if (next && next.startsWith("/")) {
+    return `${base}?next=${encodeURIComponent(next)}`;
+  }
+  return base;
 }
