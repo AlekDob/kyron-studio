@@ -63,6 +63,8 @@ STUDIO_DEV_USER=tua@email npm run dev    # bypass auth in dev
 - `documentation/features/001-shell-sidebar-dashboard.md` — sidebar + dashboard + command palette
 - `documentation/features/002-settings-tabs-layout.md` — settings tabs layout
 - `documentation/features/003-dati-module.md` — modulo Dati + chat agente Editor Dati
+- `documentation/features/004-login-standalone.md` — OTP login (workstream 03)
+- `documentation/features/005-preview-review-editor.md` — Anteprima iframe + agente Review Editor (workstream 03)
 - Cross-progetto: `Kyron/documentation/workstreams/03-studio-standalone.md` — login OTP, preview iframe, review system
 - `documentation/diary/` — changelog locale
 - Cross-progetto: `Kyron/documentation/workstreams/01-studio-shell-port.md`
