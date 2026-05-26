@@ -12,8 +12,13 @@ import {
   verifyOtpCookie,
 } from "@/lib/otp";
 
+function redirectBase(req: Request): string {
+  const env = process.env.NEXT_PUBLIC_SERVER_URL?.replace(/\/$/, "")?.trim();
+  return env || new URL(req.url).origin;
+}
+
 function loginUrl(req: Request, params: Record<string, string>): URL {
-  const url = new URL("/login", req.url);
+  const url = new URL("/login", redirectBase(req));
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
   return url;
 }
@@ -57,11 +62,11 @@ export async function POST(req: Request) {
     );
   }
 
-  const res = NextResponse.redirect(new URL(next, req.url), 303);
+  const res = NextResponse.redirect(new URL(next, redirectBase(req)), 303);
   res.cookies.set(REVIEW_COOKIE, signReviewCookie(otp.email), {
     httpOnly: true,
     sameSite: "lax",
-    secure: new URL(req.url).protocol === "https:",
+    secure: redirectBase(req).startsWith("https:"),
     path: "/",
     maxAge: REVIEW_COOKIE_MAX_AGE,
     domain: process.env.KYRON_COOKIE_DOMAIN || undefined,
