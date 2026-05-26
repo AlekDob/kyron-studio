@@ -6,6 +6,7 @@ import {
   ScrollText,
   Settings,
   Database,
+  Eye,
   type LucideIcon,
 } from "lucide-react";
 
@@ -53,6 +54,16 @@ export const MODULES: ModuleDefinition[] = [
     kind: "tool",
     status: "live",
     tone: { tile: "bg-[#0E4F4E]", icon: "text-white" },
+  },
+  {
+    id: "preview",
+    label: "Anteprima",
+    description: "Naviga il sito kyronedu.it e proponi modifiche con l'agente Review Editor.",
+    href: "/preview",
+    icon: Eye,
+    kind: "agent",
+    status: "live",
+    tone: { tile: "bg-[#9333EA]", icon: "text-white" },
   },
   {
     id: "portals",

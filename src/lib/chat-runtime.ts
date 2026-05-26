@@ -37,6 +37,22 @@ export async function* streamDataEditor(input: {
   });
 }
 
+export async function* streamReviewEditor(input: {
+  messages: ChatMessage[];
+  context?: {
+    currentUrl?: string;
+    currentPath?: string;
+    annotationsCount?: number;
+  };
+  signal?: AbortSignal;
+}): AsyncGenerator<ChatStreamEvent, void, void> {
+  yield* streamAgent({
+    endpoint: "/api/agent/review-editor",
+    body: { messages: input.messages, context: input.context },
+    signal: input.signal,
+  });
+}
+
 async function* streamAgent(input: {
   endpoint: string;
   body: unknown;
