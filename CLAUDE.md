@@ -29,6 +29,12 @@ Hub admin Kyron a `studio.kyronedu.it`. Sotto-progetto di `/Kyron`, registrato i
 - Form: type detection esteso (localized IT/EN, relations come chip readonly, json solo fallback)
 - Skeleton loading transitions, auto-scroll chat, dev-cookie auto-signing
 - Lista record con search (`?q=`) + paginazione prev/next (limit 25)
+
+**Studio standalone live** (workstream 03 phase 1-4 done, 2026-05-26):
+- Login OTP proprio (`/login`) — no piu' dipendenza dal cms
+- Modulo "Anteprima": iframe `staging.kyronedu.it` + chat agente Review Editor con tool `add_annotation`/`request_send_bundle`
+- Bundle annotazioni client-side, invio via email con `/api/review/send` (Resend + attachment .md)
+- Redirect 308 da `/studio/*` su cms → `studio.kyronedu.it`
 - Vedi feature 003-dati-module per dettagli
 
 **Da fare** (placeholder "presto"):
@@ -57,6 +63,7 @@ STUDIO_DEV_USER=tua@email npm run dev    # bypass auth in dev
 - `documentation/features/001-shell-sidebar-dashboard.md` — sidebar + dashboard + command palette
 - `documentation/features/002-settings-tabs-layout.md` — settings tabs layout
 - `documentation/features/003-dati-module.md` — modulo Dati + chat agente Editor Dati
+- Cross-progetto: `Kyron/documentation/workstreams/03-studio-standalone.md` — login OTP, preview iframe, review system
 - `documentation/diary/` — changelog locale
 - Cross-progetto: `Kyron/documentation/workstreams/01-studio-shell-port.md`
 - Cross-progetto: `Kyron/documentation/workstreams/02-studio-agentic-data-layer.md`
