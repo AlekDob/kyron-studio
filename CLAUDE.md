@@ -1,0 +1,92 @@
+# Studio — CLAUDE.md
+
+Hub admin Kyron a `studio.kyronedu.it`. Sotto-progetto di `/Kyron`, registrato in
+`Kyron/documentation/code-map.md`.
+
+## Stack
+
+- Next.js 16 + React 19 + TS strict
+- Tailwind v4 CSS-first (token in `src/app/globals.css`, no `tailwind.config.ts`)
+- AI SDK + assistant-ui per la chat di onboarding (proxy SSE verso `studio-server`)
+- Auth Payload via cookie `.kyronedu.it`
+- UI: design system port da Virgilio (copy-paste, vedi feature 001)
+
+## Stato corrente
+
+**Shell completo Virgilio-style live** (2026-05-26):
+
+- Sidebar laterale 248px con 7 moduli (Inbox, Onboarding scuole, **Dati**, Portali, Brain, Log, Impostazioni)
+- Dashboard `/` con ricerca live + griglia agenti/strumenti
+- Command palette `Cmd+K` (cmdk)
+- Theme toggle light/dark (persistenza localStorage)
+- Pagina `/settings` con tabs Virgilio-style (Connessioni, Modelli AI, Tema live)
+- Pagina `/schools/onboarding` con chat agentica (esistente)
+
+**Agentic data layer live** (workstream 02 phase 1-3 done, 2026-05-26):
+- Modulo "Dati" — lista collection con count, lista record, form edit generico
+- Split-pane: form a sinistra + chat agente "Editor Dati" a destra (5 tool su gateway BFF)
+- Agente naviga automaticamente al detail su `get_record`, refresha al tool-result mutating
+- Form: type detection esteso (localized IT/EN, relations come chip readonly, json solo fallback)
+- Skeleton loading transitions, auto-scroll chat, dev-cookie auto-signing
+- Lista record con search (`?q=`) + paginazione prev/next (limit 25)
+- Vedi feature 003-dati-module per dettagli
+
+**Da fare** (placeholder "presto"):
+- Route reali per Inbox, Portali, Brain, Log
+- Sezioni settings: Profilo, Organizzazione, MCP Servers
+- Logo Kyron definitivo (oggi placeholder testuale "K + Studio")
+- Repo GitHub dedicato (oggi untracked)
+- Deploy Coolify su `studio.kyronedu.it`
+
+Vedi `documentation/features/` per dettagli.
+
+## Come far partire
+
+```bash
+# Terminale 1 — backend
+cd ~/Desktop/Dev/Personal/Kyron/studio-server && npm run dev
+
+# Terminale 2 — frontend
+cd ~/Desktop/Dev/Personal/Kyron/studio
+STUDIO_DEV_USER=tua@email npm run dev    # bypass auth in dev
+# http://localhost:3010
+```
+
+## Knowledge base
+
+- `documentation/features/001-shell-sidebar-dashboard.md` — sidebar + dashboard + command palette
+- `documentation/features/002-settings-tabs-layout.md` — settings tabs layout
+- `documentation/features/003-dati-module.md` — modulo Dati + chat agente Editor Dati
+- `documentation/diary/` — changelog locale
+- Cross-progetto: `Kyron/documentation/workstreams/01-studio-shell-port.md`
+- Cross-progetto: `Kyron/documentation/workstreams/02-studio-agentic-data-layer.md`
+- Cross-progetto: `Kyron/documentation/decisions/decision-014-studio-bff-gateway.md`
+- Origine form: `Kyron/cms/documentation/features/029-studio-dashboard.md` (rev 1-5)
+
+## Convenzioni (ereditate da Kyron group)
+
+- **20-line** functions max
+- **300-line** files max
+- **Domain-driven** (organizzazione per feature, non per tech)
+- **Naming**: `verbNoun`, `PascalCase`, `UPPER_SNAKE`
+- **No `any`**
+- **No emoji** nel frontend/UI
+- Tutti i file UI portati da Virgilio hanno header `// Source: Virgilio @virgilio/ui ...`
+  per tracciabilita' verso il futuro estrazione del core agnostico.
+
+## Decisioni di riferimento
+
+- `Kyron/documentation/decisions/decision-012-studio-admin-hub.md` — Studio come hub
+  agentico, **coesiste** con `kyronedu.it/studio` (feature 029, dashboard editoriale Roberto).
+- `Kyron/documentation/decisions/decision-013-studio-server-as-horizontal-product.md`
+  — studio-server come prodotto orizzontale
+- **Strategia riuso UI Virgilio** (2026-05-26, diary): copy-paste con header
+  `// Source: ...` invece di workspace pnpm. Trigger di estrazione del core
+  agnostico (`Personal/studio/packages/core-ui`) e' "2+ clienti reali che
+  riusano lo stesso shell" — non soddisfatto oggi.
+
+## Sibling
+
+- `/Kyron/studio-server` — backend agentico (tenant-aware via `X-Tenant`)
+- `/Kyron/cms` — Payload CMS (auth + collection `PendingSchools`)
+- `/Kyron/ecommerce` — Saleor + storefront (consuma il `.md` esportato da Payload)

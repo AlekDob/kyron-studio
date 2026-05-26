@@ -1,0 +1,110 @@
+@import "tailwindcss";
+
+/* Studio design tokens — port leggero da Virgilio (@virgilio/ui).
+   Tema light, Geist + Instrument Serif + JetBrains Mono. */
+
+@theme {
+  --color-action: #0A0A0A;
+  --color-action-hover: #1F1F1F;
+  --color-action-subtle: #F4F4F5;
+
+  --color-accent: #1B4FE5;
+  --color-accent-soft: #5A7EE8;
+  --color-accent-deep: #1339B8;
+  --color-accent-tint: rgba(27, 79, 229, 0.08);
+
+  --color-ink: #0B0D12;
+  --color-ink-soft: #373A46;
+  --color-ink-muted: #6B6F7A;
+
+  --color-paper: #FFFFFF;
+  --color-paper-soft: #FCFCFC;
+  --color-paper-muted: #F9F9F9;
+  --color-paper-warm: #FAF7F2;
+
+  --color-line: #E7E8EC;
+  --color-line-strong: #D1D3D9;
+
+  --color-positive: #00875A;
+  --color-warning: #C68B14;
+  --color-critical: #B42318;
+
+  --radius-sharp: 0;
+  --radius-input: 12px;
+  --radius-card: 16px;
+  --radius-bubble: 20px;
+  --radius-pill: 9999px;
+
+  --shadow-card: 0 1px 2px rgba(11, 13, 18, 0.04), 0 8px 24px rgba(11, 13, 18, 0.06);
+  --shadow-modal: 0 24px 64px -12px rgba(11, 13, 18, 0.18);
+  --shadow-pill: 0 10px 40px 5px rgba(194, 194, 194, 0.25);
+
+  --font-sans: Geist, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-serif: "Instrument Serif", ui-serif, Georgia, serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--color-ink);
+  background-color: var(--color-paper);
+  font-feature-settings: "ss01", "cv01";
+}
+
+::selection {
+  background-color: var(--color-ink);
+  color: var(--color-paper);
+}
+
+/* Dark theme overrides — attivati da <html data-theme="dark"> via ThemeProvider. */
+[data-theme="dark"] {
+  --color-action: #F5F5F4;
+  --color-action-hover: #E7E5E4;
+  --color-action-subtle: #1C1F26;
+
+  --color-accent: #6E92F4;
+  --color-accent-soft: #94AEF8;
+  --color-accent-deep: #4F77E8;
+  --color-accent-tint: rgba(110, 146, 244, 0.12);
+
+  --color-ink: #F4F4F5;
+  --color-ink-soft: #C4C6CC;
+  --color-ink-muted: #888B96;
+
+  --color-paper: #0B0D12;
+  --color-paper-soft: #11141B;
+  --color-paper-muted: #161922;
+  --color-paper-warm: #181410;
+
+  --color-line: #23262F;
+  --color-line-strong: #353947;
+
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.5), 0 8px 24px rgba(0, 0, 0, 0.4);
+  --shadow-modal: 0 24px 64px -12px rgba(0, 0, 0, 0.6);
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+
+.mono-caps {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}

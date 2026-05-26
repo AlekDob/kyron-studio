@@ -1,0 +1,146 @@
+import crypto from "node:crypto";
+import { cookies } from "next/headers";
+
+const GATEWAY_URL = process.env.STUDIO_SERVER_URL ?? "http://localhost:8790";
+const TENANT = process.env.STUDIO_TENANT ?? "kyron";
+
+function secret(): string {
+  return (
+    process.env.KYRON_REVIEW_SECRET ||
+    process.env.PAYLOAD_SECRET ||
+    "kyron-review-insecure-dev"
+  );
+}
+
+function signDevCookie(email: string): string {
+  const payload = Buffer.from(
+    JSON.stringify({ email, exp: Date.now() + 60 * 60 * 1000 }),
+    "utf8",
+  ).toString("base64url");
+  const sig = crypto
+    .createHmac("sha256", secret())
+    .update(payload)
+    .digest("base64url");
+  return `${payload}.${sig}`;
+}
+
+async function buildCookieHeader(): Promise<string> {
+  if (
+    process.env.NODE_ENV !== "production" &&
+    process.env.STUDIO_DEV_USER
+  ) {
+    return `kyron-rev=${signDevCookie(process.env.STUDIO_DEV_USER)}`;
+  }
+  const store = await cookies();
+  return store
+    .getAll()
+    .map((c) => `${c.name}=${c.value}`)
+    .join("; ");
+}
+
+export class GatewayError extends Error {
+  constructor(
+    public status: number,
+    message: string,
+  ) {
+    super(message);
+  }
+}
+
+async function gatewayFetch<T>(
+  path: string,
+  init: RequestInit = {},
+): Promise<T> {
+  const headers = new Headers(init.headers);
+  headers.set("X-Tenant", TENANT);
+  headers.set("Cookie", await buildCookieHeader());
+  if (init.body && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+  const res = await fetch(`${GATEWAY_URL}${path}`, {
+    ...init,
+    headers,
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new GatewayError(res.status, text || res.statusText);
+  }
+  return (await res.json()) as T;
+}
+
+export interface CollectionSummary {
+  slug: string;
+  label: { it: string; en: string };
+  description: { it: string; en: string };
+  purpose: "manage" | "inbox" | "library";
+  editable: boolean;
+  count: number;
+}
+
+export interface PayloadDoc {
+  id: number | string;
+  [key: string]: unknown;
+}
+
+export interface RecordListMeta {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface RecordList {
+  data: PayloadDoc[];
+  meta: RecordListMeta;
+  collection: CollectionSummary;
+}
+
+export async function listCollections(): Promise<CollectionSummary[]> {
+  const body = await gatewayFetch<{ data: CollectionSummary[] }>(
+    "/api/v1/collections",
+  );
+  return body.data;
+}
+
+export async function listRecords(
+  slug: string,
+  params: { page?: number; limit?: number; q?: string } = {},
+): Promise<RecordList> {
+  const search = new URLSearchParams();
+  if (params.page) search.set("page", String(params.page));
+  if (params.limit) search.set("limit", String(params.limit));
+  if (params.q) search.set("q", params.q);
+  const qs = search.toString();
+  return gatewayFetch<RecordList>(
+    `/api/v1/collections/${slug}${qs ? `?${qs}` : ""}`,
+  );
+}
+
+export async function getRecord(
+  slug: string,
+  id: string,
+): Promise<PayloadDoc> {
+  const body = await gatewayFetch<{ data: PayloadDoc }>(
+    `/api/v1/collections/${slug}/${id}`,
+  );
+  return body.data;
+}
+
+export async function updateRecord(
+  slug: string,
+  id: string,
+  patch: Record<string, unknown>,
+): Promise<PayloadDoc> {
+  const body = await gatewayFetch<{ data: PayloadDoc }>(
+    `/api/v1/collections/${slug}/${id}`,
+    { method: "PATCH", body: JSON.stringify(patch) },
+  );
+  return body.data;
+}
+
+export async function deleteRecord(slug: string, id: string): Promise<void> {
+  await gatewayFetch(`/api/v1/collections/${slug}/${id}`, {
+    method: "DELETE",
+  });
+}
