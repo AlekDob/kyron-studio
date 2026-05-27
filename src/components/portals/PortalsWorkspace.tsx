@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactElement } from "react";
+import { memo, useCallback, useState, type ReactElement } from "react";
 import { PortalsChat } from "./PortalsChat";
 import { LivePortalCard } from "./LivePortalCard";
 import { PortalsList } from "./PortalsList";
@@ -36,18 +36,18 @@ export function PortalsWorkspace({ initialPortals }: Props): ReactElement {
   const [draft, setDraft] = useState<PortalDraft>({});
   const [panel, setPanel] = useState<SidePanelMode>({ kind: "list" });
 
-  function handleStartCreating(): void {
+  const handleStartCreating = useCallback((): void => {
     setDraft({});
     setPanel({ kind: "creating" });
-  }
+  }, []);
 
-  function handleViewPortal(portal: PortalDetail): void {
+  const handleViewPortal = useCallback((portal: PortalDetail): void => {
     setPanel({ kind: "detail", portal });
-  }
+  }, []);
 
-  function handleBackToList(): void {
+  const handleBackToList = useCallback((): void => {
     setPanel({ kind: "list" });
-  }
+  }, []);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-0 min-h-screen">
@@ -65,7 +65,7 @@ export function PortalsWorkspace({ initialPortals }: Props): ReactElement {
         />
       </div>
       <aside className="hidden lg:flex flex-col bg-[var(--color-paper-soft)] sticky top-0 h-screen overflow-hidden">
-        <SidePanel
+        <MemoSidePanel
           mode={panel}
           draft={draft}
           portals={initialPortals}
@@ -75,6 +75,8 @@ export function PortalsWorkspace({ initialPortals }: Props): ReactElement {
     </div>
   );
 }
+
+const MemoSidePanel = memo(SidePanel);
 
 function SidePanel({
   mode,

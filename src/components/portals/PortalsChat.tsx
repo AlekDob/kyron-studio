@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactElement } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactElement } from "react";
 import { useRouter } from "next/navigation";
 import { ChatBubble } from "@/components/ui";
 import { streamOnboardChat, type ChatMessage } from "@/lib/chat-runtime";
@@ -189,6 +189,8 @@ export function PortalsChat({
     }
   }
 
+  const rafRef = useRef(0);
+
   async function runStream(msgs: ChatMessage[], next: ChatTurn[]): Promise<void> {
     let buf = "";
     let pendingUi: UiBlock | undefined;
@@ -198,11 +200,16 @@ export function PortalsChat({
       for await (const ev of streamOnboardChat({ messages: msgs })) {
         if (ev.type === "delta") {
           buf += ev.delta;
-          extractDraftFromAssistantText(buf);
-          setTurns([
-            ...next,
-            { role: "assistant", content: buf, ui: pendingUi },
-          ]);
+          cancelAnimationFrame(rafRef.current);
+          const snap = buf;
+          const uiSnap = pendingUi;
+          rafRef.current = requestAnimationFrame(() => {
+            extractDraftFromAssistantText(snap);
+            setTurns([
+              ...next,
+              { role: "assistant", content: snap, ui: uiSnap },
+            ]);
+          });
         } else if (ev.type === "tool") {
           setToolStatus(`\`${ev.tool}\`...`);
           extractDraftFromToolArgs(ev.tool, ev.args);
@@ -223,9 +230,16 @@ export function PortalsChat({
         }
       }
     } finally {
+      cancelAnimationFrame(rafRef.current);
       setStreaming(false);
       setToolStatus(null);
-      if (buf) extractDraftFromAssistantText(buf);
+      if (buf) {
+        extractDraftFromAssistantText(buf);
+        setTurns([
+          ...next,
+          { role: "assistant", content: buf, ui: pendingUi },
+        ]);
+      }
     }
   }
 
