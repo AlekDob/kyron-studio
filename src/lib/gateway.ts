@@ -144,3 +144,19 @@ export async function deleteRecord(slug: string, id: string): Promise<void> {
     method: "DELETE",
   });
 }
+
+export interface PortalSummary {
+  slug: string;
+  nome: string;
+  city: string;
+  countryArea: string;
+  status: string;
+  collectedBy: string;
+  collectedAt: string;
+  bundleCount: number;
+  productCount: number;
+}
+
+export async function listPortals(): Promise<PortalSummary[]> {
+  return gatewayFetch<PortalSummary[]>("/api/v1/portals");
+}

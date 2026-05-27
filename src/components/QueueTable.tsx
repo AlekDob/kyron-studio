@@ -24,7 +24,7 @@ export function QueueTable({ items }: { items: PendingSchool[] }) {
       <div className="p-8 text-center rounded-[var(--radius-card)] bg-[var(--color-paper)] border border-[var(--color-line)] text-[var(--color-ink-muted)] text-sm">
         Nessuna scuola in coda. Inizia con{" "}
         <a
-          href="/schools/onboarding"
+          href="/portals/new"
           className="text-[var(--color-accent)] hover:underline"
         >
           un nuovo onboarding
