@@ -100,7 +100,16 @@ export function PreviewWorkspace({
   }
 
   const addAnnotation = useCallback((a: Annotation) => {
-    setAnnotations((prev) => [...prev, a]);
+    setAnnotations((prev) => {
+      const isDupe = prev.some(
+        (x) =>
+          x.kind === a.kind &&
+          x.page === a.page &&
+          x.proposal.text === a.proposal.text &&
+          x.proposal.note === a.proposal.note,
+      );
+      return isDupe ? prev : [...prev, a];
+    });
     setPendingTarget(null);
     setSelectionRect(null);
   }, []);
