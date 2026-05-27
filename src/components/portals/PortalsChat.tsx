@@ -58,77 +58,6 @@ export function PortalsChat({
     el.scrollTop = el.scrollHeight;
   }, [turns, streaming, toolStatus]);
 
-  function extractDraftFromUserReply(
-    userText: string,
-    prevTurns: ChatTurn[],
-  ): void {
-    const lastAssistant = [...prevTurns]
-      .reverse()
-      .find((t) => t.role === "assistant")?.content.toLowerCase() ?? "";
-    const text = userText.trim();
-
-    if (
-      lastAssistant.includes("nome ufficiale") ||
-      lastAssistant.includes("nome della scuola") ||
-      lastAssistant.includes("come si chiama")
-    ) {
-      onDraftUpdate((d) => ({ ...d, nome: text }));
-    }
-
-    if (
-      lastAssistant.includes("sito ufficiale") ||
-      lastAssistant.includes("url")
-    ) {
-      onDraftUpdate((d) => ({
-        ...d,
-        sitoUfficiale: text.toLowerCase() === "tbd" ? "TBD" : text,
-      }));
-    }
-
-    if (
-      lastAssistant.includes("codice meccanografico") ||
-      lastAssistant.includes("miur")
-    ) {
-      onDraftUpdate((d) => ({
-        ...d,
-        codiceMeccanografico: text.toUpperCase(),
-      }));
-    }
-
-    if (
-      lastAssistant.includes("indirizzo") ||
-      lastAssistant.includes("via e numero") ||
-      lastAssistant.includes("via,")
-    ) {
-      onDraftUpdate((d) => ({ ...d, via: text }));
-    }
-
-    if (lastAssistant.includes("confermi")) {
-      const addressMatch = lastAssistant.match(
-        /(\d{5})\s+([a-zà-ú\s]+?)\s*\((\w{2})\)/i,
-      );
-      if (addressMatch) {
-        onDraftUpdate((d) => ({
-          ...d,
-          cap: addressMatch[1],
-          city: addressMatch[2].trim(),
-          provincia: addressMatch[3].toUpperCase(),
-        }));
-      }
-    }
-
-    if (
-      lastAssistant.includes("spedizione") ||
-      lastAssistant.includes("consegna a scuola")
-    ) {
-      const yes = /^(si|sì|yes|ok|true)$/i.test(text);
-      const no = /^(no|false)$/i.test(text);
-      if (yes || no) {
-        onDraftUpdate((d) => ({ ...d, shipToSchool: yes }));
-      }
-    }
-  }
-
   function extractDraftFromToolArgs(
     tool: string,
     args: unknown,
@@ -214,14 +143,25 @@ export function PortalsChat({
 
   function extractDraftFromAssistantText(text: string): void {
     const lower = text.toLowerCase();
+
     if (
       !creatingTriggeredRef.current &&
       (lower.includes("nome ufficiale") ||
         lower.includes("nome della scuola") ||
-        lower.includes("come si chiama"))
+        lower.includes("come si chiama") ||
+        lower.includes("iniziamo") ||
+        lower.includes("onboarding"))
     ) {
       creatingTriggeredRef.current = true;
       onStartCreating();
+    }
+
+    const nameMatch = text.match(
+      /(?:confermare che (?:è|e')|confermare.*?"([^"]+)"|il nome.*?"([^"]+)"|scuola.*?"([^"]+)")/i,
+    );
+    if (nameMatch) {
+      const name = nameMatch[1] ?? nameMatch[2] ?? nameMatch[3];
+      if (name) onDraftUpdate((d) => (d.nome ? d : { ...d, nome: name.trim() }));
     }
 
     const addrMatch = text.match(
@@ -235,6 +175,10 @@ export function PortalsChat({
         city: addrMatch[3].trim(),
         provincia: addrMatch[4].toUpperCase(),
       }));
+    }
+
+    if (lower.includes("senza il sito") || lower.includes("proceder") && lower.includes("sito")) {
+      onDraftUpdate((d) => d.sitoUfficiale ? d : { ...d, sitoUfficiale: "TBD" });
     }
   }
 
@@ -282,8 +226,6 @@ export function PortalsChat({
     const trimmed = (text ?? input).trim();
     if (!trimmed || streaming) return;
     if (!text) setInput("");
-
-    extractDraftFromUserReply(trimmed, turns);
 
     const next: ChatTurn[] = [
       ...turns,
