@@ -14,6 +14,9 @@ const ProductPicker = lazy(() =>
 const BundleBuilder = lazy(() =>
   import("./BundleBuilder").then((m) => ({ default: m.BundleBuilder })),
 );
+const LogoUploader = lazy(() =>
+  import("./LogoUploader").then((m) => ({ default: m.LogoUploader })),
+);
 
 const COMPONENT_REGISTRY: Record<
   string,
@@ -23,6 +26,9 @@ const COMPONENT_REGISTRY: Record<
     Record<string, unknown>
   >,
   BundleBuilder: BundleBuilder as unknown as React.ComponentType<
+    Record<string, unknown>
+  >,
+  LogoUploader: LogoUploader as unknown as React.ComponentType<
     Record<string, unknown>
   >,
 };
@@ -103,6 +109,11 @@ function extractInitialProps(
     if (typeof d.priceEur === "number") out.initialPriceEur = d.priceEur;
     if (Array.isArray(d.components)) out.initialComponents = d.components;
     return out;
+  }
+  if (component === "LogoUploader") {
+    if (typeof d.uploaded === "boolean") {
+      return { initialUploaded: d.uploaded };
+    }
   }
   return {};
 }

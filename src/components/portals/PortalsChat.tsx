@@ -137,6 +137,13 @@ export function PortalsChat({
         bundles: [...(d.bundles ?? []), bundle],
       }));
     }
+    if (typeof data.uploaded === "boolean") {
+      onDraftUpdate((d) => ({
+        ...d,
+        logoUploaded: data.uploaded as boolean,
+        logoFilename: data.uploaded ? String(data.filename) : undefined,
+      }));
+    }
   }
 
   const creatingTriggeredRef = useRef(false);
@@ -367,6 +374,10 @@ function renderUserContent(raw: string): string {
     }
     if (parsed.data?.name) {
       return `Kit "${parsed.data.name}" a ${parsed.data.priceEur} EUR`;
+    }
+    const d = parsed.data as Record<string, unknown> | undefined;
+    if (typeof d?.uploaded === "boolean") {
+      return d.uploaded ? "Logo caricato" : "Logo saltato";
     }
   } catch {
     // fallback

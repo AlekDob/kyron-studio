@@ -3,85 +3,83 @@ type: feature
 project: kyron-studio
 created: 2026-05-27
 last_verified: 2026-05-27
-tags: [portals, onboarding, dashboard, workstream-04]
+tags: [portals, onboarding, crud, logo-upload, workstream-04]
 ---
 
 # 007 — Modulo Portali
 
 ## Cosa
 
-Modulo unificato "Portali" nella sidebar (ex "Onboarding scuole" + "Portali scuole").
-Due route:
+Modulo unificato "Portali" nella sidebar. Split-pane: chat agente a sinistra,
+pannello contestuale a destra (lista portali / scheda live onboarding / dettaglio).
 
 | Route | Scopo |
 |---|---|
-| `/portals` | Dashboard con griglia card dei portali scuola configurati |
-| `/portals/new` | Chat agentica per raccogliere dati di un nuovo portale |
+| `/portals` | Workspace split-pane (chat + side panel) |
+| `/portals/[slug]` | Pagina dettaglio standalone |
 
-## Perche'
+## Capacita' agente
 
-Il modulo "Onboarding scuole" era solo la chat. Mancava una vista d'insieme dei
-portali gia' configurati — stato, citta', catalogo, kit. "Portali" unifica
-creazione e gestione in un unico punto.
+| Azione | Tool | Note |
+|---|---|---|
+| Creare portale | `save_pending_school` | Onboarding conversazionale 8 step |
+| Elencare portali | `list_portals` | Mostra nel side panel |
+| Dettaglio portale | `get_portal` | Naviga al side panel detail |
+| Modificare portale | `update_portal` | Campi singoli, null = invariato |
+| Eliminare portale | `delete_portal` | Richiede conferma scritta del nome |
+| Upload logo | `render_logo_uploader` | Componente generativo con upload diretto |
+| Catalogo | `render_product_picker` | Generative UI, prodotti da Saleor live |
+| Kit/bundle | `render_bundle_builder` | Loop esplicito, N kit senza limiti |
+
+## Persistenza
+
+File `.md` con YAML frontmatter in directory configurabile:
+- **Dev locale**: `Kyron/media/pending-schools-export/`
+- **Prod Docker**: `/data/portals/` (env `PENDING_SCHOOLS_EXPORT_DIR`)
+- **Coolify**: serve volume mount `/data/portals` su host persistente
 
 ## Architettura dati
 
-I portali sono file `.md` con YAML frontmatter in
-`Kyron/media/pending-schools-export/`. L'agente onboarding li scrive via
-`markdown-writer.ts` (studio-server). La dashboard li legge via API:
-
 ```
 studio (Next.js)                   studio-server (Hono)
-    │                                  │
-    │  GET /api/v1/portals             │
-    ├──────────────────────────────────►│
-    │                                  │ fs.readdir() + parseFrontmatter()
-    │  PortalSummary[]                 │
-    ◄──────────────────────────────────┤
-    │                                  │
-    │ PortalsDashboard (card grid)     │
+    |                                  |
+    |  GET /api/v1/portals             | listPortals() — fs.readdir
+    |  GET /api/v1/portals/:slug       | getPortal() — fs.readFile
+    |  PUT /api/v1/portals/:slug       | updatePortal() — read+merge+write
+    |  DELETE /api/v1/portals/:slug    | deletePortal() — fs.unlink
+    |  POST /api/v1/portals/:slug/logo | savePortalLogo() — file upload
 ```
+
+## Side panel (3 modalita')
+
+| Mode | Trigger | Contenuto |
+|---|---|---|
+| `list` | Default | Elenco portali + ricerca |
+| `creating` | Agente inizia onboarding | LivePortalCard skeleton→dati |
+| `detail` | `get_portal` tool result | Dettaglio completo portale |
 
 ## File chiave
 
 **studio-server:**
-- `src/features/portals/route.ts` — `GET /` (lista) e `GET /:slug` (dettaglio)
-- `src/features/portals/reader.ts` — `listPortals()`, `getPortal()`, parser frontmatter
+- `src/features/portals/route.ts` — CRUD routes + logo upload
+- `src/features/portals/reader.ts` — `listPortals()`, `getPortal()`
+- `src/features/portals/writer.ts` — `updatePortal()`, `deletePortal()`, `savePortalLogo()`
+- `src/features/onboard-school/agent.ts` — tutti i tool
+- `src/features/onboard-school/prompt.ts` — system prompt 4 capacita'
 
 **studio:**
-- `src/app/(authed)/portals/page.tsx` — dashboard server component
-- `src/app/(authed)/portals/new/page.tsx` — chat onboarding (ex `/schools/onboarding`)
-- `src/components/PortalsDashboard.tsx` — griglia card + empty state + CTA
-- `src/components/shell/modules.ts` — modulo "Portali" (id: `portals`, href: `/portals`)
-- `src/lib/gateway.ts` — `listPortals()` client BFF
-
-## Card portale
-
-Ogni card mostra:
-- Nome scuola + slug
-- Stato: Bozza / Da rivedere / Approvato / Live (con Pill colorata)
-- Citta' + provincia
-- Conteggio prodotti e kit
-- Data raccolta + origine (Agente / Manuale)
-
-## Status portale
-
-| Valore | Label | Significato |
-|--------|-------|-------------|
-| `draft` | Bozza | Appena raccolto dall'agente, non ancora revisionato |
-| `review` | Da rivedere | Alek deve controllare i dati |
-| `approved` | Approvato | Pronto per onboarding su Saleor |
-| `onboarded` | Live | Portale attivo su storefront |
-
-Lo status e' scritto nel frontmatter del `.md`. Oggi l'agente scrive sempre
-`status: "draft"`. La transizione avviene manualmente (edit del file) — in
-futuro, azioni nella dashboard.
+- `src/app/(authed)/portals/page.tsx` — workspace server component
+- `src/components/portals/PortalsWorkspace.tsx` — split-pane + 3-mode panel
+- `src/components/portals/PortalsChat.tsx` — chat con draft extraction
+- `src/components/portals/LivePortalCard.tsx` — skeleton→data card
+- `src/components/portals/PortalsList.tsx` — lista compatta con search
+- `src/components/chat/generative/LogoUploader.tsx` — upload file generativo
+- `src/lib/gateway.ts` — client BFF
 
 ## Test manuale
 
 ```bash
 cd ~/Desktop/Dev/Personal/Kyron/studio-server && npm run dev
 cd ~/Desktop/Dev/Personal/Kyron/studio && STUDIO_DEV_USER=tua@email npm run dev
-# http://localhost:3010/portals → dashboard
-# http://localhost:3010/portals/new → chat onboarding
+# http://localhost:3010/portals → workspace
 ```

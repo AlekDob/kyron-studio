@@ -1,6 +1,6 @@
 "use client";
 
-import { MapPin, Package, ShoppingBag, Truck, Globe, Hash, Check } from "lucide-react";
+import { MapPin, Package, ShoppingBag, Truck, Globe, Hash, Check, Image } from "lucide-react";
 import { Pill } from "@/components/ui";
 import type { PortalDraft } from "./PortalsWorkspace";
 
@@ -46,6 +46,17 @@ export function LivePortalCard({ draft }: Props) {
           icon={<Hash className="h-3.5 w-3.5" />}
           label="Cod. MIUR"
           value={draft.codiceMeccanografico}
+        />
+        <LiveRow
+          icon={<Image className="h-3.5 w-3.5" />}
+          label="Logo"
+          value={
+            draft.logoUploaded != null
+              ? draft.logoUploaded
+                ? "Caricato"
+                : "TBD"
+              : undefined
+          }
         />
       </Section>
 

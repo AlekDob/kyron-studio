@@ -18,6 +18,8 @@ export interface PortalDraft {
   selectedProducts?: string[];
   bundles?: Array<{ name: string; priceEur: number; components: string[] }>;
   shipToSchool?: boolean;
+  logoUploaded?: boolean;
+  logoFilename?: string;
   saved?: boolean;
 }
 
