@@ -30,12 +30,15 @@ Hub admin Kyron a `studio.kyronedu.it`. Sotto-progetto di `/Kyron`, registrato i
 - Skeleton loading transitions, auto-scroll chat, dev-cookie auto-signing
 - Lista record con search (`?q=`) + paginazione prev/next (limit 25)
 
-**Studio standalone live** (workstream 03 phase 1-4 done, 2026-05-26):
+**Studio standalone live** (workstream 03 phase 1-5 done, 2026-05-26):
 - Login OTP proprio (`/login`) — no piu' dipendenza dal cms
-- Modulo "Anteprima": iframe `staging.kyronedu.it` + chat agente Review Editor con tool `add_annotation`/`request_send_bundle`
-- Bundle annotazioni client-side, invio via email con `/api/review/send` (Resend + attachment .md)
+- Modulo "Anteprima": iframe `staging.kyronedu.it` con handshake postMessage cms-side
+- Selezione/hover live → outline disegnato lato studio, chip pendingTarget nel composer chat
+- Agente Review Editor con `propose_annotation` reso come `ProposalCard` inline (Conferma/Modifica/Annulla)
+- Bundle annotazioni: top-3 inline + drawer "Vedi tutte" responsive (slide-from-right desktop, bottom sheet mobile) con drawer dettaglio annidato
+- Output finale: `.md` via `/api/review/send` (Resend) ad Alek — agente non scrive mai su Payload
 - Redirect 308 da `/studio/*` su cms → `studio.kyronedu.it`
-- Vedi feature 003-dati-module per dettagli
+- Vedi feature 005-preview-review-editor per dettagli Phase 5/5b
 
 **Da fare** (placeholder "presto"):
 - Route reali per Inbox, Portali, Brain, Log
@@ -65,6 +68,7 @@ STUDIO_DEV_USER=tua@email npm run dev    # bypass auth in dev
 - `documentation/features/003-dati-module.md` — modulo Dati + chat agente Editor Dati
 - `documentation/features/004-login-standalone.md` — OTP login (workstream 03)
 - `documentation/features/005-preview-review-editor.md` — Anteprima iframe + agente Review Editor (workstream 03)
+- `documentation/features/006-generative-ui-chat.md` — Generative UI in chat onboarding (workstream 04, PoC ProductPicker)
 - Cross-progetto: `Kyron/documentation/workstreams/03-studio-standalone.md` — login OTP, preview iframe, review system
 - `documentation/diary/` — changelog locale
 - Cross-progetto: `Kyron/documentation/workstreams/01-studio-shell-port.md`

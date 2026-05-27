@@ -1,6 +1,13 @@
 "use client";
 
-import { useState, useMemo, type ReactElement } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactElement,
+} from "react";
 import { PreviewChat } from "./PreviewChat";
 import { AnnotationsList } from "./AnnotationsList";
 import type { Annotation } from "@/lib/review/types";
@@ -9,6 +16,31 @@ interface Props {
   initialUrl: string;
   userEmail: string;
 }
+
+// Target di selezione inoltrato dal cms ReviewOverlay via postMessage.
+// Vive in React state lato studio; la chat lo riceve come prop, lo
+// mostra come chip nel composer, e lo include nel context dell'agente.
+export interface PendingTarget {
+  urn: string | null;
+  nodeKind: "text" | "image" | "section" | "page" | "gap";
+  page: string;
+  currentText?: string;
+  assetSrc?: string;
+  selector?: string;
+}
+
+interface HoverRect {
+  top: number;
+  left: number;
+  width: number;
+  height: number;
+}
+
+const PARENT_ORIGINS = [
+  "https://staging.kyronedu.it",
+  "https://kyronedu.it",
+  "http://localhost:3000",
+];
 
 function normalizeUrl(input: string): string {
   const trimmed = input.trim();
@@ -30,6 +62,10 @@ function urlPath(url: string): string {
   }
 }
 
+function isCmsOrigin(origin: string): boolean {
+  return PARENT_ORIGINS.includes(origin);
+}
+
 export function PreviewWorkspace({
   initialUrl,
   userEmail,
@@ -37,6 +73,12 @@ export function PreviewWorkspace({
   const [url, setUrl] = useState(initialUrl);
   const [urlInput, setUrlInput] = useState(initialUrl);
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
+  const [pendingTarget, setPendingTarget] = useState<PendingTarget | null>(
+    null,
+  );
+  const [hoverRect, setHoverRect] = useState<HoverRect | null>(null);
+  const [selectionRect, setSelectionRect] = useState<HoverRect | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const currentPath = useMemo(() => urlPath(url), [url]);
 
@@ -44,11 +86,16 @@ export function PreviewWorkspace({
     const next = normalizeUrl(target ?? urlInput);
     setUrl(next);
     setUrlInput(next);
+    setPendingTarget(null);
+    setHoverRect(null);
+    setSelectionRect(null);
   }
 
-  function addAnnotation(a: Annotation): void {
+  const addAnnotation = useCallback((a: Annotation) => {
     setAnnotations((prev) => [...prev, a]);
-  }
+    setPendingTarget(null);
+    setSelectionRect(null);
+  }, []);
 
   function removeAnnotation(id: string): void {
     setAnnotations((prev) => prev.filter((a) => a.id !== id));
@@ -57,6 +104,50 @@ export function PreviewWorkspace({
   function clearAnnotations(): void {
     setAnnotations([]);
   }
+
+  // Bridge postMessage: ack handshake, ricezione select/hover dal cms.
+  useEffect(() => {
+    function onMessage(e: MessageEvent) {
+      if (!isCmsOrigin(e.origin)) return;
+      const data = e.data as
+        | {
+            type?: string;
+            target?: PendingTarget;
+            rect?: HoverRect;
+            urn?: string | null;
+          }
+        | null;
+      if (!data || typeof data.type !== "string") return;
+
+      if (data.type === "kyron-rev:hello" && e.source) {
+        (e.source as Window).postMessage(
+          { type: "kyron-rev:ack", v: 1 },
+          e.origin,
+        );
+        return;
+      }
+      if (data.type === "kyron-rev:select" && data.target) {
+        setPendingTarget(data.target);
+        setSelectionRect(data.rect ?? null);
+        return;
+      }
+      if (data.type === "kyron-rev:hover") {
+        setHoverRect(data.urn ? data.rect ?? null : null);
+        return;
+      }
+      if (data.type === "kyron-rev:clear") {
+        setPendingTarget(null);
+        setSelectionRect(null);
+      }
+    }
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, []);
+
+  const dismissPending = useCallback(() => {
+    setPendingTarget(null);
+    setSelectionRect(null);
+  }, []);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_440px] h-screen overflow-hidden">
@@ -85,14 +176,39 @@ export function PreviewWorkspace({
             </button>
           </form>
         </header>
-        <div className="flex-1 min-h-0 bg-white">
+        <div className="flex-1 min-h-0 bg-white relative">
           <iframe
+            ref={iframeRef}
             key={url}
             src={url}
             className="w-full h-full border-0"
             title="Anteprima kyronedu.it"
             referrerPolicy="no-referrer-when-downgrade"
           />
+          {hoverRect && (
+            <div
+              aria-hidden
+              className="pointer-events-none absolute rounded border-2 border-[var(--color-action)]/40 bg-[var(--color-action)]/5 transition-all duration-100"
+              style={{
+                top: hoverRect.top,
+                left: hoverRect.left,
+                width: hoverRect.width,
+                height: hoverRect.height,
+              }}
+            />
+          )}
+          {selectionRect && (
+            <div
+              aria-hidden
+              className="pointer-events-none absolute rounded border-2 border-[var(--color-action)] bg-[var(--color-action)]/10 shadow-[0_0_0_4px_rgba(0,0,0,0.04)]"
+              style={{
+                top: selectionRect.top,
+                left: selectionRect.left,
+                width: selectionRect.width,
+                height: selectionRect.height,
+              }}
+            />
+          )}
         </div>
       </section>
 
@@ -109,6 +225,8 @@ export function PreviewWorkspace({
             currentUrl={url}
             currentPath={currentPath}
             annotationsCount={annotations.length}
+            pendingTarget={pendingTarget}
+            onDismissPending={dismissPending}
             onAdd={addAnnotation}
             reviewer={userEmail}
             onSendRequest={() => {

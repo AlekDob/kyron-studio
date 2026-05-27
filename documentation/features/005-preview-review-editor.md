@@ -82,14 +82,88 @@ Quando esiste un selector preciso dell'elemento (futuro: postMessage dal
 cms), l'agente puo' applicare la modifica deterministicamente. Senza
 selector, fallback a `body`.
 
-## Limiti MVP
+## Phase 5 — Selezione chat-integrated (2026-05-26)
 
-- **Cross-origin iframe**: `studio.kyronedu.it` vs `staging.kyronedu.it`
-  → no postMessage, no selector live, no inject script. L'agente lavora
-  con currentUrl + path dal context. Per il selector overlay vero serve
-  cooperazione cms-side.
+Il popover `ReviewComposer` cms-side e' stato eliminato in modalita'
+embedded. Selezione + conferma ora vivono nella chat.
+
+**Handshake postMessage**: l'overlay cms al mount fa
+`parent.postMessage({type:"kyron-rev:hello"}, "*")`. Studio risponde
+`kyron-rev:ack` solo se l'origin del cms e' fra
+`staging.kyronedu.it`/`kyronedu.it`/`localhost:3000`. Solo dopo l'ack
+l'overlay entra in `embedded mode` (nasconde Bar+Composer, posta solo
+eventi).
+
+**Eventi cms → studio**:
+- `kyron-rev:select` — `{target:{urn, nodeKind, page, currentText, ...}, rect}`
+- `kyron-rev:hover` — `{urn, rect}` per highlight live
+- `kyron-rev:clear` — deseleziona
+
+**Selection chip**: sopra il composer chat appare una chip con il path
+e un'anteprima del testo selezionato (`"Supportiamo le scuole…" su /it`)
++ bottone X per deselezionare. `pendingTarget` finisce in `context.pendingTarget`
+della richiesta a `streamReviewEditor`.
+
+**Proposal bubble inline**: quando l'agente chiama `propose_annotation`,
+il client renderizza un `ProposalCard` dentro il feed chat (NON popover)
+con sezioni Originale / Proposto / Nota + bottoni Conferma / Modifica /
+Annulla. Su **Conferma** il client chiama `onAdd()` localmente (zero
+latenza) e manda un user message sintetico `"Confermo, aggiungi al
+bundle."` all'agente per tenerlo allineato. Su **Modifica** il bubble
+diventa editabile inline (textarea). Su **Annulla** sintetico `"Annulla
+la proposta"`.
+
+**Hover/selection outline**: rect ricevuti via postMessage diventano due
+div absolute sopra l'iframe (outline 2px tratteggiato per hover, pieno
+per selezione). Soluzione cross-origin pulita: il cms manda solo le
+coordinate, lo studio disegna fuori dall'iframe.
+
+File aggiunti/toccati Phase 5:
+- `cms/components/review/ReviewOverlay.tsx` — embedded mode + handshake
+- `studio/src/components/preview/PreviewWorkspace.tsx` — listener +
+  pendingTarget + hover/selection overlay
+- `studio/src/components/preview/PreviewChat.tsx` — chip + proposal entry
+- `studio/src/components/preview/ProposalCard.tsx` — bubble Conferma/Modifica/Annulla
+- `studio/src/components/preview/SelectionChip.tsx`
+- `studio-server/src/features/review-editor/{agent,prompt,route}.ts` — context.pendingTarget
+
+## Phase 5b — Drawer responsive + agente piu' ambizioso (2026-05-26)
+
+**Bundle inline → top-3 + "Vedi tutte"**: `AnnotationsList` mostra solo
+le prime 3 annotazioni in pillole compatte; "Vedi tutte (N)" apre
+`AnnotationsDrawer`.
+
+**`AnnotationsDrawer.tsx`** (fixed inset-0, z-50):
+- Desktop: slide da destra 480px wide, rounded-l-2xl
+- Mobile: bottom sheet 88vh, rounded-t-2xl
+- Easing iOS `cubic-bezier(0.32, 0.72, 0, 1)` a 280ms enter
+- Stagger fade-up 30ms sui rows (max 8 step)
+- Pill colorate per kind (edit-text blu, replace-image viola,
+  add-section verde, restructure ambra)
+- Backdrop opacity + blur 2px
+- `Esc` chiude (e chiude prima detail se aperto)
+
+**`AnnotationDetail.tsx`** (fixed inset-0, z-60 sopra il drawer):
+- Stesso comportamento responsive
+- Header Indietro / Elimina
+- Sezioni: tipo, pagina, selector (se != "body"), originale (text/
+  image), proposto, immagine nuova, nota, posizione, meta
+
+**Prompt agente esteso** (`studio-server/.../prompt.ts`): spinto a
+proporre attivamente `replace-image`, `restructure` (5 colonne,
+masonry, hero photo, ordine card), `add-section` (testimonial,
+gallery, stat, FAQ). Esempi concreti in-prompt. Suggerimenti
+proattivi a 2-3 alternative quando l'utente e' vago.
+
+File aggiunti Phase 5b:
+- `studio/src/components/preview/AnnotationsDrawer.tsx`
+- `studio/src/components/preview/AnnotationDetail.tsx`
+
+## Limiti residui
+
 - **Annotazioni client-side only**: se ricarichi /preview perdi il bundle.
   Roadmap: persistenza in cookie/Supabase.
+- **Multi-select non supportato**: una selezione alla volta.
 
 ## Flusso utente
 

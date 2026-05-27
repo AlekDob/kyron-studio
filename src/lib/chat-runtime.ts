@@ -10,7 +10,7 @@ export type ChatMessage = {
 export type ChatStreamEvent =
   | { type: "delta"; delta: string }
   | { type: "tool"; tool: string; args: unknown }
-  | { type: "tool-result"; tool: string }
+  | { type: "tool-result"; tool: string; result?: unknown }
   | { type: "error"; error: string }
   | { type: "done" };
 
@@ -37,12 +37,22 @@ export async function* streamDataEditor(input: {
   });
 }
 
+export interface ReviewEditorPendingTarget {
+  urn: string | null;
+  nodeKind: "text" | "image" | "section" | "page" | "gap";
+  page: string;
+  currentText?: string;
+  assetSrc?: string;
+  selector?: string;
+}
+
 export async function* streamReviewEditor(input: {
   messages: ChatMessage[];
   context?: {
     currentUrl?: string;
     currentPath?: string;
     annotationsCount?: number;
+    pendingTarget?: ReviewEditorPendingTarget;
   };
   signal?: AbortSignal;
 }): AsyncGenerator<ChatStreamEvent, void, void> {
@@ -95,6 +105,7 @@ async function* streamAgent(input: {
           tool?: string;
           args?: unknown;
           toolResult?: string;
+          result?: unknown;
           error?: string;
         };
         if (typeof parsed.delta === "string") {
@@ -102,7 +113,11 @@ async function* streamAgent(input: {
         } else if (typeof parsed.tool === "string") {
           yield { type: "tool", tool: parsed.tool, args: parsed.args };
         } else if (typeof parsed.toolResult === "string") {
-          yield { type: "tool-result", tool: parsed.toolResult };
+          yield {
+            type: "tool-result",
+            tool: parsed.toolResult,
+            result: parsed.result,
+          };
         } else if (typeof parsed.error === "string") {
           yield { type: "error", error: parsed.error };
         }
