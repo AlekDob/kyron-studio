@@ -1,5 +1,6 @@
 // Source: cms/app/api/studio/login/request/route.ts (adapted for studio standalone)
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { Resend } from "resend";
 import {
   OTP_COOKIE,
@@ -8,6 +9,7 @@ import {
   isAuthEnabled,
   isEmailAllowed,
   signOtpCookie,
+  verifyOtpCookie,
 } from "@/lib/otp";
 
 const KYRON_DOMAIN = "kyronedu.it";
@@ -64,6 +66,17 @@ export async function POST(req: Request) {
   if (!isEmailAllowed(email)) {
     return NextResponse.redirect(
       loginUrl(req, { error: "unauthorized", email }),
+      303,
+    );
+  }
+
+  // Dedup: se esiste gia' un OTP valido per questa email emesso da <60s, skippa Resend.
+  // Questo blocca il double-send da prefetch/mobile browser e retry lato infra.
+  const jar = await cookies();
+  const existing = verifyOtpCookie(jar.get(OTP_COOKIE)?.value);
+  if (existing && existing.email === email && existing.exp > Date.now()) {
+    return NextResponse.redirect(
+      loginUrl(req, { step: "otp", email, sent: "ok" }),
       303,
     );
   }

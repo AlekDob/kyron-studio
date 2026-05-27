@@ -117,7 +117,7 @@ export default async function LoginPage({ searchParams }: Props) {
                 pattern="[0-9]{6}"
                 maxLength={6}
                 autoFocus
-                className="w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-paper-soft)] px-4 py-3 text-lg font-mono tracking-[0.3em] text-center focus:border-[var(--color-ink)] outline-none"
+                className="w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-paper-soft)] px-4 py-3 text-base font-mono tracking-[0.3em] text-center focus:border-[var(--color-ink)] outline-none"
               />
             </div>
             <button
@@ -156,7 +156,7 @@ export default async function LoginPage({ searchParams }: Props) {
                 autoComplete="email"
                 inputMode="email"
                 autoFocus
-                className="w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-paper-soft)] px-4 py-3 text-sm focus:border-[var(--color-ink)] outline-none"
+                className="w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-paper-soft)] px-4 py-3 text-base focus:border-[var(--color-ink)] outline-none"
               />
             </div>
             <button
