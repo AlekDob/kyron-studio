@@ -25,12 +25,43 @@ pannello contestuale a destra (lista portali / scheda live onboarding / dettagli
 |---|---|---|
 | Creare portale | `save_pending_school` | Onboarding conversazionale 8 step |
 | Elencare portali | `list_portals` | Mostra nel side panel |
-| Dettaglio portale | `get_portal` | Naviga al side panel detail |
-| Modificare portale | `update_portal` | Campi singoli, null = invariato |
+| Dettaglio portale | `get_portal({query})` | Fuzzy match su slug **o** nome (case-insensitive) |
+| Modificare portale | `update_portal` | Campi singoli (nome, sito, indirizzo, stato), null = invariato |
 | Eliminare portale | `delete_portal` | Richiede conferma scritta del nome |
 | Upload logo | `render_logo_uploader` | Componente generativo con upload diretto |
-| Catalogo | `render_product_picker` | Generative UI, prodotti da Saleor live |
-| Kit/bundle | `render_bundle_builder` | Loop esplicito, N kit senza limiti |
+| Catalogo (onboarding) | `render_product_picker` | Generative UI, prodotti da Saleor live |
+| Kit (onboarding) | `render_bundle_builder` | Loop esplicito, N kit senza limiti |
+| Aggiungi kit a portale esistente | `add_bundle_to_portal` | Persiste la submission BundleBuilder su un portale gia' salvato |
+| Cambia catalogo portale | `update_catalog` | Sostituisce intera lista visibleSlugs |
+| Modifica bundle | `update_bundle` | nome / prezzo / componenti (null = invariato) |
+| Rimuovi bundle | `remove_bundle` | Cancella un singolo kit |
+
+Tutti i tool di lookup (`get_portal`, `update_*`, `delete_*`, `add_bundle_to_portal`)
+risolvono il portale via `resolvePortal(query)` in `studio-server`: tentano lo
+slug esatto, poi fanno fuzzy match normalizzato (slug + nome). Su match multipli
+ritornano la lista candidati invece di "non trovato".
+
+## Side panel editabile (UX ibrida)
+
+Il pannello destro non e' solo read-only: la maggior parte dei campi e' editabile inline.
+L'agente resta per onboarding e operazioni "intelligenti", la UI per micro-fix rapidi.
+
+| Sezione | Operazioni inline | Endpoint |
+|---|---|---|
+| Informazioni | nome / sito / cod. MIUR | PUT `/api/portals/[slug]` |
+| Indirizzo | via / CAP / citta' / provincia | PUT `/api/portals/[slug]` |
+| Spedizione | toggle `shipToSchool` | PUT `/api/portals/[slug]` |
+| Catalogo | rimuovi chip / Aggiungi prodotto (dropdown Saleor) | PUT `/api/portals/[slug]/catalog` |
+| Bundle | nome / prezzo / aggiungi-rimuovi componenti | PUT `/api/portals/[slug]/bundles/[bundleSlug]` |
+| Bundle | rimuovi kit (cestino, doppio click conferma) | DELETE `/api/portals/[slug]/bundles/[bundleSlug]` |
+
+**Componenti inline**: `InlineText` (click → input → Enter/✓ salva, Esc annulla),
+`InlinePrice` (parsing virgola/punto), `CatalogEditor`, `BundleCard` con dropdown
+lazy-loaded da `/api/portals/_catalog` (Saleor passthrough).
+
+**Refresh post-edit**: `PortalsWorkspace.handleRefreshDetail()` viene passato come
+`onChanged` al PortalDetail. Dopo ogni mutation refetcha sia il portale aperto
+sia la lista (le card si aggiornano in tempo reale).
 
 ## Persistenza
 
@@ -71,6 +102,11 @@ page-level, il dettaglio apre nel side panel via `fetchPortalDetail()`.
 non possono chiamarlo direttamente. Proxy routes BFF:
 - `GET /api/portals` → `listPortals()`
 - `GET /api/portals/[slug]` → `getPortal(slug)`
+- `PUT /api/portals/[slug]` → `updatePortal(slug, patch)`
+- `PUT /api/portals/[slug]/catalog` → `updatePortalCatalog(slug, visibleSlugs)`
+- `PUT /api/portals/[slug]/bundles/[bundleSlug]` → `updateBundle(slug, bundleSlug, patch)`
+- `DELETE /api/portals/[slug]/bundles/[bundleSlug]` → `removeBundle(slug, bundleSlug)`
+- `GET /api/portals/_catalog` → `listSaleorCatalog()` (passthrough catalogo Saleor live)
 
 ## Performance streaming
 
@@ -94,19 +130,23 @@ link diretto, e redirect da route obsolete senza perdere il contesto workspace.
 ## File chiave
 
 **studio-server:**
-- `src/features/portals/route.ts` — CRUD routes + logo upload
-- `src/features/portals/reader.ts` — `listPortals()`, `getPortal()`
-- `src/features/portals/writer.ts` — `updatePortal()`, `deletePortal()`, `savePortalLogo()`
+- `src/features/portals/route.ts` — CRUD routes + logo upload + catalog/bundles + `_catalog` Saleor passthrough
+- `src/features/portals/reader.ts` — `listPortals()`, `getPortal()`, `resolvePortal(query)` (fuzzy)
+- `src/features/portals/writer.ts` — `updatePortal()`, `updatePortalCatalog()`, `addBundleToPortal()`, `updateBundleInPortal()`, `removeBundleFromPortal()`, `deletePortal()`, `savePortalLogo()`
   - `savePortalLogo` usa `fs.access()` check: durante onboarding il `.md` non esiste ancora
-- `src/features/onboard-school/agent.ts` — tutti i tool
-- `src/features/onboard-school/prompt.ts` — system prompt 4 capacita'
+- `src/features/onboard-school/agent.ts` — tutti i tool (12 totali, incl. add/update/remove bundle + update_catalog)
+- `src/features/onboard-school/prompt.ts` — system prompt 5 capacita' (incl. FLUSSO AGGIUNGI KIT)
 
 **studio:**
 - `src/app/(authed)/portals/page.tsx` — workspace server component (legge `searchParams.detail`)
 - `src/app/(authed)/portals/[slug]/page.tsx` — redirect → `/portals?detail=<slug>`
 - `src/app/api/portals/route.ts` — proxy GET /api/portals
-- `src/app/api/portals/[slug]/route.ts` — proxy GET /api/portals/:slug
-- `src/components/portals/PortalsWorkspace.tsx` — split-pane + 3-mode panel + memo
+- `src/app/api/portals/[slug]/route.ts` — proxy GET + PUT /api/portals/:slug
+- `src/app/api/portals/[slug]/catalog/route.ts` — proxy PUT catalog
+- `src/app/api/portals/[slug]/bundles/[bundleSlug]/route.ts` — proxy PUT + DELETE bundle
+- `src/app/api/portals/_catalog/route.ts` — proxy GET Saleor catalog
+- `src/components/portals/PortalsWorkspace.tsx` — split-pane + 3-mode panel + memo + `handleRefreshDetail` on mutation
+- `src/components/portals/PortalDetail.tsx` — **editor inline** (InlineText, InlinePrice, CatalogEditor, BundleCard)
 - `src/components/portals/PortalsChat.tsx` — chat con rAF throttle + draft extraction
 - `src/components/portals/LivePortalCard.tsx` — skeleton→data card
 - `src/components/portals/PortalsList.tsx` — lista compatta con search (button, no anchor)
