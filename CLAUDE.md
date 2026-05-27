@@ -30,15 +30,16 @@ Hub admin Kyron a `studio.kyronedu.it`. Sotto-progetto di `/Kyron`, registrato i
 - Skeleton loading transitions, auto-scroll chat, dev-cookie auto-signing
 - Lista record con search (`?q=`) + paginazione prev/next (limit 25)
 
-**Studio standalone live** (workstream 03 phase 1-5 done, 2026-05-26):
+**Studio standalone live** (workstream 03 phase 1-6 done, 2026-05-27):
 - Login OTP proprio (`/login`) — no piu' dipendenza dal cms
 - Modulo "Anteprima": iframe `staging.kyronedu.it` con handshake postMessage cms-side
 - Selezione/hover live → outline disegnato lato studio, chip pendingTarget nel composer chat
 - Agente Review Editor con `propose_annotation` reso come `ProposalCard` inline (Conferma/Modifica/Annulla)
 - Bundle annotazioni: top-3 inline + drawer "Vedi tutte" responsive (slide-from-right desktop, bottom sheet mobile) con drawer dettaglio annidato
+- Phase 6: toggle select/browse + DOM context strutturato (outline tree + images) nell'evento selezione → agente riceve struttura sezione; drawer 540px polished; dev cookie middleware Edge-compatible
 - Output finale: `.md` via `/api/review/send` (Resend) ad Alek — agente non scrive mai su Payload
 - Redirect 308 da `/studio/*` su cms → `studio.kyronedu.it`
-- Vedi feature 005-preview-review-editor per dettagli Phase 5/5b
+- Vedi feature 005-preview-review-editor per dettagli Phase 5/5b/6
 
 **Da fare** (placeholder "presto"):
 - Route reali per Inbox, Portali, Brain, Log

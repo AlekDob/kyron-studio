@@ -10,6 +10,7 @@ import {
 } from "react";
 import { PreviewChat } from "./PreviewChat";
 import { AnnotationsList } from "./AnnotationsList";
+import { ModeToggle } from "./ModeToggle";
 import type { Annotation } from "@/lib/review/types";
 
 interface Props {
@@ -20,6 +21,11 @@ interface Props {
 // Target di selezione inoltrato dal cms ReviewOverlay via postMessage.
 // Vive in React state lato studio; la chat lo riceve come prop, lo
 // mostra come chip nel composer, e lo include nel context dell'agente.
+export interface SectionContext {
+  outline: string;
+  images: Array<{ src: string; alt: string }>;
+}
+
 export interface PendingTarget {
   urn: string | null;
   nodeKind: "text" | "image" | "section" | "page" | "gap";
@@ -27,6 +33,7 @@ export interface PendingTarget {
   currentText?: string;
   assetSrc?: string;
   selector?: string;
+  sectionContext?: SectionContext;
 }
 
 interface HoverRect {
@@ -78,6 +85,7 @@ export function PreviewWorkspace({
   );
   const [hoverRect, setHoverRect] = useState<HoverRect | null>(null);
   const [selectionRect, setSelectionRect] = useState<HoverRect | null>(null);
+  const [selectMode, setSelectMode] = useState(true);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const currentPath = useMemo(() => urlPath(url), [url]);
@@ -112,7 +120,7 @@ export function PreviewWorkspace({
       const data = e.data as
         | {
             type?: string;
-            target?: PendingTarget;
+            target?: PendingTarget & { sectionContext?: SectionContext };
             rect?: HoverRect;
             urn?: string | null;
           }
@@ -143,6 +151,17 @@ export function PreviewWorkspace({
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
   }, []);
+
+  const toggleMode = useCallback(() => {
+    const next = !selectMode;
+    setSelectMode(next);
+    const iframe = iframeRef.current;
+    if (!iframe?.contentWindow) return;
+    iframe.contentWindow.postMessage(
+      { type: "kyron-rev:mode", mode: next ? "select" : "browse" },
+      "*",
+    );
+  }, [selectMode]);
 
   const dismissPending = useCallback(() => {
     setPendingTarget(null);
@@ -175,6 +194,7 @@ export function PreviewWorkspace({
               Vai
             </button>
           </form>
+          <ModeToggle active={selectMode} onToggle={toggleMode} />
         </header>
         <div className="flex-1 min-h-0 bg-white relative">
           <iframe
@@ -185,7 +205,7 @@ export function PreviewWorkspace({
             title="Anteprima kyronedu.it"
             referrerPolicy="no-referrer-when-downgrade"
           />
-          {hoverRect && (
+          {selectMode && hoverRect && (
             <div
               aria-hidden
               className="pointer-events-none absolute rounded border-2 border-[var(--color-action)]/40 bg-[var(--color-action)]/5 transition-all duration-100"
@@ -197,7 +217,7 @@ export function PreviewWorkspace({
               }}
             />
           )}
-          {selectionRect && (
+          {selectMode && selectionRect && (
             <div
               aria-hidden
               className="pointer-events-none absolute rounded border-2 border-[var(--color-action)] bg-[var(--color-action)]/10 shadow-[0_0_0_4px_rgba(0,0,0,0.04)]"

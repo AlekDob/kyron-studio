@@ -44,6 +44,10 @@ export interface ReviewEditorPendingTarget {
   currentText?: string;
   assetSrc?: string;
   selector?: string;
+  sectionContext?: {
+    outline: string;
+    images: Array<{ src: string; alt: string }>;
+  };
 }
 
 export async function* streamReviewEditor(input: {

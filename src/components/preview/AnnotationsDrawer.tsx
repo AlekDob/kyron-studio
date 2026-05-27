@@ -88,8 +88,9 @@ export function AnnotationsDrawer({
         aria-label="Tutte le annotazioni"
         className="absolute bg-[var(--color-paper)] shadow-2xl flex flex-col
                    inset-x-0 bottom-0 max-h-[88vh] rounded-t-2xl
-                   lg:inset-y-0 lg:right-0 lg:left-auto lg:bottom-auto
-                   lg:w-[480px] lg:max-h-none lg:rounded-none lg:rounded-l-2xl"
+                   lg:inset-y-4 lg:right-4 lg:left-auto lg:bottom-auto
+                   lg:w-[540px] lg:max-h-none lg:rounded-2xl
+                   lg:border lg:border-[var(--color-line)]"
         style={{
           transform: open
             ? "translateY(0) translateX(0)"
@@ -101,10 +102,10 @@ export function AnnotationsDrawer({
       >
         <DrawerDesktopTransform open={open} />
 
-        <header className="flex items-center justify-between border-b border-[var(--color-line)] px-5 py-3">
+        <header className="flex items-center justify-between border-b border-[var(--color-line)] px-6 py-5">
           <div>
             <p className="eyebrow">Annotazioni</p>
-            <p className="text-xs text-[var(--color-ink-muted)] mt-0.5">
+            <p className="text-base font-medium text-[var(--color-ink)] mt-1">
               {annotations.length}{" "}
               {annotations.length === 1 ? "voce" : "voci"} nel bundle
             </p>
@@ -148,7 +149,7 @@ export function AnnotationsDrawer({
               <button
                 type="button"
                 onClick={() => setSelected(a)}
-                className="w-full text-left px-5 py-3 hover:bg-[var(--color-ink)]/[0.03] active:scale-[0.995] transition-transform duration-150 origin-left"
+                className="w-full text-left px-6 py-4 hover:bg-[var(--color-ink)]/[0.03] active:scale-[0.995] transition-transform duration-150 origin-left"
               >
                 <div className="flex items-start gap-3">
                   <span

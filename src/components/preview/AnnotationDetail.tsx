@@ -71,8 +71,9 @@ export function AnnotationDetail({
         data-detail-root
         className="absolute bg-[var(--color-paper)] shadow-2xl flex flex-col
                    inset-x-0 bottom-0 max-h-[92vh] rounded-t-2xl
-                   lg:inset-y-0 lg:right-0 lg:left-auto lg:bottom-auto
-                   lg:w-[420px] lg:max-h-none lg:rounded-none lg:rounded-l-2xl"
+                   lg:inset-y-4 lg:right-4 lg:left-auto lg:bottom-auto
+                   lg:w-[540px] lg:max-h-none lg:rounded-2xl
+                   lg:border lg:border-[var(--color-line)]"
         style={{
           transform: open ? "translateY(0)" : "translateY(100%)",
           transition: "transform 280ms cubic-bezier(0.32, 0.72, 0, 1)",
@@ -86,7 +87,7 @@ export function AnnotationDetail({
           }
         `}</style>
 
-        <header className="flex items-center justify-between border-b border-[var(--color-line)] px-5 py-3">
+        <header className="flex items-center justify-between border-b border-[var(--color-line)] px-6 py-4">
           <button
             type="button"
             onClick={onClose}
@@ -116,7 +117,7 @@ export function AnnotationDetail({
           </button>
         </header>
 
-        <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4 space-y-4">
+        <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-5">
           <div className="space-y-1">
             <p className="eyebrow text-[var(--color-ink-muted)]">Tipo</p>
             <p className="text-sm font-medium">{KIND_LABELS[a.kind]}</p>

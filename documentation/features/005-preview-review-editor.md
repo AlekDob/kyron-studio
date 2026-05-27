@@ -2,7 +2,7 @@
 type: feature
 project: kyron-studio
 created: 2026-05-26
-last_verified: 2026-05-26
+last_verified: 2026-05-27
 tags: [preview, iframe, review, agent, ai, workstream-03]
 ---
 
@@ -158,6 +158,73 @@ proattivi a 2-3 alternative quando l'utente e' vago.
 File aggiunti Phase 5b:
 - `studio/src/components/preview/AnnotationsDrawer.tsx`
 - `studio/src/components/preview/AnnotationDetail.tsx`
+
+## Phase 6 — DOM context + select/browse toggle (2026-05-27)
+
+Due novita' principali: l'agente ora riceve **contesto DOM strutturato**
+dall'elemento selezionato, e l'utente puo' alternare tra modalita'
+selezione e navigazione (browse) nell'iframe.
+
+### Select / Browse toggle
+
+Nuovo state `selectMode` in `PreviewWorkspace.tsx`. Quando `selectMode=false`
+(browse), gli overlay hover/selezione sono nascosti e l'utente puo'
+navigare l'iframe liberamente. Il toggle invia `kyron-rev:mode` via
+postMessage all'iframe; il cms `ReviewOverlay.tsx` ascolta il messaggio
+e togla l'attributo CSS `data-kyron-rev-mode` con valore `armed`
+(selezione attiva) vs assente (browse) — in browse mode gli outline di
+selezione sono disabilitati lato css.
+
+Componente `ModeToggle.tsx` (NEW): bottone icona cursore (select) /
+freccia (browse), montato nella toolbar del workspace.
+
+### DOM context nell'evento di selezione
+
+`review-selection.ts` (NEW, cms-side): estratto helper di selezione
+dal `ReviewOverlay`. Aggiunta funzione `extractSectionContext()` che
+risale al `<section>` (o parent container) dell'elemento selezionato e
+costruisce:
+- **DOM outline tree**: struttura tag+classi, profondita' 3 livelli
+- **Images list**: `src` + `alt` di tutte le `<img>` nella sezione
+
+Il contesto viene incluso nel payload `kyron-rev:select` postMessage.
+
+Lato studio: `PreviewWorkspace.tsx` definisce l'interfaccia
+`SectionContext` e la propaga nell'oggetto `pendingTarget`.
+`chat-runtime.ts` estende `ReviewEditorPendingTarget` con campo
+opzionale `sectionContext`.
+
+Lato studio-server: `agent.ts` aggiunge `SectionContext` interface +
+helper `formatSectionContext()` che formatta outline + images list
+nel preamble del system prompt dell'agente.
+
+### Drawer polish (desktop)
+
+- `AnnotationsDrawer.tsx`: 540px wide (era 480px), `inset-4`,
+  `rounded-2xl` con border, header/padding piu' generosi
+- `AnnotationDetail.tsx`: stessa larghezza 540px per coprire
+  completamente il drawer parent su desktop, padding aumentato
+
+### Dev cookie middleware
+
+`middleware.ts` (NEW, studio): middleware Edge-compatible che setta
+automaticamente il cookie `kyron-rev` in dev quando `STUDIO_DEV_USER`
+e' configurato. Usa Web Crypto API (non `node:crypto`) per compatibilita'
+Edge runtime.
+
+### File toccati Phase 6
+
+| Repo | File | Modifica |
+|---|---|---|
+| cms | `components/review/ReviewOverlay.tsx` | listener `kyron-rev:mode`, toggle `data-kyron-rev-mode` |
+| cms | `components/review/review-selection.ts` (NEW) | `extractSectionContext()`, helper selezione estratti |
+| studio | `src/components/preview/PreviewWorkspace.tsx` | `SectionContext`, `selectMode`, `toggleMode()` |
+| studio | `src/components/preview/ModeToggle.tsx` (NEW) | toggle button select/browse |
+| studio | `src/middleware.ts` (NEW) | dev cookie auto-sign Edge-compatible |
+| studio | `src/components/preview/AnnotationsDrawer.tsx` | 540px, inset-4, rounded-2xl, padding |
+| studio | `src/components/preview/AnnotationDetail.tsx` | 540px, padding |
+| studio-server | `src/features/review-editor/agent.ts` | `SectionContext`, `formatSectionContext()` |
+| studio | `src/lib/chat-runtime.ts` | `sectionContext` in `ReviewEditorPendingTarget` |
 
 ## Limiti residui
 
