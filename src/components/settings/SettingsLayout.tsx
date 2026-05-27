@@ -24,22 +24,23 @@ export function SettingsLayout() {
   const [active, setActive] = useState<Tab>("connections");
 
   return (
-    <div className="flex h-full min-h-screen">
-      <nav className="w-64 shrink-0 border-r border-[var(--color-line)] bg-[var(--color-paper-muted)]">
-        <div className="px-6 py-5">
+    <div className="flex flex-col lg:flex-row h-full min-h-screen">
+      {/* Tab rail — horizontal scroll on mobile, vertical on desktop */}
+      <nav className="shrink-0 border-b lg:border-b-0 lg:border-r border-[var(--color-line)] bg-[var(--color-paper-muted)] lg:w-64">
+        <div className="px-4 py-3 lg:px-6 lg:py-5">
           <p className="eyebrow">Impostazioni</p>
         </div>
-        <ul>
+        <ul className="flex overflow-x-auto lg:flex-col lg:overflow-x-visible px-2 pb-2 lg:px-0 lg:pb-0 gap-1 lg:gap-0">
           {TABS.map((tab) => (
-            <li key={tab.id}>
+            <li key={tab.id} className="shrink-0">
               <button
                 type="button"
                 disabled={tab.disabled}
                 onClick={() => !tab.disabled && setActive(tab.id)}
                 className={cn(
-                  "w-full border-l-2 px-6 py-2.5 text-left text-sm transition-colors",
+                  "whitespace-nowrap rounded-full lg:rounded-none lg:w-full lg:border-l-2 px-4 py-2 lg:px-6 lg:py-2.5 text-left text-sm transition-colors",
                   active === tab.id
-                    ? "border-[var(--color-accent)] bg-[var(--color-paper)] text-[var(--color-ink)]"
+                    ? "bg-[var(--color-paper)] text-[var(--color-ink)] lg:border-[var(--color-accent)]"
                     : "border-transparent text-[var(--color-ink-muted)] hover:bg-[var(--color-action-subtle)] hover:text-[var(--color-ink)]",
                   tab.disabled && "cursor-not-allowed opacity-50 hover:bg-transparent hover:text-[var(--color-ink-muted)]",
                 )}
@@ -47,7 +48,7 @@ export function SettingsLayout() {
                 <span className="flex items-center justify-between gap-2">
                   <span>{tab.label}</span>
                   {tab.disabled && (
-                    <span className="mono-caps text-[var(--color-ink-muted)]">
+                    <span className="mono-caps text-[var(--color-ink-muted)] hidden lg:inline">
                       presto
                     </span>
                   )}
@@ -59,7 +60,7 @@ export function SettingsLayout() {
       </nav>
 
       <div className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-3xl px-12 py-10">
+        <div className="mx-auto max-w-3xl px-5 py-6 lg:px-12 lg:py-10">
           {active === "connections" && <ProviderConnectionsSection />}
           {active === "models" && <ModelRoutingSection />}
           {active === "theme" && <ThemeSection />}

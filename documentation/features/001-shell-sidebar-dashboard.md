@@ -43,6 +43,20 @@ Phase 1 completata 2026-05-26. Responsive mobile aggiunto 2026-05-27. Pronta per
 | Viewport height | `100dvh` (dynamic viewport height, gestisce barra browser mobile) |
 | Navigazione | Drawer si chiude automaticamente al cambio route |
 | Header mobile | Sticky top bar con hamburger + titolo "Studio" |
+| Comandi ⌘K | Nascosto su mobile (`hidden lg:flex`), accessibile solo da desktop |
+
+## Mobile chat FAB (2026-05-27)
+
+Componente shared `MobileChatOverlay` (`src/components/shell/MobileChatOverlay.tsx`):
+FAB fisso in basso a destra su mobile, apre fullscreen overlay con il pannello chat/context.
+
+| Workspace | Label FAB | Contenuto overlay |
+|---|---|---|
+| Dati (`DataWorkspace`) | "Editor Dati" | Header contesto + DataChat |
+| Anteprima (`PreviewWorkspace`) | "Review Editor" | ReviewPanel (chat + annotations) |
+| Portali (`PortalsWorkspace`) | "Portali" | Side panel lista/detail (icona LayoutList) |
+
+Settings non ha chat — usa tab rail orizzontale scrollabile su mobile.
 
 ## Primitive UI usate (da `@/components/ui`)
 

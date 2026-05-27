@@ -65,6 +65,7 @@ export function AppSidebar({ userEmail }: Props) {
           <Sidebar.Item
             icon={<Command className="h-4 w-4" />}
             onClick={openPalette}
+            className="hidden lg:flex"
           >
             <span className="flex w-full items-center justify-between gap-2">
               <span>Comandi</span>

@@ -102,22 +102,24 @@ export function PortalsWorkspace({ initialPortals, initialDetailSlug }: Props): 
   const isDetail = panel.kind === "detail";
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-screen">
-      <div className="flex-1 min-w-0 flex flex-col border-r border-[var(--color-line)] h-screen overflow-hidden">
-        <header className="px-5 py-3 border-b border-[var(--color-line)]">
+    <div className="flex flex-col lg:flex-row h-[100dvh] overflow-hidden">
+      <div className="flex-1 min-w-0 flex flex-col border-r border-[var(--color-line)] lg:h-[100dvh] overflow-hidden">
+        <header className="px-5 py-3 border-b border-[var(--color-line)] shrink-0">
           <p className="eyebrow">Agente · Portali</p>
           <p className="text-xs text-[var(--color-ink-muted)] mt-1">
             Onboarding + gestione portali
           </p>
         </header>
-        <PortalsChat
-          onDraftUpdate={setDraft}
-          onStartCreating={handleStartCreating}
-          onViewPortal={handleViewPortal}
-        />
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          <PortalsChat
+            onDraftUpdate={setDraft}
+            onStartCreating={handleStartCreating}
+            onViewPortal={handleViewPortal}
+          />
+        </div>
       </div>
       <aside
-        className={`hidden lg:flex flex-col bg-[var(--color-paper-soft)] sticky top-0 h-screen overflow-hidden transition-[width] duration-500 ease-out ${
+        className={`hidden lg:flex flex-col bg-[var(--color-paper-soft)] sticky top-0 h-[100dvh] overflow-hidden transition-[width] duration-500 ease-out ${
           isDetail ? "w-[560px]" : "w-[420px]"
         }`}
       >
@@ -130,7 +132,11 @@ export function PortalsWorkspace({ initialPortals, initialDetailSlug }: Props): 
           onDetailChanged={handleRefreshDetail}
         />
       </aside>
-      <MobileChatOverlay label="Portali" icon={<LayoutList className="h-6 w-6" />}>
+      <MobileChatOverlay
+        label="Portali"
+        icon={<LayoutList className="h-5 w-5" />}
+        position="top-right"
+      >
         <MemoSidePanel
           mode={panel}
           draft={draft}

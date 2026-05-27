@@ -11,6 +11,7 @@ import {
 import { PreviewChat } from "./PreviewChat";
 import { AnnotationsList } from "./AnnotationsList";
 import { ModeToggle } from "./ModeToggle";
+import { MobileChatOverlay } from "@/components/shell/MobileChatOverlay";
 import type { Annotation } from "@/lib/review/types";
 
 interface Props {
@@ -178,9 +179,9 @@ export function PreviewWorkspace({
   }, []);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[1fr_440px] h-screen overflow-hidden">
-      <section className="flex flex-col min-h-0 border-r border-[var(--color-line)]">
-        <header className="flex items-center gap-2 border-b border-[var(--color-line)] px-4 py-2 bg-[var(--color-paper-soft)]">
+    <div className="grid grid-cols-1 lg:grid-cols-[1fr_440px] h-[100dvh] overflow-hidden">
+      <section className="flex flex-col min-h-0 border-r border-[var(--color-line)] overflow-hidden">
+        <header className="flex items-center gap-2 border-b border-[var(--color-line)] px-4 py-2 bg-[var(--color-paper-soft)] shrink-0">
           <p className="eyebrow shrink-0">Anteprima</p>
           <form
             onSubmit={(e) => {
@@ -241,36 +242,86 @@ export function PreviewWorkspace({
         </div>
       </section>
 
-      <aside className="flex flex-col min-h-0 h-screen overflow-hidden bg-[var(--color-paper-soft)]">
-        <header className="border-b border-[var(--color-line)] px-5 py-3">
-          <p className="eyebrow">Agente · Review Editor</p>
-          <p className="text-xs text-[var(--color-ink-muted)] mt-1 font-mono truncate">
-            {currentPath}
-          </p>
-        </header>
-
-        <div className="flex-1 min-h-0 flex flex-col">
-          <PreviewChat
-            currentUrl={url}
-            currentPath={currentPath}
-            annotationsCount={annotations.length}
-            pendingTarget={pendingTarget}
-            onDismissPending={dismissPending}
-            onAdd={addAnnotation}
-            reviewer={userEmail}
-            onSendRequest={() => {
-              /* triggered when agent asks; UI shows button in AnnotationsList */
-            }}
-          />
-        </div>
-
-        <AnnotationsList
+      {/* Desktop aside */}
+      <aside className="hidden lg:flex flex-col min-h-0 h-[100dvh] overflow-hidden bg-[var(--color-paper-soft)]">
+        <ReviewPanel
+          currentUrl={url}
+          currentPath={currentPath}
           annotations={annotations}
+          pendingTarget={pendingTarget}
+          onDismissPending={dismissPending}
+          onAdd={addAnnotation}
           onRemove={removeAnnotation}
           onClear={clearAnnotations}
-          site={url}
+          reviewer={userEmail}
         />
       </aside>
+
+      {/* Mobile FAB + fullscreen overlay */}
+      <MobileChatOverlay label="Review Editor">
+        <ReviewPanel
+          currentUrl={url}
+          currentPath={currentPath}
+          annotations={annotations}
+          pendingTarget={pendingTarget}
+          onDismissPending={dismissPending}
+          onAdd={addAnnotation}
+          onRemove={removeAnnotation}
+          onClear={clearAnnotations}
+          reviewer={userEmail}
+        />
+      </MobileChatOverlay>
+    </div>
+  );
+}
+
+function ReviewPanel({
+  currentUrl,
+  currentPath,
+  annotations,
+  pendingTarget,
+  onDismissPending,
+  onAdd,
+  onRemove,
+  onClear,
+  reviewer,
+}: {
+  currentUrl: string;
+  currentPath: string;
+  annotations: Annotation[];
+  pendingTarget: PendingTarget | null;
+  onDismissPending: () => void;
+  onAdd: (a: Annotation) => void;
+  onRemove: (id: string) => void;
+  onClear: () => void;
+  reviewer: string;
+}) {
+  return (
+    <div className="flex flex-col h-full min-h-0">
+      <header className="border-b border-[var(--color-line)] px-5 py-3 shrink-0">
+        <p className="eyebrow">Agente · Review Editor</p>
+        <p className="text-xs text-[var(--color-ink-muted)] mt-1 font-mono truncate">
+          {currentPath}
+        </p>
+      </header>
+      <div className="flex-1 min-h-0 flex flex-col">
+        <PreviewChat
+          currentUrl={currentUrl}
+          currentPath={currentPath}
+          annotationsCount={annotations.length}
+          pendingTarget={pendingTarget}
+          onDismissPending={onDismissPending}
+          onAdd={onAdd}
+          reviewer={reviewer}
+          onSendRequest={() => {}}
+        />
+      </div>
+      <AnnotationsList
+        annotations={annotations}
+        onRemove={onRemove}
+        onClear={onClear}
+        site={currentUrl}
+      />
     </div>
   );
 }
