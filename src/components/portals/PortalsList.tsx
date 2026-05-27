@@ -21,9 +21,10 @@ const STATUS_VARIANT: Record<string, "neutral" | "warning" | "accent" | "tertiar
 
 interface Props {
   portals: PortalSummary[];
+  onSelect?: (slug: string) => void;
 }
 
-export function PortalsList({ portals }: Props) {
+export function PortalsList({ portals, onSelect }: Props) {
   const [query, setQuery] = useState("");
 
   const filtered = query.trim()
@@ -64,10 +65,11 @@ export function PortalsList({ portals }: Props) {
 
       <div className="flex flex-col gap-2">
         {filtered.map((p) => (
-          <a
+          <button
             key={p.slug}
-            href={`/portals/${p.slug}`}
-            className="rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper)] p-3 transition-colors hover:border-[var(--color-line-strong)] block"
+            type="button"
+            onClick={() => onSelect?.(p.slug)}
+            className="rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper)] p-3 transition-colors hover:border-[var(--color-line-strong)] text-left w-full"
           >
             <div className="flex items-start justify-between mb-1.5">
               <span className="text-xs font-medium text-[var(--color-ink)] leading-tight">
@@ -97,7 +99,7 @@ export function PortalsList({ portals }: Props) {
                 {p.bundleCount}
               </span>
             </div>
-          </a>
+          </button>
         ))}
       </div>
     </div>

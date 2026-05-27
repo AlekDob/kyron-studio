@@ -1,6 +1,12 @@
 "use client";
 
-import { memo, useCallback, useState, type ReactElement } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useState,
+  type ReactElement,
+} from "react";
 import { PortalsChat } from "./PortalsChat";
 import { LivePortalCard } from "./LivePortalCard";
 import { PortalsList } from "./PortalsList";
@@ -32,9 +38,28 @@ interface Props {
   initialPortals: PortalSummary[];
 }
 
+async function fetchPortals(): Promise<PortalSummary[]> {
+  const res = await fetch("/api/portals", { cache: "no-store" });
+  if (!res.ok) return [];
+  return (await res.json()) as PortalSummary[];
+}
+
+async function fetchPortalDetail(slug: string): Promise<PortalDetail | null> {
+  const res = await fetch(`/api/portals/${slug}`, { cache: "no-store" });
+  if (!res.ok) return null;
+  return (await res.json()) as PortalDetail;
+}
+
 export function PortalsWorkspace({ initialPortals }: Props): ReactElement {
+  const [portals, setPortals] = useState<PortalSummary[]>(initialPortals);
   const [draft, setDraft] = useState<PortalDraft>({});
   const [panel, setPanel] = useState<SidePanelMode>({ kind: "list" });
+
+  useEffect(() => {
+    if (!draft.saved) return;
+    fetchPortals().then(setPortals);
+    setPanel({ kind: "list" });
+  }, [draft.saved]);
 
   const handleStartCreating = useCallback((): void => {
     setDraft({});
@@ -45,13 +70,31 @@ export function PortalsWorkspace({ initialPortals }: Props): ReactElement {
     setPanel({ kind: "detail", portal });
   }, []);
 
+  const handleSelectPortal = useCallback((slug: string): void => {
+    fetchPortalDetail(slug).then((portal) => {
+      if (portal) setPanel({ kind: "detail", portal });
+    });
+  }, []);
+
   const handleBackToList = useCallback((): void => {
     setPanel({ kind: "list" });
   }, []);
 
+  const isDetail = panel.kind === "detail";
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-0 min-h-screen">
-      <div className="flex flex-col border-r border-[var(--color-line)] h-screen overflow-hidden">
+    <div
+      className={`grid grid-cols-1 gap-0 min-h-screen ${
+        isDetail
+          ? "lg:grid-cols-[360px_1fr]"
+          : "lg:grid-cols-[1fr_420px]"
+      }`}
+    >
+      <div
+        className={`flex flex-col border-r border-[var(--color-line)] h-screen overflow-hidden ${
+          isDetail ? "lg:order-first" : ""
+        }`}
+      >
         <header className="px-5 py-3 border-b border-[var(--color-line)]">
           <p className="eyebrow">Agente · Portali</p>
           <p className="text-xs text-[var(--color-ink-muted)] mt-1">
@@ -68,8 +111,9 @@ export function PortalsWorkspace({ initialPortals }: Props): ReactElement {
         <MemoSidePanel
           mode={panel}
           draft={draft}
-          portals={initialPortals}
+          portals={portals}
           onBackToList={handleBackToList}
+          onSelectPortal={handleSelectPortal}
         />
       </aside>
     </div>
@@ -83,11 +127,13 @@ function SidePanel({
   draft,
   portals,
   onBackToList,
+  onSelectPortal,
 }: {
   mode: SidePanelMode;
   draft: PortalDraft;
   portals: PortalSummary[];
   onBackToList: () => void;
+  onSelectPortal: (slug: string) => void;
 }) {
   if (mode.kind === "creating") {
     return (
@@ -149,7 +195,7 @@ function SidePanel({
         </p>
       </header>
       <div className="flex-1 overflow-y-auto px-5 py-4">
-        <PortalsList portals={portals} />
+        <PortalsList portals={portals} onSelect={onSelectPortal} />
       </div>
     </>
   );
@@ -166,9 +212,12 @@ function DetailView({ portal }: { portal: PortalDetail }) {
     <div className="flex flex-col gap-3 text-xs">
       <div className="rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper)] p-3">
         <p className="font-medium text-[var(--color-ink)] mb-1">{portal.nome}</p>
-        <p className="font-mono text-[10px] text-[var(--color-ink-muted)]">{portal.slug}</p>
+        <p className="font-mono text-[10px] text-[var(--color-ink-muted)]">
+          {portal.slug}
+        </p>
         <p className="text-[var(--color-ink-soft)] mt-1">
-          {addr.streetAddress1}, {addr.postalCode} {addr.city} ({addr.countryArea})
+          {addr.streetAddress1}, {addr.postalCode} {addr.city} (
+          {addr.countryArea})
         </p>
       </div>
       <div className="rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper)] p-3">
@@ -177,7 +226,10 @@ function DetailView({ portal }: { portal: PortalDetail }) {
         </p>
         <div className="flex flex-wrap gap-1">
           {portal.catalog.visibleSlugs.map((s) => (
-            <span key={s} className="px-1.5 py-0.5 rounded bg-[var(--color-paper-muted)] text-[10px] text-[var(--color-ink-soft)]">
+            <span
+              key={s}
+              className="px-1.5 py-0.5 rounded bg-[var(--color-paper-muted)] text-[10px] text-[var(--color-ink-soft)]"
+            >
               {s}
             </span>
           ))}
@@ -191,7 +243,9 @@ function DetailView({ portal }: { portal: PortalDetail }) {
           {portal.bundles.map((b) => (
             <div key={b.slug} className="flex justify-between py-1">
               <span className="text-[var(--color-ink)]">{b.name}</span>
-              <span className="tabular-nums text-[var(--color-ink)]">{EURO.format(b.finalPriceEur)}</span>
+              <span className="tabular-nums text-[var(--color-ink)]">
+                {EURO.format(b.finalPriceEur)}
+              </span>
             </div>
           ))}
         </div>
