@@ -161,6 +161,18 @@ export async function listPortals(): Promise<PortalSummary[]> {
   return gatewayFetch<PortalSummary[]>("/api/v1/portals");
 }
 
+export interface SaleorProduct {
+  slug: string;
+  name: string;
+  priceEur: number;
+  category: string;
+  imageUrl?: string;
+}
+
+export async function listSaleorCatalog(): Promise<SaleorProduct[]> {
+  return gatewayFetch<SaleorProduct[]>("/api/v1/portals/_catalog");
+}
+
 export interface PortalDetail extends PortalSummary {
   sitoUfficiale: string;
   codiceMeccanografico: string;
@@ -180,4 +192,58 @@ export interface PortalDetail extends PortalSummary {
 
 export async function getPortal(slug: string): Promise<PortalDetail> {
   return gatewayFetch<PortalDetail>(`/api/v1/portals/${slug}`);
+}
+
+export async function updatePortal(
+  slug: string,
+  patch: Record<string, unknown>,
+): Promise<{ ok: boolean; slug: string; updatedFields: string[] }> {
+  return gatewayFetch(`/api/v1/portals/${slug}`, {
+    method: "PUT",
+    body: JSON.stringify(patch),
+  });
+}
+
+export async function updatePortalCatalog(
+  slug: string,
+  visibleSlugs: string[],
+): Promise<{ ok: boolean; slug: string; total: number }> {
+  return gatewayFetch(`/api/v1/portals/${slug}/catalog`, {
+    method: "PUT",
+    body: JSON.stringify({ visibleSlugs }),
+  });
+}
+
+export interface BundlePatch {
+  name?: string;
+  finalPriceEur?: number;
+  components?: Array<{
+    productSlug: string;
+    selection: { kind: "variant"; variantSku: string };
+  }>;
+}
+
+export async function updateBundle(
+  slug: string,
+  bundleSlug: string,
+  patch: BundlePatch,
+): Promise<{
+  ok: boolean;
+  slug: string;
+  bundleSlug: string;
+  updatedFields: string[];
+}> {
+  return gatewayFetch(`/api/v1/portals/${slug}/bundles/${bundleSlug}`, {
+    method: "PUT",
+    body: JSON.stringify(patch),
+  });
+}
+
+export async function removeBundle(
+  slug: string,
+  bundleSlug: string,
+): Promise<{ ok: boolean; slug: string; bundleSlug: string; total: number }> {
+  return gatewayFetch(`/api/v1/portals/${slug}/bundles/${bundleSlug}`, {
+    method: "DELETE",
+  });
 }

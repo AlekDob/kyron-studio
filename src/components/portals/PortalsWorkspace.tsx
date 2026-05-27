@@ -11,6 +11,8 @@ import { PortalsChat } from "./PortalsChat";
 import { LivePortalCard } from "./LivePortalCard";
 import { PortalsList } from "./PortalsList";
 import { PortalDetail as PortalDetailView } from "./PortalDetail";
+import { LayoutList } from "lucide-react";
+import { MobileChatOverlay } from "@/components/shell/MobileChatOverlay";
 import type { PortalSummary, PortalDetail } from "@/lib/gateway";
 
 export interface PortalDraft {
@@ -89,6 +91,14 @@ export function PortalsWorkspace({ initialPortals, initialDetailSlug }: Props): 
     setPanel({ kind: "list" });
   }, []);
 
+  const detailSlug = panel.kind === "detail" ? panel.portal.slug : null;
+  const handleRefreshDetail = useCallback(async (): Promise<void> => {
+    if (!detailSlug) return;
+    const refreshed = await fetchPortalDetail(detailSlug);
+    if (refreshed) setPanel({ kind: "detail", portal: refreshed });
+    fetchPortals().then(setPortals);
+  }, [detailSlug]);
+
   const isDetail = panel.kind === "detail";
 
   return (
@@ -117,8 +127,19 @@ export function PortalsWorkspace({ initialPortals, initialDetailSlug }: Props): 
           portals={portals}
           onBackToList={handleBackToList}
           onSelectPortal={handleSelectPortal}
+          onDetailChanged={handleRefreshDetail}
         />
       </aside>
+      <MobileChatOverlay label="Portali" icon={<LayoutList className="h-6 w-6" />}>
+        <MemoSidePanel
+          mode={panel}
+          draft={draft}
+          portals={portals}
+          onBackToList={handleBackToList}
+          onSelectPortal={handleSelectPortal}
+          onDetailChanged={handleRefreshDetail}
+        />
+      </MobileChatOverlay>
     </div>
   );
 }
@@ -131,12 +152,14 @@ function SidePanel({
   portals,
   onBackToList,
   onSelectPortal,
+  onDetailChanged,
 }: {
   mode: SidePanelMode;
   draft: PortalDraft;
   portals: PortalSummary[];
   onBackToList: () => void;
   onSelectPortal: (slug: string) => void;
+  onDetailChanged?: () => void;
 }) {
   if (mode.kind === "creating") {
     return (
@@ -186,7 +209,7 @@ function SidePanel({
           key={p.slug}
           className="flex-1 overflow-y-auto px-5 py-4 motion-safe:animate-[fadeIn_280ms_ease-out]"
         >
-          <PortalDetailView portal={p} />
+          <PortalDetailView portal={p} onChanged={onDetailChanged} />
         </div>
       </>
     );
