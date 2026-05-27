@@ -3,11 +3,7 @@
 import { useEffect, useRef, useState, type ReactElement } from "react";
 import { useRouter } from "next/navigation";
 import { ChatBubble } from "@/components/ui";
-import {
-  streamOnboardChat,
-  type ChatMessage,
-  type ChatStreamEvent,
-} from "@/lib/chat-runtime";
+import { streamOnboardChat, type ChatMessage } from "@/lib/chat-runtime";
 import {
   MarkdownContent,
   StreamingBubble,
@@ -19,9 +15,10 @@ import {
   type GenerativeSubmission,
 } from "@/components/chat/generative/types";
 import { GenerativeRenderer } from "@/components/chat/generative/registry";
+import type { PortalDraft } from "./PortalsWorkspace";
 
 interface Props {
-  slug?: string;
+  onDraftUpdate: (updater: (prev: PortalDraft) => PortalDraft) => void;
 }
 
 interface UiBlock {
@@ -35,23 +32,13 @@ interface ChatTurn {
   ui?: UiBlock;
 }
 
-const NAV_TOOLS = new Set(["get_portal"]);
+const GREETING =
+  "Ciao! Posso creare un nuovo portale scuola o mostrarti quelli esistenti. Da dove partiamo?";
 
-interface ToolArgs {
-  slug?: string;
-}
-
-function greeting(slug?: string): string {
-  if (slug) {
-    return `Sto guardando il portale **${slug}**. Posso mostrarti i dettagli, analizzare il catalogo e i kit, o confrontarlo con altri portali. Cosa vuoi sapere?`;
-  }
-  return "Ciao! Posso aiutarti a creare un nuovo portale scuola o mostrarti quelli esistenti. Da dove partiamo?";
-}
-
-export function PortalsChat({ slug }: Props): ReactElement {
+export function PortalsChat({ onDraftUpdate }: Props): ReactElement {
   const router = useRouter();
   const [turns, setTurns] = useState<ChatTurn[]>([
-    { role: "assistant", content: greeting(slug) },
+    { role: "assistant", content: GREETING },
   ]);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
@@ -64,8 +51,127 @@ export function PortalsChat({ slug }: Props): ReactElement {
     el.scrollTop = el.scrollHeight;
   }, [turns, streaming, toolStatus]);
 
-  function toMessages(): ChatMessage[] {
-    return turns.map((t) => ({ role: t.role, content: t.content }));
+  function extractDraftFromToolArgs(
+    tool: string,
+    args: unknown,
+  ): void {
+    const a = (args ?? {}) as Record<string, unknown>;
+    if (tool === "check_slug_availability" && a.slug) {
+      onDraftUpdate((d) => ({ ...d, slug: String(a.slug) }));
+    }
+    if (tool === "validate_school_data") {
+      onDraftUpdate((d) => ({
+        ...d,
+        slug: a.slug ? String(a.slug) : d.slug,
+        provincia: a.countryArea ? String(a.countryArea) : d.provincia,
+        codiceMeccanografico: a.codiceMeccanografico
+          ? String(a.codiceMeccanografico)
+          : d.codiceMeccanografico,
+        sitoUfficiale: a.sitoUfficiale
+          ? String(a.sitoUfficiale)
+          : d.sitoUfficiale,
+      }));
+    }
+    if (tool === "save_pending_school") {
+      const addr = a.schoolAddress as Record<string, string> | undefined;
+      onDraftUpdate((d) => ({
+        ...d,
+        nome: a.nome ? String(a.nome) : d.nome,
+        slug: a.slug ? String(a.slug) : d.slug,
+        sitoUfficiale: a.sitoUfficiale
+          ? String(a.sitoUfficiale)
+          : d.sitoUfficiale,
+        codiceMeccanografico: a.codiceMeccanografico
+          ? String(a.codiceMeccanografico)
+          : d.codiceMeccanografico,
+        via: addr?.streetAddress1 ?? d.via,
+        cap: addr?.postalCode ?? d.cap,
+        city: addr?.city ?? d.city,
+        provincia: addr?.countryArea ?? d.provincia,
+        shipToSchool:
+          typeof a.shipToSchool === "boolean"
+            ? a.shipToSchool
+            : d.shipToSchool,
+      }));
+    }
+  }
+
+  function extractDraftFromToolResult(
+    tool: string,
+    result: unknown,
+  ): void {
+    if (tool === "save_pending_school") {
+      onDraftUpdate((d) => ({ ...d, saved: true }));
+    }
+  }
+
+  function extractDraftFromSubmission(sub: GenerativeSubmission): void {
+    const data = sub.data as Record<string, unknown>;
+    if (data.selectedSlugs) {
+      onDraftUpdate((d) => ({
+        ...d,
+        selectedProducts: data.selectedSlugs as string[],
+      }));
+    }
+    if (data.name && data.priceEur != null) {
+      const bundle = {
+        name: String(data.name),
+        priceEur: Number(data.priceEur),
+        components: (data.components as string[]) ?? [],
+      };
+      onDraftUpdate((d) => ({
+        ...d,
+        bundles: [...(d.bundles ?? []), bundle],
+      }));
+    }
+  }
+
+  function extractDraftFromAssistantText(text: string): void {
+    const nameMatch = text.match(
+      /(?:nome.*?scuola|scuola.*?chiama|nome ufficiale)[:\s]*["""']?([A-Z][^"""'\n.!?]{2,60})/i,
+    );
+    if (nameMatch) {
+      onDraftUpdate((d) => (d.nome ? d : { ...d, nome: nameMatch[1].trim() }));
+    }
+  }
+
+  async function runStream(msgs: ChatMessage[], next: ChatTurn[]): Promise<void> {
+    let buf = "";
+    let pendingUi: UiBlock | undefined;
+    setTurns([...next, { role: "assistant", content: "" }]);
+
+    try {
+      for await (const ev of streamOnboardChat({ messages: msgs })) {
+        if (ev.type === "delta") {
+          buf += ev.delta;
+          setTurns([
+            ...next,
+            { role: "assistant", content: buf, ui: pendingUi },
+          ]);
+        } else if (ev.type === "tool") {
+          setToolStatus(`\`${ev.tool}\`...`);
+          extractDraftFromToolArgs(ev.tool, ev.args);
+        } else if (ev.type === "tool-result") {
+          setToolStatus(null);
+          extractDraftFromToolResult(ev.tool, ev.result);
+          const desc = extractGenerativeDescriptor(ev.result);
+          if (desc) {
+            pendingUi = { descriptor: desc };
+            setTurns([
+              ...next,
+              { role: "assistant", content: buf, ui: pendingUi },
+            ]);
+          }
+        } else if (ev.type === "error") {
+          buf += `\n\n_[errore: ${ev.error}]_`;
+          setTurns([...next, { role: "assistant", content: buf }]);
+        }
+      }
+    } finally {
+      setStreaming(false);
+      setToolStatus(null);
+      if (buf) extractDraftFromAssistantText(buf);
+    }
   }
 
   async function send(text?: string): Promise<void> {
@@ -81,64 +187,19 @@ export function PortalsChat({ slug }: Props): ReactElement {
     setStreaming(true);
 
     const msgs = next.map((t) => ({ role: t.role, content: t.content }));
-    let buf = "";
-    let pendingUi: UiBlock | undefined;
-    setTurns([...next, { role: "assistant", content: "" }]);
-
-    try {
-      for await (const ev of streamOnboardChat({ messages: msgs })) {
-        if (ev.type === "delta") {
-          buf += ev.delta;
-          setTurns([
-            ...next,
-            { role: "assistant", content: buf, ui: pendingUi },
-          ]);
-        } else if (ev.type === "tool") {
-          setToolStatus(`Sto chiamando \`${ev.tool}\`...`);
-          if (NAV_TOOLS.has(ev.tool)) {
-            const args = (ev.args ?? {}) as ToolArgs;
-            if (args.slug && args.slug !== slug) {
-              router.push(`/portals/${args.slug}`);
-            }
-          }
-        } else if (ev.type === "tool-result") {
-          setToolStatus(null);
-          const desc = extractGenerativeDescriptor(ev.result);
-          if (desc) {
-            pendingUi = { descriptor: desc };
-            setTurns([
-              ...next,
-              { role: "assistant", content: buf, ui: pendingUi },
-            ]);
-          }
-          if (ev.tool === "list_portals") router.refresh();
-        } else if (ev.type === "error") {
-          buf += `\n\n_[errore: ${ev.error}]_`;
-          setTurns([...next, { role: "assistant", content: buf }]);
-        }
-      }
-    } finally {
-      setStreaming(false);
-      setToolStatus(null);
-    }
+    await runStream(msgs, next);
   }
 
   function handleGenerativeSubmit(
     turnIdx: number,
     submission: GenerativeSubmission,
   ): void {
-    setTurns((prev) => {
-      const updated = [...prev];
-      const turn = updated[turnIdx];
-      if (!turn?.ui) return prev;
-      updated[turnIdx] = {
-        ...turn,
-        ui: { ...turn.ui, submission },
-      };
-      return updated;
-    });
+    extractDraftFromSubmission(submission);
 
-    const summary = renderUserSummary(submission);
+    const updated = turns.map((t, i) =>
+      i === turnIdx && t.ui ? { ...t, ui: { ...t.ui, submission } } : t,
+    );
+
     const payload = JSON.stringify({
       kind: "generative_submission",
       component: turns[turnIdx]?.ui?.descriptor.component,
@@ -146,60 +207,14 @@ export function PortalsChat({ slug }: Props): ReactElement {
     });
 
     const next: ChatTurn[] = [
-      ...turns.map((t, i) =>
-        i === turnIdx && t.ui
-          ? { ...t, ui: { ...t.ui, submission } }
-          : t,
-      ),
+      ...updated,
       { role: "user" as const, content: payload },
     ];
     setTurns(next);
 
-    void (async () => {
-      setStreaming(true);
-      let buf = "";
-      let pendingUi: UiBlock | undefined;
-      setTurns([...next, { role: "assistant", content: "" }]);
-      const msgs = next.map((t) => ({ role: t.role, content: t.content }));
-
-      try {
-        for await (const ev of streamOnboardChat({ messages: msgs })) {
-          if (ev.type === "delta") {
-            buf += ev.delta;
-            setTurns([
-              ...next,
-              { role: "assistant", content: buf, ui: pendingUi },
-            ]);
-          } else if (ev.type === "tool") {
-            setToolStatus(`Sto chiamando \`${ev.tool}\`...`);
-            if (NAV_TOOLS.has(ev.tool)) {
-              const args = (ev.args ?? {}) as ToolArgs;
-              if (args.slug && args.slug !== slug) {
-                router.push(`/portals/${args.slug}`);
-              }
-            }
-          } else if (ev.type === "tool-result") {
-            setToolStatus(null);
-            const desc = extractGenerativeDescriptor(ev.result);
-            if (desc) {
-              pendingUi = { descriptor: desc };
-              setTurns([
-                ...next,
-                { role: "assistant", content: buf, ui: pendingUi },
-              ]);
-            }
-          } else if (ev.type === "error") {
-            buf += `\n\n_[errore: ${ev.error}]_`;
-            setTurns([...next, { role: "assistant", content: buf }]);
-          }
-        }
-      } finally {
-        setStreaming(false);
-        setToolStatus(null);
-      }
-    })();
-
-    void summary;
+    setStreaming(true);
+    const msgs = next.map((t) => ({ role: t.role, content: t.content }));
+    void runStream(msgs, next);
   }
 
   return (
@@ -292,18 +307,6 @@ export function PortalsChat({ slug }: Props): ReactElement {
       </form>
     </div>
   );
-}
-
-function renderUserSummary(sub: GenerativeSubmission): string {
-  const d = sub.data as Record<string, unknown>;
-  if (d.selectedSlugs) {
-    const slugs = d.selectedSlugs as string[];
-    return `Selezionati ${slugs.length} prodotti`;
-  }
-  if (d.name && d.priceEur != null) {
-    return `Kit "${d.name}" a ${d.priceEur} EUR`;
-  }
-  return "Dati inviati";
 }
 
 function renderUserContent(raw: string): string {
