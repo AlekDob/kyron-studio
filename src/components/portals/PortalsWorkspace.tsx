@@ -10,6 +10,7 @@ import {
 import { PortalsChat } from "./PortalsChat";
 import { LivePortalCard } from "./LivePortalCard";
 import { PortalsList } from "./PortalsList";
+import { PortalDetail as PortalDetailView } from "./PortalDetail";
 import type { PortalSummary, PortalDetail } from "@/lib/gateway";
 
 export interface PortalDraft {
@@ -91,18 +92,8 @@ export function PortalsWorkspace({ initialPortals, initialDetailSlug }: Props): 
   const isDetail = panel.kind === "detail";
 
   return (
-    <div
-      className={`grid grid-cols-1 gap-0 min-h-screen ${
-        isDetail
-          ? "lg:grid-cols-[360px_1fr]"
-          : "lg:grid-cols-[1fr_420px]"
-      }`}
-    >
-      <div
-        className={`flex flex-col border-r border-[var(--color-line)] h-screen overflow-hidden ${
-          isDetail ? "lg:order-first" : ""
-        }`}
-      >
+    <div className="flex flex-col lg:flex-row min-h-screen">
+      <div className="flex-1 min-w-0 flex flex-col border-r border-[var(--color-line)] h-screen overflow-hidden">
         <header className="px-5 py-3 border-b border-[var(--color-line)]">
           <p className="eyebrow">Agente · Portali</p>
           <p className="text-xs text-[var(--color-ink-muted)] mt-1">
@@ -115,7 +106,11 @@ export function PortalsWorkspace({ initialPortals, initialDetailSlug }: Props): 
           onViewPortal={handleViewPortal}
         />
       </div>
-      <aside className="hidden lg:flex flex-col bg-[var(--color-paper-soft)] sticky top-0 h-screen overflow-hidden">
+      <aside
+        className={`hidden lg:flex flex-col bg-[var(--color-paper-soft)] sticky top-0 h-screen overflow-hidden transition-[width] duration-500 ease-out ${
+          isDetail ? "w-[560px]" : "w-[420px]"
+        }`}
+      >
         <MemoSidePanel
           mode={panel}
           draft={draft}
@@ -173,22 +168,25 @@ function SidePanel({
     return (
       <>
         <header className="px-5 py-3 border-b border-[var(--color-line)] flex items-center justify-between">
-          <div>
+          <div className="min-w-0">
             <p className="eyebrow">Dettaglio</p>
-            <p className="text-xs text-[var(--color-ink-muted)] mt-1">
+            <p className="text-sm font-medium text-[var(--color-ink)] mt-0.5 truncate">
               {p.nome}
             </p>
           </div>
           <button
             type="button"
             onClick={onBackToList}
-            className="text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
+            className="text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] shrink-0 ml-3"
           >
             Lista
           </button>
         </header>
-        <div className="flex-1 overflow-y-auto px-5 py-4">
-          <DetailView portal={p} />
+        <div
+          key={p.slug}
+          className="flex-1 overflow-y-auto px-5 py-4 motion-safe:animate-[fadeIn_280ms_ease-out]"
+        >
+          <PortalDetailView portal={p} />
         </div>
       </>
     );
@@ -209,55 +207,3 @@ function SidePanel({
   );
 }
 
-function DetailView({ portal }: { portal: PortalDetail }) {
-  const EURO = new Intl.NumberFormat("it-IT", {
-    style: "currency",
-    currency: "EUR",
-  });
-  const addr = portal.schoolAddress as Record<string, string>;
-
-  return (
-    <div className="flex flex-col gap-3 text-xs">
-      <div className="rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper)] p-3">
-        <p className="font-medium text-[var(--color-ink)] mb-1">{portal.nome}</p>
-        <p className="font-mono text-[10px] text-[var(--color-ink-muted)]">
-          {portal.slug}
-        </p>
-        <p className="text-[var(--color-ink-soft)] mt-1">
-          {addr.streetAddress1}, {addr.postalCode} {addr.city} (
-          {addr.countryArea})
-        </p>
-      </div>
-      <div className="rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper)] p-3">
-        <p className="text-[10px] font-medium text-[var(--color-ink-muted)] uppercase tracking-wider mb-1">
-          Catalogo ({portal.catalog.visibleSlugs.length})
-        </p>
-        <div className="flex flex-wrap gap-1">
-          {portal.catalog.visibleSlugs.map((s) => (
-            <span
-              key={s}
-              className="px-1.5 py-0.5 rounded bg-[var(--color-paper-muted)] text-[10px] text-[var(--color-ink-soft)]"
-            >
-              {s}
-            </span>
-          ))}
-        </div>
-      </div>
-      {portal.bundles.length > 0 ? (
-        <div className="rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper)] p-3">
-          <p className="text-[10px] font-medium text-[var(--color-ink-muted)] uppercase tracking-wider mb-1">
-            Kit ({portal.bundles.length})
-          </p>
-          {portal.bundles.map((b) => (
-            <div key={b.slug} className="flex justify-between py-1">
-              <span className="text-[var(--color-ink)]">{b.name}</span>
-              <span className="tabular-nums text-[var(--color-ink)]">
-                {EURO.format(b.finalPriceEur)}
-              </span>
-            </div>
-          ))}
-        </div>
-      ) : null}
-    </div>
-  );
-}
