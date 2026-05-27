@@ -62,7 +62,7 @@ export function PortalsDashboard({ portals }: Props) {
       {portals.length === 0 ? (
         <EmptyState />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2">
           {portals.map((p) => (
             <PortalCard key={p.slug} portal={p} />
           ))}
@@ -77,7 +77,9 @@ function PortalCard({ portal }: { portal: PortalSummary }) {
   const label = STATUS_LABEL[portal.status] ?? portal.status;
 
   return (
-    <div className="rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper)] p-5 transition-shadow hover:shadow-sm">
+    <a
+      href={`/portals/${portal.slug}`}
+      className="block rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper)] p-5 transition-shadow hover:shadow-sm hover:border-[var(--color-line-strong)]">
       <div className="mb-3 flex items-start justify-between">
         <h3 className="text-sm font-medium text-[var(--color-ink)] leading-tight">
           {portal.nome}
@@ -114,7 +116,7 @@ function PortalCard({ portal }: { portal: PortalSummary }) {
           {portal.collectedBy === "agent" ? "via Agente" : "Manuale"}
         </span>
       </div>
-    </div>
+    </a>
   );
 }
 

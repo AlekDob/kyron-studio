@@ -160,3 +160,24 @@ export interface PortalSummary {
 export async function listPortals(): Promise<PortalSummary[]> {
   return gatewayFetch<PortalSummary[]>("/api/v1/portals");
 }
+
+export interface PortalDetail extends PortalSummary {
+  sitoUfficiale: string;
+  codiceMeccanografico: string;
+  schoolAddress: Record<string, unknown>;
+  branding: Record<string, unknown>;
+  shipToSchool: boolean;
+  shippingMethodLabel: string;
+  shippingPriceEur: number;
+  catalog: { visibleSlugs: string[]; hiddenSlugs: string[] };
+  bundles: Array<{
+    slug: string;
+    name: string;
+    finalPriceEur: number;
+    components: Array<Record<string, unknown>>;
+  }>;
+}
+
+export async function getPortal(slug: string): Promise<PortalDetail> {
+  return gatewayFetch<PortalDetail>(`/api/v1/portals/${slug}`);
+}
