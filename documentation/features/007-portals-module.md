@@ -56,7 +56,32 @@ studio (Next.js)                   studio-server (Hono)
 |---|---|---|
 | `list` | Default | Elenco portali + ricerca |
 | `creating` | Agente inizia onboarding | LivePortalCard skeleton→dati |
-| `detail` | `get_portal` tool result | Dettaglio completo portale |
+| `detail` | `get_portal` tool o click lista | Dettaglio completo portale |
+
+**Layout flip**: in mode `list`/`creating` il grid e' `[1fr_420px]` (chat ampia).
+In mode `detail` diventa `[360px_1fr]` (chat stretta, dettaglio ampio).
+
+**PortalsList**: le card sono `<button>` con `onSelect(slug)` — nessuna navigazione
+page-level, il dettaglio apre nel side panel via `fetchPortalDetail()`.
+
+## Proxy routes Next.js
+
+`gateway.ts` usa `cookies()` da `next/headers` (server-only). I client component
+non possono chiamarlo direttamente. Proxy routes BFF:
+- `GET /api/portals` → `listPortals()`
+- `GET /api/portals/[slug]` → `getPortal(slug)`
+
+## Performance streaming
+
+Ogni delta SSE causava re-render completo inclusa colonna destra. Fix:
+- Delta handler usa `requestAnimationFrame` throttle (max 60fps)
+- `SidePanel` wrappato in `React.memo` con handler `useCallback`
+
+## Lista aggiornamento live
+
+`initialPortals` e' SSR-only; dopo salvataggio agente il pannello lista tornava
+vuoto. Fix: stato `portals` client-side + `useEffect` su `draft.saved` che chiama
+`/api/portals` e aggiorna lo stato senza page reload.
 
 ## File chiave
 
@@ -64,15 +89,18 @@ studio (Next.js)                   studio-server (Hono)
 - `src/features/portals/route.ts` — CRUD routes + logo upload
 - `src/features/portals/reader.ts` — `listPortals()`, `getPortal()`
 - `src/features/portals/writer.ts` — `updatePortal()`, `deletePortal()`, `savePortalLogo()`
+  - `savePortalLogo` usa `fs.access()` check: durante onboarding il `.md` non esiste ancora
 - `src/features/onboard-school/agent.ts` — tutti i tool
 - `src/features/onboard-school/prompt.ts` — system prompt 4 capacita'
 
 **studio:**
 - `src/app/(authed)/portals/page.tsx` — workspace server component
-- `src/components/portals/PortalsWorkspace.tsx` — split-pane + 3-mode panel
-- `src/components/portals/PortalsChat.tsx` — chat con draft extraction
+- `src/app/api/portals/route.ts` — proxy GET /api/portals
+- `src/app/api/portals/[slug]/route.ts` — proxy GET /api/portals/:slug
+- `src/components/portals/PortalsWorkspace.tsx` — split-pane + 3-mode panel + memo
+- `src/components/portals/PortalsChat.tsx` — chat con rAF throttle + draft extraction
 - `src/components/portals/LivePortalCard.tsx` — skeleton→data card
-- `src/components/portals/PortalsList.tsx` — lista compatta con search
+- `src/components/portals/PortalsList.tsx` — lista compatta con search (button, no anchor)
 - `src/components/chat/generative/LogoUploader.tsx` — upload file generativo
 - `src/lib/gateway.ts` — client BFF
 

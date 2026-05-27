@@ -138,6 +138,23 @@ Aggiungere un nuovo componente generativo (es. BundleBuilder):
 
 Nessuna modifica al protocollo SSE, al runtime client, o agli altri componenti.
 
+## Loop multi-kit (step 7)
+
+Il prompt step 7 implementa un loop esplicito per kit ripetuti:
+1. Agente chiama `render_bundle_builder` → user submit
+2. Agente chiede "Vuoi aggiungere un altro kit?"
+3. Se "si" → agente chiama DI NUOVO `render_bundle_builder` (nuovo `id`, nuovo
+   componente vuoto). Mai riferirsi al builder precedente (e' in stato submitted
+   e read-only).
+4. Se "no" → step 8.
+
+Bug fix (2026-05-27): in precedenza l'agente, dopo la prima submission, emetteva
+solo testo "Per favore, crea un altro kit/bundle utilizzando il builder visuale."
+senza richiamare il tool. L'utente vedeva un'istruzione orfana che indicava il
+builder gia' submitted sopra. Fix in `studio-server/src/features/onboard-school/prompt.ts`:
+step 7 riscritto con loop esplicito + regola ferrea "se devi mostrare un builder,
+DEVI chiamare il tool — mai solo testo".
+
 ## Limiti attuali
 
 - Nessuna persistenza server-side dei thread chat (re-render funziona solo
