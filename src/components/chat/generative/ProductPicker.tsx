@@ -110,12 +110,25 @@ export function ProductPicker(props: ProductPickerProps): ReactElement {
                     : "border-[var(--color-line)] bg-transparent hover:border-[var(--color-line-strong)]"
                 } disabled:cursor-not-allowed disabled:opacity-60`}
               >
-                <span className="flex flex-col">
-                  <span className="font-medium text-[var(--color-ink)]">
-                    {p.name}
-                  </span>
-                  <span className="text-xs text-[var(--color-ink-muted)]">
-                    {p.category} · {p.slug}
+                <span className="flex items-center gap-3">
+                  {p.imageUrl ? (
+                    <img
+                      src={p.imageUrl}
+                      alt={p.name}
+                      className="h-10 w-10 shrink-0 rounded-[var(--radius-control)] bg-[var(--color-paper-muted)] object-cover"
+                    />
+                  ) : (
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-control)] bg-[var(--color-paper-muted)] text-xs text-[var(--color-ink-muted)]">
+                      ?
+                    </span>
+                  )}
+                  <span className="flex flex-col">
+                    <span className="font-medium text-[var(--color-ink)]">
+                      {p.name}
+                    </span>
+                    <span className="text-xs text-[var(--color-ink-muted)]">
+                      {p.category} · {p.slug}
+                    </span>
                   </span>
                 </span>
                 <span className="flex items-center gap-3">

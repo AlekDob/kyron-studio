@@ -146,27 +146,39 @@ export function PreviewChat(props: Props): ReactElement {
           } else if (ev.type === "tool") {
             setToolStatus(`Sto chiamando \`${ev.tool}\`…`);
             if (ev.tool === "propose_annotation") {
-              const id = makeId("prop");
               const args = (ev.args ?? {}) as ProposeArgs;
-              const flushed: ChatEntry[] = buf
-                ? [
-                    ...working,
-                    { kind: "msg", role: "assistant", content: buf },
-                  ]
-                : working;
-              working = [
-                ...flushed,
-                { kind: "proposal", id, args, state: "pending" },
-              ];
-              buf = "";
-              setEntries(working);
-            } else if (ev.tool === "add_annotation") {
-              const a = buildAnnotation(
-                (ev.args ?? {}) as ProposeArgs,
-                props.currentUrl,
-                props.reviewer,
+              const alreadyHandled = working.some(
+                (e) =>
+                  e.kind === "proposal" &&
+                  e.state === "confirmed" &&
+                  e.args.kind === args.kind &&
+                  e.args.page === args.page,
               );
+              if (!alreadyHandled) {
+                const id = makeId("prop");
+                const flushed: ChatEntry[] = buf
+                  ? [...working, { kind: "msg", role: "assistant", content: buf }]
+                  : working;
+                working = [
+                  ...flushed,
+                  { kind: "proposal", id, args, state: "pending" },
+                ];
+                buf = "";
+                setEntries(working);
+              }
+            } else if (ev.tool === "add_annotation") {
+              const args = (ev.args ?? {}) as ProposeArgs;
+              const a = buildAnnotation(args, props.currentUrl, props.reviewer);
               if (a) props.onAdd(a);
+              working = working.map<ChatEntry>((e) =>
+                e.kind === "proposal" &&
+                e.state === "pending" &&
+                e.args.kind === args.kind &&
+                e.args.page === args.page
+                  ? { ...e, state: "confirmed" }
+                  : e,
+              );
+              setEntries([...working, { kind: "msg", role: "assistant", content: buf }]);
             } else if (ev.tool === "request_send_bundle") {
               props.onSendRequest();
             }

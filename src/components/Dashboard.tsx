@@ -120,7 +120,7 @@ function ModuleRow({ module: m }: { module: ModuleDefinition }) {
     <Card
       padding="sm"
       interactive={!disabled}
-      className={disabled ? "cursor-not-allowed opacity-60" : undefined}
+      className={`h-full ${disabled ? "cursor-not-allowed opacity-60" : ""}`}
     >
       <div className="flex items-start gap-3 p-1">
         <div
@@ -147,10 +147,10 @@ function ModuleRow({ module: m }: { module: ModuleDefinition }) {
   );
 
   if (disabled) {
-    return <div role="presentation">{inner}</div>;
+    return <div role="presentation" className="h-full">{inner}</div>;
   }
   return (
-    <Link href={m.href} className="block">
+    <Link href={m.href} className="block h-full">
       {inner}
     </Link>
   );
