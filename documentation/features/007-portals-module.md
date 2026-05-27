@@ -16,7 +16,8 @@ pannello contestuale a destra (lista portali / scheda live onboarding / dettagli
 | Route | Scopo |
 |---|---|
 | `/portals` | Workspace split-pane (chat + side panel) |
-| `/portals/[slug]` | Pagina dettaglio standalone |
+| `/portals?detail=<slug>` | Apre workspace con dettaglio nel side panel |
+| `/portals/[slug]` | Redirect 307 → `/portals?detail=<slug>` (deep link compat) |
 
 ## Capacita' agente
 
@@ -83,6 +84,13 @@ Ogni delta SSE causava re-render completo inclusa colonna destra. Fix:
 vuoto. Fix: stato `portals` client-side + `useEffect` su `draft.saved` che chiama
 `/api/portals` e aggiorna lo stato senza page reload.
 
+## Deep link / navigazione diretta
+
+`/portals/[slug]` redirige a `/portals?detail=<slug>`. Il workspace legge
+`searchParams.detail` (prop `initialDetailSlug`) e fa `fetchPortalDetail` al
+mount per aprire subito il side panel nel mode `detail`. Permette bookmark,
+link diretto, e redirect da route obsolete senza perdere il contesto workspace.
+
 ## File chiave
 
 **studio-server:**
@@ -94,7 +102,8 @@ vuoto. Fix: stato `portals` client-side + `useEffect` su `draft.saved` che chiam
 - `src/features/onboard-school/prompt.ts` — system prompt 4 capacita'
 
 **studio:**
-- `src/app/(authed)/portals/page.tsx` — workspace server component
+- `src/app/(authed)/portals/page.tsx` — workspace server component (legge `searchParams.detail`)
+- `src/app/(authed)/portals/[slug]/page.tsx` — redirect → `/portals?detail=<slug>`
 - `src/app/api/portals/route.ts` — proxy GET /api/portals
 - `src/app/api/portals/[slug]/route.ts` — proxy GET /api/portals/:slug
 - `src/components/portals/PortalsWorkspace.tsx` — split-pane + 3-mode panel + memo
