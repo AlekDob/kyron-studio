@@ -3,13 +3,17 @@ import { getCurrentUser, loginUrl } from "@/lib/auth";
 import { listPortals } from "@/lib/gateway";
 import { PortalsWorkspace } from "@/components/portals/PortalsWorkspace";
 
-export default async function PortalsPage() {
+interface Props {
+  searchParams: Promise<{ detail?: string }>;
+}
+
+export default async function PortalsPage({ searchParams }: Props) {
   const user = await getCurrentUser();
   if (!user) {
     redirect(loginUrl());
   }
 
-  const portals = await listPortals();
+  const [portals, { detail }] = await Promise.all([listPortals(), searchParams]);
 
-  return <PortalsWorkspace initialPortals={portals} />;
+  return <PortalsWorkspace initialPortals={portals} initialDetailSlug={detail} />;
 }

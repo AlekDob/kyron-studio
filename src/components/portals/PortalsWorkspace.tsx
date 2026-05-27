@@ -36,6 +36,7 @@ export type SidePanelMode =
 
 interface Props {
   initialPortals: PortalSummary[];
+  initialDetailSlug?: string;
 }
 
 async function fetchPortals(): Promise<PortalSummary[]> {
@@ -50,10 +51,17 @@ async function fetchPortalDetail(slug: string): Promise<PortalDetail | null> {
   return (await res.json()) as PortalDetail;
 }
 
-export function PortalsWorkspace({ initialPortals }: Props): ReactElement {
+export function PortalsWorkspace({ initialPortals, initialDetailSlug }: Props): ReactElement {
   const [portals, setPortals] = useState<PortalSummary[]>(initialPortals);
   const [draft, setDraft] = useState<PortalDraft>({});
   const [panel, setPanel] = useState<SidePanelMode>({ kind: "list" });
+
+  useEffect(() => {
+    if (!initialDetailSlug) return;
+    fetchPortalDetail(initialDetailSlug).then((portal) => {
+      if (portal) setPanel({ kind: "detail", portal });
+    });
+  }, [initialDetailSlug]);
 
   useEffect(() => {
     if (!draft.saved) return;
