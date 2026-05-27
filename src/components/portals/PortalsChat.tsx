@@ -16,9 +16,12 @@ import {
 } from "@/components/chat/generative/types";
 import { GenerativeRenderer } from "@/components/chat/generative/registry";
 import type { PortalDraft } from "./PortalsWorkspace";
+import type { PortalDetail } from "@/lib/gateway";
 
 interface Props {
   onDraftUpdate: (updater: (prev: PortalDraft) => PortalDraft) => void;
+  onStartCreating: () => void;
+  onViewPortal: (portal: PortalDetail) => void;
 }
 
 interface UiBlock {
@@ -35,7 +38,11 @@ interface ChatTurn {
 const GREETING =
   "Ciao! Posso creare un nuovo portale scuola o mostrarti quelli esistenti. Da dove partiamo?";
 
-export function PortalsChat({ onDraftUpdate }: Props): ReactElement {
+export function PortalsChat({
+  onDraftUpdate,
+  onStartCreating,
+  onViewPortal,
+}: Props): ReactElement {
   const router = useRouter();
   const [turns, setTurns] = useState<ChatTurn[]>([
     { role: "assistant", content: GREETING },
@@ -169,9 +176,16 @@ export function PortalsChat({ onDraftUpdate }: Props): ReactElement {
 
   function extractDraftFromToolResult(
     tool: string,
+    result: unknown,
   ): void {
     if (tool === "save_pending_school") {
       onDraftUpdate((d) => ({ ...d, saved: true }));
+    }
+    if (tool === "get_portal" && result) {
+      const r = result as Record<string, unknown>;
+      if (r.portal) {
+        onViewPortal(r.portal as PortalDetail);
+      }
     }
   }
 
@@ -196,7 +210,20 @@ export function PortalsChat({ onDraftUpdate }: Props): ReactElement {
     }
   }
 
+  const creatingTriggeredRef = useRef(false);
+
   function extractDraftFromAssistantText(text: string): void {
+    const lower = text.toLowerCase();
+    if (
+      !creatingTriggeredRef.current &&
+      (lower.includes("nome ufficiale") ||
+        lower.includes("nome della scuola") ||
+        lower.includes("come si chiama"))
+    ) {
+      creatingTriggeredRef.current = true;
+      onStartCreating();
+    }
+
     const addrMatch = text.match(
       /(?:indirizzo|l'indirizzo)[^:]*?:\s*([^,]+),\s*(\d{5})\s+([A-Za-zÀ-ú\s]+?)\s*\((\w{2})\)/i,
     );
@@ -220,6 +247,7 @@ export function PortalsChat({ onDraftUpdate }: Props): ReactElement {
       for await (const ev of streamOnboardChat({ messages: msgs })) {
         if (ev.type === "delta") {
           buf += ev.delta;
+          extractDraftFromAssistantText(buf);
           setTurns([
             ...next,
             { role: "assistant", content: buf, ui: pendingUi },
@@ -229,7 +257,7 @@ export function PortalsChat({ onDraftUpdate }: Props): ReactElement {
           extractDraftFromToolArgs(ev.tool, ev.args);
         } else if (ev.type === "tool-result") {
           setToolStatus(null);
-          extractDraftFromToolResult(ev.tool);
+          extractDraftFromToolResult(ev.tool, ev.result);
           const desc = extractGenerativeDescriptor(ev.result);
           if (desc) {
             pendingUi = { descriptor: desc };
