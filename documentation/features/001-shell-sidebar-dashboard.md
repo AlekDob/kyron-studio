@@ -16,7 +16,7 @@ toggle light/dark con persistenza.
 
 ## Stato
 
-Phase 1 completata 2026-05-26. Pronta per `npm run dev` su `:3010`.
+Phase 1 completata 2026-05-26. Responsive mobile aggiunto 2026-05-27. Pronta per `npm run dev` su `:3010`.
 
 ## Componenti
 
@@ -29,6 +29,20 @@ Phase 1 completata 2026-05-26. Pronta per `npm run dev` su `:3010`.
 | Theme | `src/components/shell/ThemeProvider.tsx` | light/dark, localStorage `kyron-studio-theme` |
 | Palette | `src/components/shell/CommandPaletteProvider.tsx` | ⌘K via cmdk, naviga con `useRouter` |
 | Dashboard | `src/components/Dashboard.tsx` | client, ricerca live su modules |
+
+## Responsive mobile (2026-05-27)
+
+| Breakpoint | Comportamento |
+|---|---|
+| `< lg` (mobile/tablet) | Sidebar nascosta, drawer overlay 280px da sinistra con hamburger nella top bar sticky |
+| `>= lg` (desktop) | Sidebar fissa 248px, layout originale |
+
+| Aspetto | Dettaglio |
+|---|---|
+| Zoom | Disabilitato via `viewport` export (`userScalable: false`, `maximumScale: 1`) |
+| Viewport height | `100dvh` (dynamic viewport height, gestisce barra browser mobile) |
+| Navigazione | Drawer si chiude automaticamente al cambio route |
+| Header mobile | Sticky top bar con hamburger + titolo "Studio" |
 
 ## Primitive UI usate (da `@/components/ui`)
 

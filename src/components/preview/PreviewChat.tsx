@@ -21,6 +21,7 @@ import type { Annotation } from "@/lib/review/types";
 import { buildUrn } from "@/lib/review/urn";
 import type { PendingTarget } from "./PreviewWorkspace";
 import { SelectionChip } from "./SelectionChip";
+import { ManualAnnotationForm } from "./ManualAnnotationForm";
 import {
   ProposalCard,
   type ProposalEntry,
@@ -111,6 +112,7 @@ export function PreviewChat(props: Props): ReactElement {
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [toolStatus, setToolStatus] = useState<string | null>(null);
+  const [manualOpen, setManualOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -212,17 +214,12 @@ export function PreviewChat(props: Props): ReactElement {
   }
 
   const confirmProposal = useCallback(
-    async (id: string, editedText?: string) => {
+    (id: string, editedText?: string) => {
       const found = entries.find(
         (e): e is Extract<ChatEntry, { kind: "proposal" }> =>
           e.kind === "proposal" && e.id === id && e.state === "pending",
       );
       if (!found) return;
-      const next = entries.map<ChatEntry>((e) =>
-        e.kind === "proposal" && e.id === id && e.state === "pending"
-          ? { ...e, state: "confirmed", editedText }
-          : e,
-      );
       const annotation = buildAnnotation(
         found.args,
         props.currentUrl,
@@ -231,34 +228,44 @@ export function PreviewChat(props: Props): ReactElement {
       );
       if (annotation) props.onAdd(annotation);
 
-      const ack: ChatEntry = {
-        kind: "msg",
-        role: "user",
-        content: editedText
-          ? `Confermo con modifica: "${truncate(editedText)}"`
-          : "Confermo, aggiungi al bundle.",
-      };
-      await runStream([...next, ack]);
+      setEntries((prev) => {
+        const updated = prev.map<ChatEntry>((e) =>
+          e.kind === "proposal" && e.id === id && e.state === "pending"
+            ? { ...e, state: "confirmed", editedText }
+            : e,
+        );
+        return [
+          ...updated,
+          {
+            kind: "msg",
+            role: "assistant",
+            content: editedText
+              ? `Aggiunta al bundle con la tua modifica: "${truncate(editedText)}".`
+              : "Aggiunta al bundle.",
+          },
+        ];
+      });
     },
-    [entries, props, runStream],
+    [entries, props],
   );
 
-  const cancelProposal = useCallback(
-    async (id: string) => {
-      const next = entries.map<ChatEntry>((e) =>
+  const cancelProposal = useCallback((id: string) => {
+    setEntries((prev) => {
+      const updated = prev.map<ChatEntry>((e) =>
         e.kind === "proposal" && e.id === id && e.state === "pending"
           ? { ...e, state: "cancelled" }
           : e,
       );
-      const ack: ChatEntry = {
-        kind: "msg",
-        role: "user",
-        content: "Annulla la proposta, non aggiungerla.",
-      };
-      await runStream([...next, ack]);
-    },
-    [entries, runStream],
-  );
+      return [
+        ...updated,
+        {
+          kind: "msg",
+          role: "assistant",
+          content: "Proposta annullata.",
+        },
+      ];
+    });
+  }, []);
 
   return (
     <div className="flex flex-1 min-h-0 flex-col">
@@ -311,7 +318,48 @@ export function PreviewChat(props: Props): ReactElement {
       {props.pendingTarget && (
         <SelectionChip
           target={props.pendingTarget}
-          onDismiss={props.onDismissPending}
+          onDismiss={() => {
+            setManualOpen(false);
+            props.onDismissPending();
+          }}
+          onManual={
+            manualOpen ? undefined : () => setManualOpen(true)
+          }
+        />
+      )}
+      {props.pendingTarget && manualOpen && (
+        <ManualAnnotationForm
+          target={props.pendingTarget}
+          onCancel={() => setManualOpen(false)}
+          onSave={(data) => {
+            const t = props.pendingTarget!;
+            const args: ProposeArgs = {
+              kind: data.kind,
+              page: t.page,
+              selector: t.selector ?? (t.urn ? undefined : "body"),
+              original: {
+                text: t.currentText,
+                assetSrc: t.assetSrc,
+              },
+              proposal: {
+                text: data.proposalText,
+                note: data.note,
+                newAssetHint: data.newAssetHint,
+              },
+            };
+            const a = buildAnnotation(args, props.currentUrl, props.reviewer);
+            if (a) props.onAdd(a);
+            setManualOpen(false);
+            props.onDismissPending();
+            setEntries((prev) => [
+              ...prev,
+              {
+                kind: "msg",
+                role: "assistant",
+                content: "Annotazione manuale aggiunta al bundle.",
+              },
+            ]);
+          }}
         />
       )}
 

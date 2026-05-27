@@ -226,6 +226,46 @@ Edge runtime.
 | studio-server | `src/features/review-editor/agent.ts` | `SectionContext`, `formatSectionContext()` |
 | studio | `src/lib/chat-runtime.ts` | `sectionContext` in `ReviewEditorPendingTarget` |
 
+## Phase 7 — Conferma sync + annotazione manuale (2026-05-27)
+
+Due fix UX dopo feedback live: la conferma proposta richiamava l'agente
+inutilmente (lenta), e mancava un modo per aggiungere annotazioni senza
+passare dalla chat.
+
+### Conferma proposta sync (no round-trip)
+
+Prima: `confirmProposal`/`cancelProposal` aggiornavano lo stato locale e
+chiamavano `runStream` con un messaggio sintetico ("Confermo, aggiungi al
+bundle.") all'agente, che ri-elaborava tutta la conversazione solo per
+rispondere "ok". Risultato: "Ragionamento..." dopo ogni conferma.
+
+Ora: entrambe sync, no fetch. Aggiungono l'annotazione via `props.onAdd`
+e mostrano un ack assistente locale ("Aggiunta al bundle."). L'agente
+riceve il nuovo `annotationsCount` nel context al prossimo messaggio.
+
+### Annotazione manuale via form
+
+Nuovo componente `ManualAnnotationForm.tsx`. Quando c'e' un `pendingTarget`,
+la `SelectionChip` mostra un bottone "Aggiungi manualmente" che apre un
+form inline sotto la chip con:
+- Selettore `kind` (text/replace-image/comment/add-section/restructure),
+  default derivato dal `nodeKind`
+- Textarea testo proposto (per text + add-section)
+- Input hint nuova immagine (per replace-image + target image)
+- Textarea nota libera
+
+Submit costruisce `ProposeArgs` dal `pendingTarget` + form, riusa
+`buildAnnotation()` per produrre `Annotation` completa, chiama `onAdd`,
+deseleziona, mostra ack. Zero chiamate all'agente.
+
+### File toccati Phase 7
+
+| File | Modifica |
+|---|---|
+| `studio/src/components/preview/PreviewChat.tsx` | `confirmProposal`/`cancelProposal` sync, stato `manualOpen`, wiring form |
+| `studio/src/components/preview/SelectionChip.tsx` | prop opzionale `onManual` con bottone |
+| `studio/src/components/preview/ManualAnnotationForm.tsx` (NEW) | form inline, riusa `buildAnnotation` |
+
 ## Limiti residui
 
 - **Annotazioni client-side only**: se ricarichi /preview perdi il bundle.
