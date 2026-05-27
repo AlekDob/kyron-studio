@@ -2,7 +2,7 @@
 type: feature
 project: kyron-studio
 created: 2026-05-26
-last_verified: 2026-05-26
+last_verified: 2026-05-27
 tags: [data-editor, gateway, payload, chat, agent, workstream-02]
 ---
 
@@ -18,10 +18,12 @@ verita'.
 
 ## Stato
 
-Phase 2 + Phase 3 del workstream 02 completate 2026-05-26. Live in dev su
-`/dati`, `/dati/[slug]`, `/dati/[slug]/[id]`. Form generico (auto-detect type)
-copre l'80% — Phase 2.5 form Kyron-branded (lexical→markdown, upload, variants)
-rimandata.
+Phase 2 + Phase 3 del workstream 02 completate 2026-05-26. Refresh UX Dati
+completato 2026-05-27. Live in dev su `/dati`, `/dati/[slug]`,
+`/dati/[slug]/[id]`. Form generico (auto-detect type) copre campi semplici,
+localizzati, rich text readonly, relazioni catalogo sicure e array strutturati
+base. Phase 2.5 form Kyron-branded completo (upload, variants complesse,
+editor rich text dedicato) rimandata.
 
 ## Architettura
 
@@ -49,14 +51,19 @@ Header `X-Tenant: kyron`.
 | File | Ruolo |
 |---|---|
 | `src/lib/gateway.ts` | Client server-side verso studio-server; dev-cookie auto-signing |
-| `src/app/dati/page.tsx` | Lista collection con count |
-| `src/app/dati/[slug]/page.tsx` | Lista record con pickTitle/pickMeta + search (`?q=`) + paginazione prev/next (limit 25) |
-| `src/app/dati/[slug]/[id]/page.tsx` | Form edit generico (string/text/number/date/boolean/localized/relation/json) |
-| `src/app/dati/[slug]/[id]/actions.ts` | Server Actions save/destroy via gateway |
-| `src/app/dati/[slug]/loading.tsx` | Skeleton transition lista |
-| `src/app/dati/[slug]/[id]/loading.tsx` | Skeleton transition detail |
+| `src/app/(authed)/dati/page.tsx` | Lista collection con count, card e stato vuoto |
+| `src/app/(authed)/dati/[slug]/page.tsx` | Lista record con titolo/meta leggibili + search (`?q=`) + paginazione prev/next (limit 25) |
+| `src/app/(authed)/dati/[slug]/[id]/page.tsx` | Form edit generico server-side con relation options e layout stacked |
+| `src/app/(authed)/dati/[slug]/[id]/actions.ts` | Server Actions save/destroy via gateway; parsing relazioni e array strutturati |
+| `src/app/(authed)/dati/[slug]/loading.tsx` | Skeleton transition lista |
+| `src/app/(authed)/dati/[slug]/[id]/loading.tsx` | Skeleton transition detail |
 | `src/components/data/DataChat.tsx` | Chat client (riusa ChatBubble Virgilio-port) |
 | `src/components/data/DataWorkspace.tsx` | Split-pane layout 1fr/420px lg+ |
+| `src/components/data/RelationFieldEditor.tsx` | Editor relazioni sicure: single select + multi checkbox/add |
+| `src/components/data/StructuredArrayFieldEditor.tsx` | Editor array inline per righe scalari/localizzate (`features`, `specs`) |
+| `src/components/data/DataSelect.tsx` | Select wrapper con `appearance-none` + icona Lucide |
+| `src/components/data/DataDisclosure.tsx` | Disclosure wrapper senza marker nativo |
+| `src/lib/data-fields.ts` | Field detection, label relazioni, localized/rich previews, target mapping |
 | `src/app/api/agent/data-editor/route.ts` | Proxy SSE verso studio-server |
 | `src/lib/chat-runtime.ts` | `streamAgent` + `streamDataEditor` con eventi delta/tool/tool-result |
 | `src/components/shell/modules.ts` | Modulo "Dati" in sidebar |
@@ -71,13 +78,69 @@ Il form ispeziona ogni campo del doc Payload e sceglie l'editor:
 | `string` >120 char | `text` | `<textarea rows=4>` |
 | `string` | `string` | `<input type="text">` |
 | `number` | `number` | `<input type="number">` |
-| `boolean` | `boolean` | `<select>` true/false |
-| `{ it, en }` (≤3 keys, locale only) | `localized` / `localized-text` | 2 input/textarea IT + EN affiancati |
-| `{ id, name?, slug? }` | `relation` | Chip readonly `#id · label` |
-| Array di relations | `relations` | Multi chip readonly |
+| `boolean` | `boolean` | Select true/false con freccia custom |
+| `{ it, en }` (≤3 keys, locale only) | `localized` / `localized-text` | input/textarea IT + EN stacked |
+| localized rich text Payload | `localized-rich` | anteprima leggibile + JSON ispezionabile readonly |
+| `{ id, name?, slug? }` con target noto | `relation` | select se target editabile, altrimenti chip readonly |
+| array relation con target noto | `relations` | checkbox correnti + disclosure "Aggiungi relazioni" |
+| array righe scalari/localizzate | `array` | editor righe con remove + disclosure "Aggiungi elemento" |
 | Altro | `json` | `<textarea>` JSON pretty-printed |
 
-Relations sono readonly: modificarle dall'agente via `update_record { brand: 25 }`.
+Relazioni editabili tramite UI solo se il target e' esplicito in
+`RELATION_TARGETS`. Al 2026-05-27: `brand`, `categories`, `heroImage`,
+`parentProduct`, `related`. Questa scelta evita PATCH sbagliate su campi
+Payload non inferibili solo dal nome.
+
+## Editing relazioni e array catalogo
+
+### Relazioni
+
+- `brand`: single select con opzione "Nessuna relazione".
+- `categories`/`related`: relazioni correnti come checkbox gia' spuntate; per
+  rimuovere si toglie la spunta, per aggiungere si apre il disclosure
+  "Aggiungi relazioni" e si selezionano altre opzioni.
+- Opzioni caricate server-side con `listRecords(target, { limit: 100 })` e label
+  normalizzata da `relationLabel`.
+- Il submit invia un hidden marker `__relationEditable_{field}`: se manca,
+  `actions.ts` non modifica quel campo.
+
+### `features` e `specs`
+
+`features` e `specs` sono array Payload inline, non relationship. Ogni riga
+Payload contiene un `id`, quindi la detection precedente li scambiava per
+relazioni e mostrava chip opachi. La regola attuale e':
+
+- un array e' relazione solo se il nome campo ha un target esplicito;
+- un array di oggetti con celle scalari/localizzate diventa editor strutturato;
+- array complessi o annidati (`gallery`, `variants`) restano JSON per evitare
+  conversioni distruttive.
+
+Editor `features`:
+
+| Campo | UI |
+|---|---|
+| `icon` | input text |
+| `label` | input IT + EN |
+| `description` | input IT + EN |
+
+Editor `specs`:
+
+| Campo | UI |
+|---|---|
+| `group` | input text |
+| `label` | input IT + EN |
+| `value` | input IT + EN |
+
+Rimozione: checkbox "Rimuovi" per riga. Aggiunta: disclosure "Aggiungi
+elemento"; la riga `new` viene ignorata se resta vuota. Gli `id` delle righe
+esistenti vengono preservati nel patch.
+
+### Dropdown/disclosure
+
+Tutti i dropdown del detail Dati usano `DataSelect`: select nativa mantenuta per
+accessibilita', ma con `appearance-none`, padding a destra e icona `ChevronDown`
+Lucide. I disclosure usano `DataDisclosure`, che nasconde `::-webkit-details-marker`
+e usa la stessa icona ruotata in stato aperto.
 
 ## Chat agente Editor Dati
 

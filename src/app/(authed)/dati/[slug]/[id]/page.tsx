@@ -1,138 +1,30 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getCurrentUser, loginUrl } from "@/lib/auth";
-import { GatewayError, getRecord, type PayloadDoc } from "@/lib/gateway";
+import {
+  GatewayError,
+  getRecord,
+  listRecords,
+  type PayloadDoc,
+} from "@/lib/gateway";
+import { DataDisclosure } from "@/components/data/DataDisclosure";
+import { DataSelect } from "@/components/data/DataSelect";
 import { DataWorkspace } from "@/components/data/DataWorkspace";
+import { RelationFieldEditor } from "@/components/data/RelationFieldEditor";
+import { StructuredArrayFieldEditor } from "@/components/data/StructuredArrayFieldEditor";
+import {
+  buildFields,
+  formatFieldName,
+  pickRecordTitle,
+  relationOption,
+  type FieldDescriptor,
+  type RelationOption,
+} from "@/lib/data-fields";
 import { saveRecord, destroyRecord } from "./actions";
 
 export const dynamic = "force-dynamic";
 
-const HIDDEN_KEYS = new Set([
-  "id",
-  "createdAt",
-  "updatedAt",
-  "_status",
-  "tenant",
-]);
-
-type FieldType =
-  | "string"
-  | "text"
-  | "number"
-  | "date"
-  | "boolean"
-  | "localized"
-  | "localized-text"
-  | "relation"
-  | "relations"
-  | "json";
-
-interface FieldDescriptor {
-  name: string;
-  type: FieldType;
-  value: string;
-  extra?: {
-    it?: string;
-    en?: string;
-    relations?: { id: string | number; label: string }[];
-  };
-}
-
-function isLocalizedObject(v: unknown): v is { it?: string; en?: string } {
-  if (!v || typeof v !== "object") return false;
-  const keys = Object.keys(v as object);
-  if (keys.length === 0 || keys.length > 3) return false;
-  return keys.every((k) => k === "it" || k === "en" || k === "fr");
-}
-
-function isRelation(v: unknown): v is { id: string | number } {
-  return (
-    !!v &&
-    typeof v === "object" &&
-    "id" in (v as Record<string, unknown>) &&
-    ((v as { id: unknown }).id !== undefined)
-  );
-}
-
-function relationLabel(rel: Record<string, unknown>): string {
-  const name = rel.name;
-  if (name && typeof name === "object" && "it" in name) {
-    return String((name as { it: string }).it);
-  }
-  if (typeof name === "string") return name;
-  if (typeof rel.titolo === "string") return rel.titolo;
-  if (typeof rel.title === "string") return rel.title;
-  if (typeof rel.slug === "string") return rel.slug;
-  return `#${rel.id}`;
-}
-
-function detectField(name: string, value: unknown): FieldDescriptor {
-  if (typeof value === "string") {
-    if (/^\d{4}-\d{2}-\d{2}T/.test(value))
-      return { name, type: "date", value: value.slice(0, 10) };
-    if (value.length > 120) return { name, type: "text", value };
-    return { name, type: "string", value };
-  }
-  if (typeof value === "number")
-    return { name, type: "number", value: String(value) };
-  if (typeof value === "boolean")
-    return { name, type: "boolean", value: String(value) };
-  if (value === null || value === undefined)
-    return { name, type: "string", value: "" };
-
-  if (isLocalizedObject(value)) {
-    const it = (value as { it?: string }).it ?? "";
-    const en = (value as { en?: string }).en ?? "";
-    const long = it.length > 120 || en.length > 120;
-    return {
-      name,
-      type: long ? "localized-text" : "localized",
-      value: "",
-      extra: { it, en },
-    };
-  }
-
-  if (Array.isArray(value)) {
-    if (value.every((v) => isRelation(v))) {
-      return {
-        name,
-        type: "relations",
-        value: "",
-        extra: {
-          relations: (value as Record<string, unknown>[]).map((r) => ({
-            id: r.id as string | number,
-            label: relationLabel(r),
-          })),
-        },
-      };
-    }
-    return { name, type: "json", value: JSON.stringify(value, null, 2) };
-  }
-
-  if (isRelation(value)) {
-    return {
-      name,
-      type: "relation",
-      value: "",
-      extra: {
-        relations: [
-          {
-            id: (value as { id: string | number }).id,
-            label: relationLabel(value as Record<string, unknown>),
-          },
-        ],
-      },
-    };
-  }
-
-  return { name, type: "json", value: JSON.stringify(value, null, 2) };
-}
-
-function buildFields(doc: PayloadDoc): FieldDescriptor[] {
-  return Object.entries(doc)
-    .filter(([k]) => !HIDDEN_KEYS.has(k))
-    .map(([name, value]) => detectField(name, value));
-}
+const RELATION_OPTION_LIMIT = 100;
 
 interface Props {
   params: Promise<{ slug: string; id: string }>;
@@ -152,21 +44,25 @@ export default async function RecordEditPage({ params }: Props) {
     throw err;
   }
 
-  const fields = buildFields(doc);
+  const fields = await withRelationOptions(buildFields(doc));
   const fieldMeta = JSON.stringify(fields.map((f) => ({ name: f.name, type: f.type })));
+  const recordTitle = pickRecordTitle(doc);
 
   return (
     <DataWorkspace slug={slug} id={String(doc.id)}>
-    <main className="px-8 py-12 max-w-3xl mx-auto">
-      <header className="mb-8">
+    <main className="px-5 py-8 sm:px-8 lg:px-10 max-w-4xl mx-auto">
+      <header className="mb-8 rounded-2xl border border-[var(--color-line)] bg-[var(--color-paper-soft)] px-5 py-5">
         <p className="eyebrow mb-2">
           <Link href="/dati" className="hover:underline">Studio · Dati</Link>
           {" / "}
           <Link href={`/dati/${slug}`} className="hover:underline">{slug}</Link>
         </p>
         <h1 className="text-3xl font-medium tracking-tight">
-          Record <span className="font-serif italic">#{String(doc.id)}</span>
+          {recordTitle}
         </h1>
+        <p className="mt-2 text-sm text-[var(--color-ink-muted)]">
+          Record #{String(doc.id)} · modifica i campi semplici, ispeziona relazioni e contenuti strutturati.
+        </p>
       </header>
 
       <form action={saveRecord} className="space-y-5">
@@ -206,50 +102,56 @@ export default async function RecordEditPage({ params }: Props) {
   );
 }
 
+async function withRelationOptions(
+  fields: FieldDescriptor[],
+): Promise<FieldDescriptor[]> {
+  const targets = [
+    ...new Set(fields.map((field) => field.relationTarget).filter(isString)),
+  ];
+  const optionMap = new Map<string, RelationOption[]>();
+  await Promise.all(
+    targets.map(async (target) => {
+      const list = await listRecords(target, { limit: RELATION_OPTION_LIMIT });
+      optionMap.set(target, list.data.map(relationOption));
+    }),
+  );
+  return fields.map((field) => {
+    if (!field.relationTarget) return field;
+    return {
+      ...field,
+      extra: {
+        ...field.extra,
+        relationOptions: optionMap.get(field.relationTarget) ?? [],
+      },
+    };
+  });
+}
+
+function isString(value: unknown): value is string {
+  return typeof value === "string";
+}
+
 function FieldInput({ field }: { field: FieldDescriptor }) {
   const baseClass =
-    "w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-paper)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-ink)]/20";
+    "w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-paper)] px-3 py-2.5 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-[var(--color-ink)]/20";
+  const fieldShell =
+    "rounded-2xl border border-[var(--color-line)] bg-[var(--color-paper-soft)] p-4";
+  const labelClass =
+    "block text-xs uppercase tracking-wider text-[var(--color-ink-muted)] mb-3";
 
   if (field.type === "relation" || field.type === "relations") {
-    const rels = field.extra?.relations ?? [];
-    return (
-      <div>
-        <span className="block text-xs uppercase tracking-wider text-[var(--color-ink-muted)] mb-1">
-          {field.name}{" "}
-          <span className="lowercase opacity-60">
-            (relazione{field.type === "relations" ? "i" : ""})
-          </span>
-        </span>
-        <div className="flex flex-wrap gap-2">
-          {rels.length === 0 ? (
-            <span className="text-sm text-[var(--color-ink-muted)] italic">
-              nessuna
-            </span>
-          ) : (
-            rels.map((r) => (
-              <span
-                key={String(r.id)}
-                className="inline-flex items-center gap-2 rounded-full border border-[var(--color-line)] bg-[var(--color-paper-soft)] px-3 py-1 text-xs"
-              >
-                <span className="text-[var(--color-ink-muted)]">#{r.id}</span>
-                <span>{r.label}</span>
-              </span>
-            ))
-          )}
-        </div>
-      </div>
-    );
+    return <RelationFieldEditor field={field} />;
   }
 
   if (field.type === "localized" || field.type === "localized-text") {
     const long = field.type === "localized-text";
     return (
-      <div>
-        <span className="block text-xs uppercase tracking-wider text-[var(--color-ink-muted)] mb-1">
-          {field.name}{" "}
+      <div className={fieldShell}>
+        <span className={labelClass}>
+          {formatFieldName(field.name)}{" "}
           <span className="lowercase opacity-60">(IT + EN)</span>
         </span>
-        <div className="grid gap-2 md:grid-cols-2">
+        <div className="grid gap-3">
           <LocaleField
             name={`${field.name}__it`}
             locale="IT"
@@ -269,10 +171,18 @@ function FieldInput({ field }: { field: FieldDescriptor }) {
     );
   }
 
+  if (field.type === "localized-rich") {
+    return <StructuredLocalizedField field={field} />;
+  }
+
+  if (field.type === "array") {
+    return <StructuredArrayFieldEditor field={field} />;
+  }
+
   return (
-    <label className="block">
-      <span className="block text-xs uppercase tracking-wider text-[var(--color-ink-muted)] mb-1">
-        {field.name}{" "}
+    <label className={`block ${fieldShell}`}>
+      <span className={labelClass}>
+        {formatFieldName(field.name)}{" "}
         <span className="lowercase opacity-60">({field.type})</span>
       </span>
       {field.type === "text" || field.type === "json" ? (
@@ -283,10 +193,10 @@ function FieldInput({ field }: { field: FieldDescriptor }) {
           className={`${baseClass} ${field.type === "json" ? "font-mono" : ""}`}
         />
       ) : field.type === "boolean" ? (
-        <select name={field.name} defaultValue={field.value} className={baseClass}>
+        <DataSelect name={field.name} defaultValue={field.value}>
           <option value="true">true</option>
           <option value="false">false</option>
-        </select>
+        </DataSelect>
       ) : (
         <input
           type={
@@ -302,6 +212,41 @@ function FieldInput({ field }: { field: FieldDescriptor }) {
         />
       )}
     </label>
+  );
+}
+
+function StructuredLocalizedField({ field }: { field: FieldDescriptor }) {
+  const locales = field.extra?.locales ?? [];
+  return (
+    <section className="rounded-2xl border border-[var(--color-line)] bg-[var(--color-paper-soft)] p-4">
+      <span className="block text-xs uppercase tracking-wider text-[var(--color-ink-muted)] mb-3">
+        {formatFieldName(field.name)} <span className="lowercase opacity-60">(rich text)</span>
+      </span>
+      <div className="grid gap-3">
+        {locales.map((locale) => (
+          <DataDisclosure
+            key={locale.locale}
+            summary={
+              <span>
+                <span className="text-[10px] uppercase tracking-wider text-[var(--color-ink-muted)]">
+                  {locale.locale}
+                </span>
+                <span className="mt-1 block text-sm leading-6 text-[var(--color-ink)]">
+                  {locale.preview}
+                </span>
+              </span>
+            }
+          >
+            <pre className="mt-3 max-h-72 overflow-auto rounded-lg bg-[var(--color-paper-muted)] p-3 text-xs leading-5 text-[var(--color-ink-muted)]">
+              {locale.json}
+            </pre>
+          </DataDisclosure>
+        ))}
+      </div>
+      <p className="mt-3 text-xs text-[var(--color-ink-muted)]">
+        Campo strutturato Payload: anteprima leggibile, modifica diretta disabilitata per evitare corruzioni.
+      </p>
+    </section>
   );
 }
 
