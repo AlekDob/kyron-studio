@@ -15,12 +15,13 @@ Hub admin Kyron a `studio.kyronedu.it`. Sotto-progetto di `/Kyron`, registrato i
 
 **Shell completo Virgilio-style live** (2026-05-26):
 
-- Sidebar laterale 248px con 7 moduli (Inbox, Onboarding scuole, **Dati**, Portali, Brain, Log, Impostazioni)
+- Sidebar laterale 248px con 7 moduli (Inbox, **Portali**, **Dati**, Anteprima, Brain, Log, Impostazioni)
 - Dashboard `/` con ricerca live + griglia agenti/strumenti
 - Command palette `Cmd+K` (cmdk)
 - Theme toggle light/dark (persistenza localStorage)
 - Pagina `/settings` con tabs Virgilio-style (Connessioni, Modelli AI, Tema live)
-- Pagina `/schools/onboarding` con chat agentica (esistente)
+- Modulo **Portali** (`/portals`): dashboard griglia card con stato, citta', prodotti, kit
+- Pagina `/portals/new` con chat agentica onboarding (ex `/schools/onboarding`)
 
 **Agentic data layer live** (workstream 02 phase 1-3 done, 2026-05-26):
 - Modulo "Dati" — lista collection con count, lista record, form edit generico
@@ -45,8 +46,6 @@ Hub admin Kyron a `studio.kyronedu.it`. Sotto-progetto di `/Kyron`, registrato i
 - Route reali per Inbox, Portali, Brain, Log
 - Sezioni settings: Profilo, Organizzazione, MCP Servers
 - Logo Kyron definitivo (oggi placeholder testuale "K + Studio")
-- Repo GitHub dedicato (oggi untracked)
-- Deploy Coolify su `studio.kyronedu.it`
 
 Vedi `documentation/features/` per dettagli.
 
@@ -62,6 +61,16 @@ STUDIO_DEV_USER=tua@email npm run dev    # bypass auth in dev
 # http://localhost:3010
 ```
 
+## Deploy (produzione)
+
+Live su `https://studio.kyronedu.it` (Coolify + Hetzner CCX23).
+
+- **Repo GitHub**: `AlekDob/kyron-studio` (frontend), `AlekDob/kyron-studio-server` (backend)
+- **Workflow**: push su `main` → GitHub App `coolify-kyron` triggera il build Docker + deploy
+- **Fallback manuale**: `POST http://178.105.157.128:8000/api/v1/deploy?uuid=<app-uuid>` con Bearer token Coolify
+- **App UUIDs**: studio = `qp5tw0o90drest5wnnof8647`, studio-server = `x5bzjhuxbl4ab4j5tnkbckq0`
+- Dettagli env vars e setup: `Kyron/documentation/inbox/2026-05-26-coolify-deploy-studio.md`
+
 ## Knowledge base
 
 - `documentation/features/001-shell-sidebar-dashboard.md` — sidebar + dashboard + command palette
@@ -70,6 +79,7 @@ STUDIO_DEV_USER=tua@email npm run dev    # bypass auth in dev
 - `documentation/features/004-login-standalone.md` — OTP login (workstream 03)
 - `documentation/features/005-preview-review-editor.md` — Anteprima iframe + agente Review Editor (workstream 03)
 - `documentation/features/006-generative-ui-chat.md` — Generative UI in chat onboarding (workstream 04, PoC ProductPicker)
+- `documentation/features/007-portals-module.md` — Modulo Portali: dashboard + onboarding unificati
 - Cross-progetto: `Kyron/documentation/workstreams/03-studio-standalone.md` — login OTP, preview iframe, review system
 - `documentation/diary/` — changelog locale
 - Cross-progetto: `Kyron/documentation/workstreams/01-studio-shell-port.md`

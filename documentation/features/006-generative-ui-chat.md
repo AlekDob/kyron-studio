@@ -65,7 +65,7 @@ studio-server (agent)              studio (client)
 
 **studio-server:**
 - `src/features/onboard-school/agent.ts` — tool `render_product_picker` e `render_bundle_builder` + `maxSteps: 8`
-- `src/features/onboard-school/demo-catalog.ts` — 6 prodotti hardcoded (sostituire con Saleor in fase 2)
+- `src/core/saleor/client.ts` — gateway Saleor GraphQL (catalogo prodotti live)
 - `src/features/onboard-school/route.ts` — SSE emette ora anche `tool-call` e `tool-result` (con payload `result`)
 - `src/features/onboard-school/prompt.ts` — step 4 (CAP dedotto), step 6 (picker), step 7 (bundle builder)
 
@@ -140,15 +140,13 @@ Nessuna modifica al protocollo SSE, al runtime client, o agli altri componenti.
 
 ## Limiti attuali
 
-- Catalogo hardcoded (`DEMO_CATALOG`, 6 prodotti). Phase 3: fetch reale da
-  Saleor via gateway commerce (decision-014 phase 4)
 - Nessuna persistenza server-side dei thread chat (re-render funziona solo
   in-session). Phase 4 affronta questo
 - Mancano ancora `DiscountConfig` (slider sconto avanzato, oggi e' interno al
   BundleBuilder come differenza somma vs prezzo finale) e `Summary` (riepilogo
   finale pre-salvataggio PendingSchool)
 - CAP dedotto via training LLM — affidabile su citta' principali, fragile su
-  frazioni. Phase 3: tool lookup esterno (Nominatim OSM)
+  frazioni. Tool lookup esterno (Nominatim OSM) come miglioramento futuro
 - Nessuna validazione Zod sulla `data` di submission lato server
 
 ## Test manuale
@@ -161,7 +159,7 @@ cd ~/Desktop/Dev/Personal/Kyron/studio-server && npm run dev
 cd ~/Desktop/Dev/Personal/Kyron/studio
 STUDIO_DEV_USER=tua@email npm run dev
 
-# Vai a http://localhost:3010/schools/onboarding
+# Vai a http://localhost:3010/portals/new
 # Rispondi alle domande fino allo step 6 (catalogo)
 # L'agente deve emettere il tool render_product_picker
 # Il picker appare inline, seleziona prodotti, conferma
