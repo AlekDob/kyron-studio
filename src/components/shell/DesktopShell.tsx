@@ -50,9 +50,9 @@ export function DesktopShell({ children, userEmail }: Props) {
           </div>
 
           {/* Main content */}
-          <main className="relative flex-1 min-w-0 overflow-y-auto">
+          <main className="relative flex-1 min-w-0 flex flex-col overflow-hidden">
             {/* Mobile header */}
-            <div className="sticky top-0 z-30 flex items-center gap-3 border-b border-[var(--color-line)] bg-[var(--color-paper)] px-4 py-3 lg:hidden">
+            <div className="shrink-0 z-30 flex items-center gap-3 border-b border-[var(--color-line)] bg-[var(--color-paper)] px-4 py-3 lg:hidden">
               <button
                 type="button"
                 onClick={() => setSidebarOpen((v) => !v)}
@@ -65,7 +65,7 @@ export function DesktopShell({ children, userEmail }: Props) {
                 Studio
               </span>
             </div>
-            {children}
+            <div className="flex-1 min-h-0 overflow-y-auto">{children}</div>
           </main>
         </div>
       </CommandPaletteProvider>

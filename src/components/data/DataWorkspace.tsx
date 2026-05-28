@@ -20,9 +20,9 @@ export function DataWorkspace({ slug, id, children }: Props) {
   );
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-0 h-[100dvh] overflow-hidden">
+    <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-0 h-full overflow-hidden">
       <div className="overflow-y-auto">{children}</div>
-      <aside className="hidden lg:flex flex-col border-l border-[var(--color-line)] bg-[var(--color-paper-soft)] sticky top-0 h-[100dvh] overflow-hidden">
+      <aside className="hidden lg:flex flex-col border-l border-[var(--color-line)] bg-[var(--color-paper-soft)] sticky top-0 h-full overflow-hidden">
         {chatHeader}
         <DataChat slug={slug} id={id} />
       </aside>

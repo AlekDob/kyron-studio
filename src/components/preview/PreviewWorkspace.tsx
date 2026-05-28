@@ -179,7 +179,7 @@ export function PreviewWorkspace({
   }, []);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[1fr_440px] h-[100dvh] overflow-hidden">
+    <div className="grid grid-cols-1 lg:grid-cols-[1fr_440px] h-full overflow-hidden">
       <section className="flex flex-col min-h-0 border-r border-[var(--color-line)] overflow-hidden">
         <header className="flex items-center gap-2 border-b border-[var(--color-line)] px-4 py-2 bg-[var(--color-paper-soft)] shrink-0">
           <p className="eyebrow shrink-0">Anteprima</p>
@@ -243,7 +243,7 @@ export function PreviewWorkspace({
       </section>
 
       {/* Desktop aside */}
-      <aside className="hidden lg:flex flex-col min-h-0 h-[100dvh] overflow-hidden bg-[var(--color-paper-soft)]">
+      <aside className="hidden lg:flex flex-col min-h-0 h-full overflow-hidden bg-[var(--color-paper-soft)]">
         <ReviewPanel
           currentUrl={url}
           currentPath={currentPath}

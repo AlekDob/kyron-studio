@@ -102,8 +102,8 @@ export function PortalsWorkspace({ initialPortals, initialDetailSlug }: Props): 
   const isDetail = panel.kind === "detail";
 
   return (
-    <div className="flex flex-col lg:flex-row h-[100dvh] overflow-hidden">
-      <div className="flex-1 min-w-0 flex flex-col border-r border-[var(--color-line)] lg:h-[100dvh] overflow-hidden">
+    <div className="flex flex-col lg:flex-row h-full overflow-hidden">
+      <div className="flex-1 min-w-0 min-h-0 flex flex-col border-r border-[var(--color-line)] lg:h-full overflow-hidden">
         <header className="px-5 py-3 border-b border-[var(--color-line)] shrink-0">
           <p className="eyebrow">Agente · Portali</p>
           <p className="text-xs text-[var(--color-ink-muted)] mt-1">
@@ -119,7 +119,7 @@ export function PortalsWorkspace({ initialPortals, initialDetailSlug }: Props): 
         </div>
       </div>
       <aside
-        className={`hidden lg:flex flex-col bg-[var(--color-paper-soft)] sticky top-0 h-[100dvh] overflow-hidden transition-[width] duration-500 ease-out ${
+        className={`hidden lg:flex flex-col bg-[var(--color-paper-soft)] sticky top-0 h-full overflow-hidden transition-[width] duration-500 ease-out ${
           isDetail ? "w-[560px]" : "w-[420px]"
         }`}
       >
