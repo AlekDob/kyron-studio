@@ -37,6 +37,12 @@ export function formatDiscount(d: ProductDiscount): string {
   return d.kind === "percent" ? `-${d.value}%` : `→ ${EURO.format(d.value)}`;
 }
 
+// Prezzo finale al netto dello sconto. percent = sconto %, eur = prezzo finale.
+export function netPrice(priceEur: number, kind: "percent" | "eur", value: number): number {
+  if (kind === "eur") return value;
+  return Math.max(0, priceEur * (1 - value / 100));
+}
+
 interface ProductRowProps {
   product: ProductPickerProduct;
   selected: boolean;
@@ -49,10 +55,12 @@ interface ProductRowProps {
 }
 
 export function ProductRow(props: ProductRowProps): ReactElement {
-  const { product: p, selected, multi, locked, readOnly, draft, onToggle, onDraft } = props;
+  const { product: p, selected, multi, locked, draft, onToggle, onDraft } = props;
   const kind = draft?.kind ?? "percent";
   const showDiscountInput = selected && multi && !locked;
-  const roValue = readOnly && draft ? parseValue(draft.value) : 0;
+  // Sconto attivo sulla riga (live in edit, statico in readonly) → prezzo netto.
+  const dv = draft ? parseValue(draft.value) : 0;
+  const net = dv > 0 ? netPrice(p.priceEur, kind, dv) : null;
 
   return (
     <div
@@ -109,13 +117,20 @@ export function ProductRow(props: ProductRowProps): ReactElement {
               {kind === "percent" ? "%" : "€"}
             </button>
           </span>
-        ) : roValue > 0 && draft ? (
-          <span className="text-xs font-medium text-[var(--color-action)]">
-            {formatDiscount({ slug: p.slug, kind: draft.kind, value: roValue })}
-          </span>
         ) : null}
-        <span className="text-sm tabular-nums text-[var(--color-ink)]">
-          {EURO.format(p.priceEur)}
+        <span className="flex items-center gap-2 text-sm tabular-nums">
+          {net != null ? (
+            <>
+              <span className="text-[var(--color-ink-muted)] line-through">
+                {EURO.format(p.priceEur)}
+              </span>
+              <span className="font-medium text-[var(--color-action)]">
+                {EURO.format(net)}
+              </span>
+            </>
+          ) : (
+            <span className="text-[var(--color-ink)]">{EURO.format(p.priceEur)}</span>
+          )}
         </span>
         <span
           aria-hidden="true"

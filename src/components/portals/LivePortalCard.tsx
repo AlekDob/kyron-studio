@@ -2,6 +2,7 @@
 
 import { MapPin, Package, ShoppingBag, Truck, Globe, Hash, Check, Image } from "lucide-react";
 import { Pill } from "@/components/ui";
+import { formatDiscount } from "@/components/chat/generative/ProductPickerRow";
 import type { PortalDraft } from "./PortalsWorkspace";
 
 interface Props {
@@ -82,11 +83,15 @@ export function LivePortalCard({ draft }: Props) {
       >
         {draft.selectedProducts ? (
           <div className="flex flex-wrap gap-1.5">
-            {draft.selectedProducts.map((s) => (
-              <Pill key={s} variant="neutral" size="sm">
-                {s}
-              </Pill>
-            ))}
+            {draft.selectedProducts.map((s) => {
+              const disc = (draft.productDiscounts ?? []).find((d) => d.slug === s);
+              return (
+                <Pill key={s} variant={disc ? "accent" : "neutral"} size="sm">
+                  {s}
+                  {disc ? ` · ${formatDiscount(disc)}` : ""}
+                </Pill>
+              );
+            })}
           </div>
         ) : (
           <SkeletonBar />
