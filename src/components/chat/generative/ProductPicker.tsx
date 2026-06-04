@@ -1,14 +1,15 @@
 "use client";
 
 import { useMemo, useState, type ReactElement } from "react";
+import {
+  ProductRow,
+  parseValue,
+  type DiscountDraft,
+  type ProductDiscount,
+  type ProductPickerProduct,
+} from "./ProductPickerRow";
 
-export interface ProductPickerProduct {
-  slug: string;
-  name: string;
-  priceEur: number;
-  category: string;
-  imageUrl?: string;
-}
+export type { ProductPickerProduct, ProductDiscount } from "./ProductPickerRow";
 
 export interface ProductPickerProps {
   products: ProductPickerProduct[];
@@ -16,13 +17,20 @@ export interface ProductPickerProps {
   readOnly?: boolean;
   disabled?: boolean;
   initialSelection?: string[];
-  onSubmit?: (data: { selectedSlugs: string[] }) => void;
+  initialDiscounts?: ProductDiscount[];
+  onSubmit?: (data: {
+    selectedSlugs: string[];
+    productDiscounts: ProductDiscount[];
+  }) => void;
 }
 
-const EURO = new Intl.NumberFormat("it-IT", {
-  style: "currency",
-  currency: "EUR",
-});
+function initialDraftMap(
+  discounts: ProductDiscount[],
+): Record<string, DiscountDraft> {
+  const map: Record<string, DiscountDraft> = {};
+  for (const d of discounts) map[d.slug] = { kind: d.kind, value: String(d.value) };
+  return map;
+}
 
 export function ProductPicker(props: ProductPickerProps): ReactElement {
   const {
@@ -31,23 +39,23 @@ export function ProductPicker(props: ProductPickerProps): ReactElement {
     readOnly = false,
     disabled = false,
     initialSelection = [],
+    initialDiscounts = [],
     onSubmit,
   } = props;
 
   const [selected, setSelected] = useState<Set<string>>(
     () => new Set(initialSelection),
   );
+  const [drafts, setDrafts] = useState<Record<string, DiscountDraft>>(() =>
+    initialDraftMap(initialDiscounts),
+  );
   const [submittedLocal, setSubmittedLocal] = useState(false);
   const [query, setQuery] = useState("");
 
-  const filtered = useMemo(() => filterProducts(products, query), [
-    products,
-    query,
-  ]);
-  // readOnly = freeze permanente (turn vecchio gia' confermato).
-  // disabled = freeze temporaneo (es. streaming in corso, evita doppi click).
-  // submittedLocal = l'utente ha appena cliccato Conferma in questo render.
+  const filtered = useMemo(() => filterProducts(products, query), [products, query]);
   const locked = submittedLocal || readOnly || disabled;
+  const allFilteredSelected =
+    filtered.length > 0 && filtered.every((p) => selected.has(p.slug));
 
   function toggle(slug: string): void {
     if (locked) return;
@@ -59,10 +67,39 @@ export function ProductPicker(props: ProductPickerProps): ReactElement {
     });
   }
 
+  function toggleAll(): void {
+    if (locked) return;
+    setSelected((prev) => {
+      const next = new Set(prev);
+      for (const p of filtered) {
+        if (allFilteredSelected) next.delete(p.slug);
+        else next.add(p.slug);
+      }
+      return next;
+    });
+  }
+
+  function setDraft(slug: string, patch: Partial<DiscountDraft>): void {
+    setDrafts((prev) => ({
+      ...prev,
+      [slug]: {
+        kind: prev[slug]?.kind ?? "percent",
+        value: prev[slug]?.value ?? "",
+        ...patch,
+      },
+    }));
+  }
+
   function handleConfirm(): void {
     if (locked || selected.size === 0) return;
     setSubmittedLocal(true);
-    onSubmit?.({ selectedSlugs: Array.from(selected) });
+    const productDiscounts: ProductDiscount[] = [];
+    for (const slug of selected) {
+      const d = drafts[slug];
+      const value = d ? parseValue(d.value) : 0;
+      if (value > 0) productDiscounts.push({ slug, kind: d.kind, value });
+    }
+    onSubmit?.({ selectedSlugs: Array.from(selected), productDiscounts });
   }
 
   return (
@@ -71,9 +108,20 @@ export function ProductPicker(props: ProductPickerProps): ReactElement {
         <h4 className="text-sm font-medium text-[var(--color-ink)]">
           Seleziona i prodotti per il portale
         </h4>
-        <span className="text-xs text-[var(--color-ink-muted)]">
-          {selected.size} su {products.length}
-          {multi ? "" : " (singola)"}
+        <span className="flex items-center gap-3 text-xs text-[var(--color-ink-muted)]">
+          {multi && !locked ? (
+            <button
+              type="button"
+              onClick={toggleAll}
+              className="rounded-[var(--radius-control)] border border-[var(--color-line)] px-2 py-1 text-xs text-[var(--color-ink)] hover:border-[var(--color-line-strong)]"
+            >
+              {allFilteredSelected ? "Deseleziona tutti" : "Seleziona tutti"}
+            </button>
+          ) : null}
+          <span>
+            {selected.size} su {products.length}
+            {multi ? "" : " (singola)"}
+          </span>
         </span>
       </div>
 
@@ -95,73 +143,20 @@ export function ProductPicker(props: ProductPickerProps): ReactElement {
             Nessun prodotto corrisponde a &ldquo;{query}&rdquo;
           </li>
         ) : null}
-        {filtered.map((p) => {
-          const isSelected = selected.has(p.slug);
-          return (
-            <li key={p.slug}>
-              <button
-                type="button"
-                disabled={locked}
-                onClick={() => toggle(p.slug)}
-                aria-pressed={isSelected}
-                className={`flex w-full items-center justify-between gap-3 rounded-[var(--radius-control)] border px-3 py-2 text-left text-sm transition-colors ${
-                  isSelected
-                    ? "border-[var(--color-action)] bg-[var(--color-action-soft,var(--color-paper-muted))]"
-                    : "border-[var(--color-line)] bg-transparent hover:border-[var(--color-line-strong)]"
-                } disabled:cursor-not-allowed disabled:opacity-60`}
-              >
-                <span className="flex items-center gap-3">
-                  {p.imageUrl ? (
-                    <img
-                      src={p.imageUrl}
-                      alt={p.name}
-                      className="h-10 w-10 shrink-0 rounded-[var(--radius-control)] bg-[var(--color-paper-muted)] object-cover"
-                    />
-                  ) : (
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-control)] bg-[var(--color-paper-muted)] text-xs text-[var(--color-ink-muted)]">
-                      ?
-                    </span>
-                  )}
-                  <span className="flex flex-col">
-                    <span className="font-medium text-[var(--color-ink)]">
-                      {p.name}
-                    </span>
-                    <span className="text-xs text-[var(--color-ink-muted)]">
-                      {p.category} · {p.slug}
-                    </span>
-                  </span>
-                </span>
-                <span className="flex items-center gap-3">
-                  <span className="text-sm tabular-nums text-[var(--color-ink)]">
-                    {EURO.format(p.priceEur)}
-                  </span>
-                  <span
-                    aria-hidden="true"
-                    className={`inline-flex h-4 w-4 items-center justify-center rounded-sm border ${
-                      isSelected
-                        ? "border-[var(--color-action)] bg-[var(--color-action)] text-[var(--color-paper)]"
-                        : "border-[var(--color-line-strong)]"
-                    }`}
-                  >
-                    {isSelected ? (
-                      <svg
-                        className="h-3 w-3"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    ) : null}
-                  </span>
-                </span>
-              </button>
-            </li>
-          );
-        })}
+        {filtered.map((p) => (
+          <li key={p.slug}>
+            <ProductRow
+              product={p}
+              selected={selected.has(p.slug)}
+              multi={multi}
+              locked={locked}
+              readOnly={readOnly}
+              draft={drafts[p.slug]}
+              onToggle={() => toggle(p.slug)}
+              onDraft={(patch) => setDraft(p.slug, patch)}
+            />
+          </li>
+        ))}
       </ul>
 
       {!readOnly ? (
@@ -181,7 +176,7 @@ export function ProductPicker(props: ProductPickerProps): ReactElement {
 }
 
 // Fuzzy semplice: tokenizza la query e ogni token deve matchare (substring,
-// case-insensitive, accent-fold base) almeno uno tra name/slug/category.
+// case-insensitive) almeno uno tra name/slug/category.
 function filterProducts(
   products: ProductPickerProduct[],
   query: string,
@@ -190,8 +185,7 @@ function filterProducts(
   if (!q) return products;
   const tokens = q.split(/\s+/);
   return products.filter((p) => {
-    const haystack =
-      `${p.name} ${p.slug} ${p.category}`.toLowerCase();
+    const haystack = `${p.name} ${p.slug} ${p.category}`.toLowerCase();
     return tokens.every((t) => haystack.includes(t));
   });
 }

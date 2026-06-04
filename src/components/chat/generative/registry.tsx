@@ -100,7 +100,12 @@ function extractInitialProps(
   const d = data as Record<string, unknown>;
   if (component === "ProductPicker") {
     if (Array.isArray(d.selectedSlugs)) {
-      return { initialSelection: d.selectedSlugs };
+      return {
+        initialSelection: d.selectedSlugs,
+        initialDiscounts: Array.isArray(d.productDiscounts)
+          ? d.productDiscounts
+          : [],
+      };
     }
   }
   if (component === "BundleBuilder") {

@@ -124,6 +124,9 @@ export function PortalsChat({
       onDraftUpdate((d) => ({
         ...d,
         selectedProducts: data.selectedSlugs as string[],
+        productDiscounts: Array.isArray(data.productDiscounts)
+          ? (data.productDiscounts as PortalDraft["productDiscounts"])
+          : d.productDiscounts,
       }));
     }
     if (data.name && data.priceEur != null) {

@@ -25,6 +25,7 @@ export interface PortalDraft {
   city?: string;
   provincia?: string;
   selectedProducts?: string[];
+  productDiscounts?: Array<{ slug: string; kind: "percent" | "eur"; value: number }>;
   bundles?: Array<{ name: string; priceEur: number; components: string[] }>;
   shipToSchool?: boolean;
   logoUploaded?: boolean;

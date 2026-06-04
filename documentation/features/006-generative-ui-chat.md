@@ -182,3 +182,11 @@ STUDIO_DEV_USER=tua@email npm run dev
 # Il picker appare inline, seleziona prodotti, conferma
 # L'agente prosegue con i bundle (step 7)
 ```
+
+## Update 2026-06-04 — ProductPicker: select-all + sconto per-prodotto
+
+- `ProductPicker` ora ha "Seleziona tutti / Deseleziona tutti" (sui prodotti filtrati dalla ricerca) e, per ogni prodotto selezionato (solo `multi`), un input sconto con toggle unita' `% | €`.
+- Riga estratta in `ProductPickerRow.tsx` (file < 300 righe). Tipi/ helper condivisi nel row file.
+- Submission: `{ selectedSlugs: string[], productDiscounts: Array<{slug, kind:"percent"|"eur", value}> }` (solo prodotti con value > 0).
+- `registry.tsx` mappa `productDiscounts` → prop `initialDiscounts` per il render readonly dei turn confermati.
+- A valle: `PortalDraft.productDiscounts` + schema studio-server `catalog.productDiscounts` + Payload `catalog.productDiscounts` + md/mail (cms feature 032). Applicazione Saleor delegata a onboard-school.
