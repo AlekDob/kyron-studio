@@ -132,9 +132,13 @@ export function ProductRow(props: ProductRowProps): ReactElement {
             <span className="text-[var(--color-ink)]">{EURO.format(p.priceEur)}</span>
           )}
         </span>
-        <span
-          aria-hidden="true"
-          className={`inline-flex h-4 w-4 items-center justify-center rounded-sm border ${
+        <button
+          type="button"
+          disabled={locked}
+          onClick={onToggle}
+          aria-pressed={selected}
+          aria-label={selected ? `Deseleziona ${p.name}` : `Seleziona ${p.name}`}
+          className={`inline-flex h-4 w-4 items-center justify-center rounded-sm border disabled:cursor-not-allowed ${
             selected
               ? "border-[var(--color-action)] bg-[var(--color-action)] text-[var(--color-paper)]"
               : "border-[var(--color-line-strong)]"
@@ -153,7 +157,7 @@ export function ProductRow(props: ProductRowProps): ReactElement {
               <polyline points="20 6 9 17 4 12" />
             </svg>
           ) : null}
-        </span>
+        </button>
       </span>
     </div>
   );

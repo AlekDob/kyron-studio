@@ -137,6 +137,17 @@ export function ProductPicker(props: ProductPickerProps): ReactElement {
         />
       </div>
 
+      {multi && !locked ? (
+        <p className="mb-3 text-xs leading-relaxed text-[var(--color-ink-muted)]">
+          Sconto per prodotto (opzionale): seleziona un prodotto, scrivi un valore
+          e usa il tasto unita&apos; per scegliere{" "}
+          <span className="font-medium text-[var(--color-ink)]">%</span> = sconto
+          percentuale oppure{" "}
+          <span className="font-medium text-[var(--color-ink)]">&euro;</span> =
+          prezzo finale. Il prezzo netto appare accanto all&apos;originale.
+        </p>
+      ) : null}
+
       <ul className="flex flex-col gap-2">
         {filtered.length === 0 ? (
           <li className="rounded-[var(--radius-control)] border border-dashed border-[var(--color-line)] px-3 py-4 text-center text-xs text-[var(--color-ink-muted)]">
