@@ -181,7 +181,11 @@ export interface PortalDetail extends PortalSummary {
   shipToSchool: boolean;
   shippingMethodLabel: string;
   shippingPriceEur: number;
-  catalog: { visibleSlugs: string[]; hiddenSlugs: string[] };
+  catalog: {
+    visibleSlugs: string[];
+    hiddenSlugs: string[];
+    productDiscounts?: Array<{ slug: string; kind: "percent" | "eur"; value: number }>;
+  };
   bundles: Array<{
     slug: string;
     name: string;

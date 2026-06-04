@@ -32,7 +32,9 @@ interface UiBlock {
 interface ChatTurn {
   role: "user" | "assistant";
   content: string;
-  ui?: UiBlock;
+  // Lista: un turno assistant puo' emettere piu' card generative (es. logo + picker).
+  // Le teniamo tutte cosi' nessuna viene sovrascritta (bug "logo sparisce").
+  uis?: UiBlock[];
 }
 
 const GREETING =
@@ -196,7 +198,7 @@ export function PortalsChat({
 
   async function runStream(msgs: ChatMessage[], next: ChatTurn[]): Promise<void> {
     let buf = "";
-    let pendingUi: UiBlock | undefined;
+    const uis: UiBlock[] = [];
     setTurns([...next, { role: "assistant", content: "" }]);
 
     try {
@@ -205,12 +207,12 @@ export function PortalsChat({
           buf += ev.delta;
           cancelAnimationFrame(rafRef.current);
           const snap = buf;
-          const uiSnap = pendingUi;
+          const uiSnap = [...uis];
           rafRef.current = requestAnimationFrame(() => {
             extractDraftFromAssistantText(snap);
             setTurns([
               ...next,
-              { role: "assistant", content: snap, ui: uiSnap },
+              { role: "assistant", content: snap, uis: uiSnap },
             ]);
           });
         } else if (ev.type === "tool") {
@@ -221,26 +223,27 @@ export function PortalsChat({
           extractDraftFromToolResult(ev.tool, ev.result);
           const desc = extractGenerativeDescriptor(ev.result);
           if (desc) {
-            pendingUi = { descriptor: desc };
+            // Append: piu' card nello stesso turno restano tutte visibili.
+            uis.push({ descriptor: desc });
             setTurns([
               ...next,
-              { role: "assistant", content: buf, ui: pendingUi },
+              { role: "assistant", content: buf, uis: [...uis] },
             ]);
           }
         } else if (ev.type === "error") {
           buf += `\n\n_[errore: ${ev.error}]_`;
-          setTurns([...next, { role: "assistant", content: buf }]);
+          setTurns([...next, { role: "assistant", content: buf, uis: [...uis] }]);
         }
       }
     } finally {
       cancelAnimationFrame(rafRef.current);
       setStreaming(false);
       setToolStatus(null);
-      if (buf) {
+      if (buf || uis.length > 0) {
         extractDraftFromAssistantText(buf);
         setTurns([
           ...next,
-          { role: "assistant", content: buf, ui: pendingUi },
+          { role: "assistant", content: buf, uis: [...uis] },
         ]);
       }
     }
@@ -264,17 +267,25 @@ export function PortalsChat({
 
   function handleGenerativeSubmit(
     turnIdx: number,
+    cardIdx: number,
     submission: GenerativeSubmission,
   ): void {
     extractDraftFromSubmission(submission);
 
     const updated = turns.map((t, i) =>
-      i === turnIdx && t.ui ? { ...t, ui: { ...t.ui, submission } } : t,
+      i === turnIdx && t.uis
+        ? {
+            ...t,
+            uis: t.uis.map((u, j) =>
+              j === cardIdx ? { ...u, submission } : u,
+            ),
+          }
+        : t,
     );
 
     const payload = JSON.stringify({
       kind: "generative_submission",
-      component: turns[turnIdx]?.ui?.descriptor.component,
+      component: turns[turnIdx]?.uis?.[cardIdx]?.descriptor.component,
       data: submission.data,
     });
 
@@ -319,15 +330,16 @@ export function PortalsChat({
                   <MarkdownContent content={processContent(t.content).text} />
                 </ChatBubble>
               )}
-              {t.ui ? (
+              {t.uis?.map((u, j) => (
                 <GenerativeRenderer
-                  descriptor={t.ui.descriptor}
-                  readOnly={!!t.ui.submission}
+                  key={u.descriptor.id ?? j}
+                  descriptor={u.descriptor}
+                  readOnly={!!u.submission}
                   disabled={streaming}
-                  initialSubmission={t.ui.submission}
-                  onSubmit={(sub) => handleGenerativeSubmit(i, sub)}
+                  initialSubmission={u.submission}
+                  onSubmit={(sub) => handleGenerativeSubmit(i, j, sub)}
                 />
-              ) : null}
+              ))}
             </div>
           );
         })}

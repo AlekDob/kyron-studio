@@ -18,7 +18,10 @@ import {
   Trash2,
 } from "lucide-react";
 import { Pill } from "@/components/ui";
+import { formatDiscount } from "@/components/chat/generative/ProductPickerRow";
 import type { PortalDetail as PortalDetailType, SaleorProduct } from "@/lib/gateway";
+
+type CatalogDiscount = { slug: string; kind: "percent" | "eur"; value: number };
 
 const STATUS_LABEL: Record<string, string> = {
   draft: "Bozza",
@@ -157,6 +160,7 @@ export function PortalDetail({ portal, onChanged }: Props) {
       <Section title={`Catalogo (${portal.catalog.visibleSlugs.length} prodotti)`}>
         <CatalogEditor
           visibleSlugs={portal.catalog.visibleSlugs}
+          discounts={portal.catalog.productDiscounts ?? []}
           onSave={patchCatalog}
         />
       </Section>
@@ -311,11 +315,14 @@ function InlineText({
 
 function CatalogEditor({
   visibleSlugs,
+  discounts,
   onSave,
 }: {
   visibleSlugs: string[];
+  discounts: CatalogDiscount[];
   onSave: (next: string[]) => Promise<void>;
 }) {
+  const discountBySlug = new Map(discounts.map((d) => [d.slug, d]));
   const [adding, setAdding] = useState(false);
   const [available, setAvailable] = useState<SaleorProduct[] | null>(null);
   const [busy, setBusy] = useState(false);
@@ -353,12 +360,19 @@ function CatalogEditor({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap gap-1.5">
-        {visibleSlugs.map((s) => (
+        {visibleSlugs.map((s) => {
+          const disc = discountBySlug.get(s);
+          return (
           <span
             key={s}
-            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--color-paper-muted)] text-[11px] text-[var(--color-ink-soft)]"
+            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] ${
+              disc
+                ? "bg-[var(--color-accent-tint)] text-[var(--color-accent)]"
+                : "bg-[var(--color-paper-muted)] text-[var(--color-ink-soft)]"
+            }`}
           >
             {s}
+            {disc ? ` · ${formatDiscount(disc)}` : ""}
             <button
               type="button"
               onClick={() => handleRemove(s)}
@@ -369,7 +383,8 @@ function CatalogEditor({
               <X className="h-3 w-3" />
             </button>
           </span>
-        ))}
+          );
+        })}
         <button
           type="button"
           onClick={() => {
