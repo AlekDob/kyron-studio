@@ -214,6 +214,27 @@ export async function deletePortal(
   return gatewayFetch(`/api/v1/portals/${slug}`, { method: "DELETE" });
 }
 
+// Upload logo: multipart server-side (NO Content-Type manuale → fetch imposta
+// il boundary). Non usa gatewayFetch (che forza application/json sul body).
+export async function uploadPortalLogo(
+  slug: string,
+  form: FormData,
+): Promise<{ ok: boolean; filename: string }> {
+  const headers = new Headers();
+  headers.set("X-Tenant", TENANT);
+  headers.set("Cookie", await buildCookieHeader());
+  const res = await fetch(`${GATEWAY_URL}/api/v1/portals/${slug}/logo`, {
+    method: "POST",
+    headers,
+    body: form,
+  });
+  if (!res.ok) {
+    const txt = await res.text().catch(() => "");
+    throw new GatewayError(res.status, txt || "logo upload failed");
+  }
+  return res.json();
+}
+
 export async function updatePortalCatalog(
   slug: string,
   visibleSlugs: string[],

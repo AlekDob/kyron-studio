@@ -11,9 +11,6 @@ interface LogoUploaderProps {
   onSubmit?: (data: { uploaded: boolean; filename: string }) => void;
 }
 
-const GATEWAY_URL =
-  process.env.NEXT_PUBLIC_STUDIO_SERVER_URL ?? "http://localhost:8790";
-
 export function LogoUploader({
   slug,
   readOnly,
@@ -59,10 +56,11 @@ export function LogoUploader({
       const form = new FormData();
       form.append("file", file);
 
-      const res = await fetch(
-        `${GATEWAY_URL}/api/v1/portals/${slug}/logo`,
-        { method: "POST", body: form },
-      );
+      // Same-origin: passa dal proxy Next (/api/portals/{slug}/logo).
+      const res = await fetch(`/api/portals/${slug}/logo`, {
+        method: "POST",
+        body: form,
+      });
 
       if (!res.ok) {
         const body = await res.json().catch(() => ({ error: "Upload fallito" }));
