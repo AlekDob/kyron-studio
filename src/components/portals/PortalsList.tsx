@@ -1,16 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { MapPin, Package, ShoppingBag, Trash2 } from "lucide-react";
 import type { PortalSummary } from "@/lib/gateway";
 
-// Opzioni stato per il selettore manuale dalla lista.
+// Per ora solo 2 stati operativi: Bozza (draft) e Live (onboarded).
 const STATUS_OPTIONS: Array<{ value: string; label: string }> = [
   { value: "draft", label: "Bozza" },
-  { value: "review", label: "Da rivedere" },
-  { value: "approved", label: "Approvato" },
   { value: "onboarded", label: "Live" },
 ];
+
+// Normalizza qualunque stato legacy (review/approved) al modello a 2 stati:
+// solo "draft" resta Bozza, tutto il resto e' considerato Live.
+function normStatus(status: string): "draft" | "onboarded" {
+  return status === "draft" ? "draft" : "onboarded";
+}
 
 interface Props {
   portals: PortalSummary[];
@@ -63,6 +67,10 @@ export function PortalsList({
       })
     : portals;
 
+  // Grouping a 2 stati: Bozze in cima, Live sotto.
+  const drafts = filtered.filter((p) => normStatus(p.status) === "draft");
+  const live = filtered.filter((p) => normStatus(p.status) !== "draft");
+
   if (portals.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -88,78 +96,102 @@ export function PortalsList({
         />
       ) : null}
 
-      <div className="flex flex-col gap-2">
-        {filtered.map((p) => (
-          <div
-            key={p.slug}
-            className="rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper)] p-3 transition-colors hover:border-[var(--color-line-strong)]"
+      <PortalGroup label="Bozze" items={drafts} render={renderRow} />
+      <PortalGroup label="Live" items={live} render={renderRow} />
+    </div>
+  );
+
+  function renderRow(p: PortalSummary) {
+    return (
+      <div
+        key={p.slug}
+        className="rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper)] p-3 transition-colors hover:border-[var(--color-line-strong)]"
+      >
+        <div className="flex items-start justify-between gap-2 mb-1.5">
+          <button
+            type="button"
+            onClick={() => onSelect?.(p.slug)}
+            className="text-left text-xs font-medium text-[var(--color-ink)] leading-tight hover:underline"
           >
-            <div className="flex items-start justify-between gap-2 mb-1.5">
+            {p.nome}
+          </button>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <select
+              value={normStatus(p.status)}
+              disabled={busySlug === p.slug || !onChangeStatus}
+              onChange={(e) => void handleStatus(p.slug, e.target.value)}
+              aria-label={`Stato ${p.nome}`}
+              className="rounded-[var(--radius-control)] border border-[var(--color-line)] bg-[var(--color-paper-muted)] px-1.5 py-0.5 text-[10px] text-[var(--color-ink)] focus:border-[var(--color-line-strong)] focus:outline-none disabled:opacity-50"
+            >
+              {STATUS_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+            {onDelete ? (
               <button
                 type="button"
-                onClick={() => onSelect?.(p.slug)}
-                className="text-left text-xs font-medium text-[var(--color-ink)] leading-tight hover:underline"
+                onClick={() => void handleDelete(p.slug)}
+                disabled={busySlug === p.slug}
+                aria-label={`Elimina ${p.nome}`}
+                title={confirmSlug === p.slug ? "Conferma eliminazione" : "Elimina"}
+                className={`rounded-[var(--radius-control)] border px-1.5 py-0.5 disabled:opacity-50 ${
+                  confirmSlug === p.slug
+                    ? "border-red-500 bg-red-500 text-white"
+                    : "border-[var(--color-line)] text-[var(--color-ink-muted)] hover:border-red-400 hover:text-red-500"
+                }`}
               >
-                {p.nome}
+                <Trash2 className="h-3 w-3" />
               </button>
-              <div className="flex items-center gap-1.5 shrink-0">
-                <select
-                  value={p.status}
-                  disabled={busySlug === p.slug || !onChangeStatus}
-                  onChange={(e) => void handleStatus(p.slug, e.target.value)}
-                  aria-label={`Stato ${p.nome}`}
-                  className="rounded-[var(--radius-control)] border border-[var(--color-line)] bg-[var(--color-paper-muted)] px-1.5 py-0.5 text-[10px] text-[var(--color-ink)] focus:border-[var(--color-line-strong)] focus:outline-none disabled:opacity-50"
-                >
-                  {STATUS_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-                {onDelete ? (
-                  <button
-                    type="button"
-                    onClick={() => void handleDelete(p.slug)}
-                    disabled={busySlug === p.slug}
-                    aria-label={`Elimina ${p.nome}`}
-                    title={confirmSlug === p.slug ? "Conferma eliminazione" : "Elimina"}
-                    className={`rounded-[var(--radius-control)] border px-1.5 py-0.5 disabled:opacity-50 ${
-                      confirmSlug === p.slug
-                        ? "border-red-500 bg-red-500 text-white"
-                        : "border-[var(--color-line)] text-[var(--color-ink-muted)] hover:border-red-400 hover:text-red-500"
-                    }`}
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </button>
-                ) : null}
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => onSelect?.(p.slug)}
-              className="block w-full text-left"
-            >
-              <p className="font-mono text-[10px] text-[var(--color-ink-muted)] mb-1.5">
-                {p.slug}
-              </p>
-              <div className="flex gap-3 text-[10px] text-[var(--color-ink-soft)]">
-                <span className="flex items-center gap-1">
-                  <MapPin className="h-2.5 w-2.5" />
-                  {p.city}
-                </span>
-                <span className="flex items-center gap-1">
-                  <ShoppingBag className="h-2.5 w-2.5" />
-                  {p.productCount}
-                </span>
-                <span className="flex items-center gap-1">
-                  <Package className="h-2.5 w-2.5" />
-                  {p.bundleCount}
-                </span>
-              </div>
-            </button>
+            ) : null}
           </div>
-        ))}
+        </div>
+        <button
+          type="button"
+          onClick={() => onSelect?.(p.slug)}
+          className="block w-full text-left"
+        >
+          <p className="font-mono text-[10px] text-[var(--color-ink-muted)] mb-1.5">
+            {p.slug}
+          </p>
+          <div className="flex gap-3 text-[10px] text-[var(--color-ink-soft)]">
+            <span className="flex items-center gap-1">
+              <MapPin className="h-2.5 w-2.5" />
+              {p.city}
+            </span>
+            <span className="flex items-center gap-1">
+              <ShoppingBag className="h-2.5 w-2.5" />
+              {p.productCount}
+            </span>
+            <span className="flex items-center gap-1">
+              <Package className="h-2.5 w-2.5" />
+              {p.bundleCount}
+            </span>
+          </div>
+        </button>
       </div>
+    );
+  }
+}
+
+// Gruppo con intestazione; render nascosto se vuoto. Bozze prima, Live dopo.
+function PortalGroup({
+  label,
+  items,
+  render,
+}: {
+  label: string;
+  items: PortalSummary[];
+  render: (p: PortalSummary) => ReactNode;
+}) {
+  if (items.length === 0) return null;
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="eyebrow px-1">
+        {label} ({items.length})
+      </p>
+      {items.map(render)}
     </div>
   );
 }
