@@ -100,6 +100,33 @@ export function PortalsWorkspace({ initialPortals, initialDetailSlug }: Props): 
     fetchPortals().then(setPortals);
   }, [detailSlug]);
 
+  // Cambio stato manuale dalla lista → PUT + refresh (e detail se aperto).
+  const handleChangeStatus = useCallback(
+    async (slug: string, status: string): Promise<void> => {
+      await fetch(`/api/portals/${slug}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      setPortals(await fetchPortals());
+      if (detailSlug === slug) {
+        const refreshed = await fetchPortalDetail(slug);
+        if (refreshed) setPanel({ kind: "detail", portal: refreshed });
+      }
+    },
+    [detailSlug],
+  );
+
+  // Eliminazione portale → DELETE + refresh (torna alla lista se era aperto).
+  const handleDeletePortal = useCallback(
+    async (slug: string): Promise<void> => {
+      await fetch(`/api/portals/${slug}`, { method: "DELETE" });
+      setPortals(await fetchPortals());
+      if (detailSlug === slug) setPanel({ kind: "list" });
+    },
+    [detailSlug],
+  );
+
   const isDetail = panel.kind === "detail";
 
   return (
@@ -131,6 +158,8 @@ export function PortalsWorkspace({ initialPortals, initialDetailSlug }: Props): 
           onBackToList={handleBackToList}
           onSelectPortal={handleSelectPortal}
           onDetailChanged={handleRefreshDetail}
+          onChangeStatus={handleChangeStatus}
+          onDeletePortal={handleDeletePortal}
         />
       </aside>
       <MobileChatOverlay
@@ -145,6 +174,8 @@ export function PortalsWorkspace({ initialPortals, initialDetailSlug }: Props): 
           onBackToList={handleBackToList}
           onSelectPortal={handleSelectPortal}
           onDetailChanged={handleRefreshDetail}
+          onChangeStatus={handleChangeStatus}
+          onDeletePortal={handleDeletePortal}
         />
       </MobileChatOverlay>
     </div>
@@ -160,6 +191,8 @@ function SidePanel({
   onBackToList,
   onSelectPortal,
   onDetailChanged,
+  onChangeStatus,
+  onDeletePortal,
 }: {
   mode: SidePanelMode;
   draft: PortalDraft;
@@ -167,6 +200,8 @@ function SidePanel({
   onBackToList: () => void;
   onSelectPortal: (slug: string) => void;
   onDetailChanged?: () => void;
+  onChangeStatus?: (slug: string, status: string) => Promise<void> | void;
+  onDeletePortal?: (slug: string) => Promise<void> | void;
 }) {
   if (mode.kind === "creating") {
     return (
@@ -231,7 +266,12 @@ function SidePanel({
         </p>
       </header>
       <div className="flex-1 overflow-y-auto px-5 py-4">
-        <PortalsList portals={portals} onSelect={onSelectPortal} />
+        <PortalsList
+          portals={portals}
+          onSelect={onSelectPortal}
+          onChangeStatus={onChangeStatus}
+          onDelete={onDeletePortal}
+        />
       </div>
     </>
   );

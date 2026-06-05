@@ -208,6 +208,12 @@ export async function updatePortal(
   });
 }
 
+export async function deletePortal(
+  slug: string,
+): Promise<{ ok: boolean; slug: string }> {
+  return gatewayFetch(`/api/v1/portals/${slug}`, { method: "DELETE" });
+}
+
 export async function updatePortalCatalog(
   slug: string,
   visibleSlugs: string[],
