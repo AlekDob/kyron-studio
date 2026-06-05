@@ -65,21 +65,25 @@ sia la lista (le card si aggiornano in tempo reale).
 
 ## Persistenza
 
-File `.md` con YAML frontmatter in directory configurabile:
-- **Dev locale**: `Kyron/media/pending-schools-export/`
-- **Prod Docker**: `/data/portals/` (env `PENDING_SCHOOLS_EXPORT_DIR`)
-- **Coolify**: serve volume mount `/data/portals` su host persistente
+Collection Payload `pending-schools` (vedi `cms/payload/collections/PendingSchools.ts`),
+accessibile via gateway BFF studio-server (decision-014, decision-016).
+Persistenza nativa Postgres del cms — sopravvive ai redeploy di studio-server.
+Logo file su Payload Media collection (`/api/media`).
+
+Fonte di verita' unica. L'hook `cms/payload/hooks/exportPendingSchoolMarkdown.ts`
+resta in vita ma e' solo **artefatto export downstream** quando un portale
+passa a `status === "approved"` (consumato da `ecommerce/seed/onboard-school.ts`).
 
 ## Architettura dati
 
 ```
-studio (Next.js)                   studio-server (Hono)
-    |                                  |
-    |  GET /api/v1/portals             | listPortals() — fs.readdir
-    |  GET /api/v1/portals/:slug       | getPortal() — fs.readFile
-    |  PUT /api/v1/portals/:slug       | updatePortal() — read+merge+write
-    |  DELETE /api/v1/portals/:slug    | deletePortal() — fs.unlink
-    |  POST /api/v1/portals/:slug/logo | savePortalLogo() — file upload
+studio (Next.js)                   studio-server (Hono)              cms Payload
+    |                                  |                                |
+    |  GET /api/v1/portals             | listPortals() ────────────────> GET /api/pending-schools
+    |  GET /api/v1/portals/:slug       | getPortal()   ────────────────> GET /api/pending-schools?where[slug][equals]
+    |  PUT /api/v1/portals/:slug       | updatePortal() ───────────────> PATCH /api/pending-schools/:id
+    |  DELETE /api/v1/portals/:slug    | deletePortal() ───────────────> DELETE /api/pending-schools/:id
+    |  POST /api/v1/portals/:slug/logo | savePortalLogo() ─────────────> POST /api/media (multipart) + PATCH branding.logo
 ```
 
 ## Side panel (3 modalita')
@@ -130,12 +134,15 @@ link diretto, e redirect da route obsolete senza perdere il contesto workspace.
 ## File chiave
 
 **studio-server:**
+- `src/features/portals/gateway.ts` — helper `getPortalsGateway()` lazy singleton sul Payload gateway (decision-016)
 - `src/features/portals/route.ts` — CRUD routes + logo upload + catalog/bundles + `_catalog` Saleor passthrough
-- `src/features/portals/reader.ts` — `listPortals()`, `getPortal()`, `resolvePortal(query)` (fuzzy)
-- `src/features/portals/writer.ts` — `updatePortal()`, `updatePortalCatalog()`, `addBundleToPortal()`, `updateBundleInPortal()`, `removeBundleFromPortal()`, `deletePortal()`, `savePortalLogo()`
-  - `savePortalLogo` usa `fs.access()` check: durante onboarding il `.md` non esiste ancora
+- `src/features/portals/reader.ts` — `listPortals()`, `getPortal()`, `findPortalDoc()`, `resolvePortal(query)` (fuzzy in-memory) sopra Payload REST
+- `src/features/portals/writer.ts` — `updatePortal()`, `updatePortalCatalog()`, `addBundleToPortal()`, `updateBundleInPortal()`, `removeBundleFromPortal()`, `deletePortal()` (PATCH/DELETE Payload)
+- `src/features/portals/logo.ts` — `savePortalLogo()`: multipart POST a `/api/media` + PATCH `branding.logo` con Media ID
+- `src/features/onboard-school/markdown-writer.ts` — `writePendingSchoolMarkdown()` -> create/update su `pending-schools` (nome del file storico, semantica Payload)
 - `src/features/onboard-school/agent.ts` — tutti i tool (12 totali, incl. add/update/remove bundle + update_catalog)
 - `src/features/onboard-school/prompt.ts` — system prompt 5 capacita' (incl. FLUSSO AGGIUNGI KIT)
+- `scripts/migrate-portals-md-to-payload.ts` — migrazione one-shot dei `.md` residui dev verso Payload
 
 **studio:**
 - `src/app/(authed)/portals/page.tsx` — workspace server component (legge `searchParams.detail`)
