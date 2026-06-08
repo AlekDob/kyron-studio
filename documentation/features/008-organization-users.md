@@ -63,6 +63,8 @@ AZIONI ADMIN (authz reale, lato server)
 | `studio/src/app/api/org/[...path]/route.ts` | proxy → studio-server (inoltra cookie) |
 | `studio/src/components/settings/OrganizationSection.tsx` | UI invito/ruolo/attiva/rimuovi |
 | `studio/src/components/settings/SettingsLayout.tsx` | filtro tab adminOnly + render org |
+| `studio/src/app/api/logout/route.ts` | logout: cancella kyron-rev (stesso domain) → /login |
+| `studio/src/components/shell/AppSidebar.tsx` | voce "Esci" nel footer sidebar |
 
 ## Sicurezza / scelte
 
@@ -92,6 +94,16 @@ Vedi GOTCHA Schema DB del cms (payload migrate KO → `db/schema.sql` idempotent
 |---|---|---|
 | `KYRON_ADMIN_EMAILS` | studio | CSV admin bootstrap (fallback login se DB down) |
 | `TENANT_KYRON_PAYLOAD_API_KEY` | studio-server | service key per leggere/scrivere studio-users |
+
+## Logout / refresh ruolo
+
+Il ruolo viaggia nel cookie `kyron-rev` (firmato al login). Un cookie emesso
+**prima** del rollout di questa feature NON ha il `role` → l'utente e' trattato
+come **editor** (privilegio minimo). Per applicare il ruolo corretto serve
+**re-login**: voce **"Esci"** nel footer sidebar → `GET/POST /api/logout`
+(cancella `kyron-rev` con lo stesso `KYRON_COOKIE_DOMAIN`) → `/login` → il nuovo
+cookie porta il `role` risolto dal DB. Stesso meccanismo per applicare un
+cambio ruolo: l'utente deve rifare login (il cookie dura 7gg).
 
 ## Vedi anche
 
