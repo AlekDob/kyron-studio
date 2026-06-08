@@ -16,6 +16,7 @@ import {
   X,
   Plus,
   Trash2,
+  User,
 } from "lucide-react";
 import { Pill } from "@/components/ui";
 import { formatDiscount } from "@/components/chat/generative/ProductPickerRow";
@@ -108,6 +109,13 @@ export function PortalDetail({ portal, onChanged }: Props) {
             onSave={(v) => patchPortal({ codiceMeccanografico: v })}
           />
         </Row>
+        {portal.requestedBy ? (
+          <Row icon={<User className="h-4 w-4" />} label="Richiesto da">
+            <span className="text-xs text-[var(--color-ink-muted)]">
+              {portal.requestedBy}
+            </span>
+          </Row>
+        ) : null}
       </Section>
 
       <Section title="Indirizzo">

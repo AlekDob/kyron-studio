@@ -152,6 +152,8 @@ export interface PortalSummary {
   countryArea: string;
   status: string;
   collectedBy: string;
+  // Email dell'agente Studio che ha richiesto l'onboarding (vuoto se sconosciuto).
+  requestedBy: string;
   collectedAt: string;
   bundleCount: number;
   productCount: number;

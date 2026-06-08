@@ -2,8 +2,8 @@
 type: feature
 project: kyron-studio
 created: 2026-05-27
-last_verified: 2026-05-27
-tags: [portals, onboarding, crud, logo-upload, workstream-04]
+last_verified: 2026-06-08
+tags: [portals, onboarding, crud, logo-upload, workstream-04, requested-by]
 ---
 
 # 007 — Modulo Portali
@@ -73,6 +73,25 @@ Logo file su Payload Media collection (`/api/media`).
 Fonte di verita' unica. L'hook `cms/payload/hooks/exportPendingSchoolMarkdown.ts`
 resta in vita ma e' solo **artefatto export downstream** quando un portale
 passa a `status === "approved"` (consumato da `ecommerce/seed/onboard-school.ts`).
+
+## Agente richiedente (`requestedBy`)
+
+Ogni onboarding registra **quale utente Studio loggato** lo ha avviato (campo `requestedBy`,
+email). Catena: la route `/agents/onboard-school` di studio-server e' protetta da
+`studioAuthMiddleware` (cookie `kyron-rev`) → `c.get("studioUser").email` →
+`runOnboardSchoolAgent({ userEmail })` → tool `save_pending_school` →
+`writePendingSchoolMarkdown(doc, userEmail)` → campo `requestedBy` su `pending-schools`.
+
+| Punto | Comportamento |
+|---|---|
+| Auth | onboarding **richiede login** (401 senza cookie valido), coerente con data-editor/review-editor |
+| Lista | `PortalsList` mostra l'email (icona `User`) sotto i meta città/prodotti/kit, solo se valorizzato |
+| Dettaglio | `PortalDetail` → riga "Richiesto da" nella card INFORMAZIONI |
+| Mail | feature cms-032: subject + body della mail Resend includono `requestedBy` |
+| Display | email completa (es. `a.ravelli@kyronedu.it`), nessuna mappatura nome |
+
+Campo additivo/nullable su Payload → richiede `PAYLOAD_PUSH=true` in dev e rigenerazione
+`db/schema.sql` per prod (vedi GOTCHA "Schema DB in produzione" in `cms/CLAUDE.md`).
 
 ## Architettura dati
 

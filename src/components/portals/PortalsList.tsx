@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { MapPin, Package, ShoppingBag, Trash2 } from "lucide-react";
+import { MapPin, Package, ShoppingBag, Trash2, User } from "lucide-react";
 import type { PortalSummary } from "@/lib/gateway";
 
 // Per ora solo 2 stati operativi: Bozza (draft) e Live (onboarded).
@@ -169,6 +169,12 @@ export function PortalsList({
               {p.bundleCount}
             </span>
           </div>
+          {p.requestedBy ? (
+            <div className="mt-1.5 flex items-center gap-1 text-[10px] text-[var(--color-ink-muted)]">
+              <User className="h-2.5 w-2.5" />
+              <span className="truncate">{p.requestedBy}</span>
+            </div>
+          ) : null}
         </button>
       </div>
     );
