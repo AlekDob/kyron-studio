@@ -88,9 +88,17 @@ const REVIEW_MAX_AGE_S = 60 * 60 * 24 * 7;
 export const REVIEW_COOKIE = "kyron-rev";
 export const REVIEW_COOKIE_MAX_AGE = REVIEW_MAX_AGE_S;
 
-export function signReviewCookie(email: string): string {
+// Brain: feature-008-organization-users — il cookie di sessione porta anche il
+// role, usato per il gating UI (mostra/nasconde sezioni admin). NB: il role nel
+// cookie e' solo per la UI; l'autorizzazione reale sulle azioni admin e'
+// verificata lato studio-server con lookup fresco sul DB.
+export function signReviewCookie(
+  email: string,
+  role: "admin" | "editor" = "editor",
+): string {
   const payload = JSON.stringify({
     email: email.trim().toLowerCase(),
+    role,
     exp: Date.now() + REVIEW_MAX_AGE_S * 1000,
   });
   const data = b64url(Buffer.from(payload, "utf8"));
@@ -99,14 +107,4 @@ export function signReviewCookie(email: string): string {
 
 export function isAuthEnabled(): boolean {
   return process.env.KYRON_REVIEW_ENABLED !== "false";
-}
-
-export function isEmailAllowed(email: string): boolean {
-  const raw = process.env.KYRON_REVIEW_EMAILS || "";
-  const list = raw
-    .split(",")
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
-  const target = email.trim().toLowerCase();
-  return target.length > 0 && list.includes(target);
 }

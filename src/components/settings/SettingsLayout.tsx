@@ -8,20 +8,35 @@ import { ProviderConnectionsSection } from "./ProviderConnectionsSection";
 import { ModelRoutingSection } from "./ModelRoutingSection";
 import { ThemeSection } from "./ThemeSection";
 import { ComingSoonSection } from "./ComingSoonSection";
+import { OrganizationSection } from "./OrganizationSection";
 
 type Tab = "profile" | "connections" | "models" | "theme" | "org" | "mcp";
 
-const TABS: Array<{ id: Tab; label: string; disabled?: boolean }> = [
+// Brain: feature-008 — adminOnly: connessioni AI, modelli, MCP e organizzazione
+// (gestione utenti) sono riservate agli admin. Gli editor vedono solo Tema
+// (e Profilo, quando esistera').
+const TABS: Array<{
+  id: Tab;
+  label: string;
+  disabled?: boolean;
+  adminOnly?: boolean;
+}> = [
   { id: "profile", label: "Profilo", disabled: true },
-  { id: "connections", label: "Connessioni" },
-  { id: "models", label: "Modelli AI" },
+  { id: "connections", label: "Connessioni", adminOnly: true },
+  { id: "models", label: "Modelli AI", adminOnly: true },
   { id: "theme", label: "Tema" },
-  { id: "org", label: "Organizzazione", disabled: true },
-  { id: "mcp", label: "MCP Servers", disabled: true },
+  { id: "org", label: "Organizzazione", adminOnly: true },
+  { id: "mcp", label: "MCP Servers", disabled: true, adminOnly: true },
 ];
 
-export function SettingsLayout() {
-  const [active, setActive] = useState<Tab>("connections");
+interface Props {
+  userEmail: string;
+  isAdmin: boolean;
+}
+
+export function SettingsLayout({ userEmail, isAdmin }: Props) {
+  const tabs = TABS.filter((t) => isAdmin || !t.adminOnly);
+  const [active, setActive] = useState<Tab>(isAdmin ? "connections" : "theme");
 
   return (
     <div className="flex flex-col lg:flex-row h-full min-h-screen">
@@ -31,7 +46,7 @@ export function SettingsLayout() {
           <p className="eyebrow">Impostazioni</p>
         </div>
         <ul className="flex overflow-x-auto lg:flex-col lg:overflow-x-visible px-2 pb-2 lg:px-0 lg:pb-0 gap-1 lg:gap-0">
-          {TABS.map((tab) => (
+          {tabs.map((tab) => (
             <li key={tab.id} className="shrink-0">
               <button
                 type="button"
@@ -71,12 +86,7 @@ export function SettingsLayout() {
               description="Email, nome, preferenze personali. Per ora il profilo e' gestito da Payload CMS."
             />
           )}
-          {active === "org" && (
-            <ComingSoonSection
-              title="Organizzazione"
-              description="Configurazione tenant Kyron, moduli abilitati, branding."
-            />
-          )}
+          {active === "org" && <OrganizationSection currentEmail={userEmail} />}
           {active === "mcp" && (
             <ComingSoonSection
               title="MCP Servers"

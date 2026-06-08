@@ -9,9 +9,14 @@ async function forward(
   method: "GET" | "PUT" | "POST",
 ) {
   const url = `${STUDIO_SERVER_URL}/settings/${path.map(encodeURIComponent).join("/")}`;
+  // Brain: feature-008 — inoltra il cookie kyron-rev: /settings ora richiede
+  // sessione + ruolo admin (studioAuthMiddleware + requireAdmin lato server).
   const init: RequestInit = {
     method,
-    headers: { "X-Tenant": "kyron" },
+    headers: {
+      "X-Tenant": "kyron",
+      Cookie: req.headers.get("cookie") ?? "",
+    },
   };
   if (method !== "GET") {
     const body = await req.text();

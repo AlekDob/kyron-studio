@@ -15,9 +15,11 @@ function hmac(data: string): string {
   return crypto.createHmac("sha256", secret()).update(data).digest("base64url");
 }
 
+export type StudioRole = "admin" | "editor";
+
 function verifyReviewCookie(
   raw: string | undefined,
-): { email: string } | null {
+): { email: string; role: StudioRole } | null {
   if (!raw) return null;
   const dot = raw.lastIndexOf(".");
   if (dot < 0) return null;
@@ -31,11 +33,12 @@ function verifyReviewCookie(
     return null;
   }
   try {
-    const { email, exp } = JSON.parse(
+    const { email, role, exp } = JSON.parse(
       Buffer.from(data, "base64url").toString("utf8"),
-    ) as { email?: string; exp?: number };
+    ) as { email?: string; role?: string; exp?: number };
     if (!email || typeof exp !== "number" || exp < Date.now()) return null;
-    return { email };
+    // Brain: feature-008 — cookie legacy senza role → editor (meno privilegi).
+    return { email, role: role === "admin" ? "admin" : "editor" };
   } catch {
     return null;
   }
@@ -43,22 +46,28 @@ function verifyReviewCookie(
 
 export interface StudioUser {
   email: string;
+  role: StudioRole;
 }
 
 export async function getCurrentUser(): Promise<StudioUser | null> {
   // Dev bypass: in locale il cookie kyron-rev non e' cross-subdomain
   // (host-only su localhost:3000). Setta STUDIO_DEV_USER=tuo@email per
   // bypassare la verifica e iterare sull'UI senza dover loggare ogni volta.
-  // In produzione questa env NON va settata.
+  // In dev l'utente bypass e' admin (vede tutte le sezioni). In produzione
+  // questa env NON va settata.
   if (
     process.env.NODE_ENV !== "production" &&
     process.env.STUDIO_DEV_USER
   ) {
-    return { email: process.env.STUDIO_DEV_USER };
+    return { email: process.env.STUDIO_DEV_USER, role: "admin" };
   }
   const cookieStore = await cookies();
   const raw = cookieStore.get(REVIEW_COOKIE)?.value;
   return verifyReviewCookie(raw);
+}
+
+export function isAdmin(user: StudioUser | null): boolean {
+  return user?.role === "admin";
 }
 
 export function loginUrl(next?: string): string {

@@ -43,9 +43,15 @@ Hub admin Kyron a `studio.kyronedu.it`. Sotto-progetto di `/Kyron`, registrato i
 - Redirect 308 da `/studio/*` su cms → `studio.kyronedu.it`
 - Vedi feature 005-preview-review-editor per dettagli Phase 5/5b/6
 
+**Ruoli & gestione utenti live** (feature 008, 2026-06-08):
+- Allowlist + ruoli (admin/editor) su collection Payload `studio-users` (non piu' env var)
+- Impostazioni → Organizzazione (admin-only): invita/cambia ruolo/disattiva/rimuovi utenti
+- Sezioni admin-only: Connessioni, Modelli AI, MCP, Organizzazione (editor vedono solo Tema)
+- Authz reale lato studio-server (`requireAdmin`), anti-lockout, fallback bootstrap `KYRON_ADMIN_EMAILS`
+
 **Da fare** (placeholder "presto"):
 - Route reali per Inbox, Portali, Brain, Log
-- Sezioni settings: Profilo, Organizzazione, MCP Servers
+- Sezioni settings: Profilo, MCP Servers
 - Logo Kyron definitivo (oggi placeholder testuale "K + Studio")
 
 Vedi `documentation/features/` per dettagli.
@@ -81,6 +87,7 @@ Live su `https://studio.kyronedu.it` (Coolify + Hetzner CCX23).
 - `documentation/features/005-preview-review-editor.md` — Anteprima iframe + agente Review Editor (workstream 03)
 - `documentation/features/006-generative-ui-chat.md` — Generative UI in chat onboarding (workstream 04, PoC ProductPicker)
 - `documentation/features/007-portals-module.md` — Modulo Portali: dashboard + onboarding unificati
+- `documentation/features/008-organization-users.md` — Utenti & ruoli (admin/editor), tab Organizzazione, collection `studio-users`
 - Cross-progetto: `Kyron/documentation/workstreams/03-studio-standalone.md` — login OTP, preview iframe, review system
 - `documentation/diary/` — changelog locale
 - Cross-progetto: `Kyron/documentation/workstreams/01-studio-shell-port.md`

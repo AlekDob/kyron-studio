@@ -7,10 +7,10 @@ import {
   REVIEW_COOKIE_MAX_AGE,
   codeMatches,
   isAuthEnabled,
-  isEmailAllowed,
   signReviewCookie,
   verifyOtpCookie,
 } from "@/lib/otp";
+import { resolveStudioAccess } from "@/lib/studio-access";
 
 function redirectBase(req: Request): string {
   const env = process.env.NEXT_PUBLIC_SERVER_URL?.replace(/\/$/, "")?.trim();
@@ -52,7 +52,8 @@ export async function POST(req: Request) {
       303,
     );
   }
-  if (!isEmailAllowed(otp.email)) {
+  const access = await resolveStudioAccess(otp.email);
+  if (!access.allowed) {
     return NextResponse.redirect(loginUrl(req, { error: "unauthorized" }), 303);
   }
   if (!code || !codeMatches(code, otp.code)) {
@@ -63,7 +64,7 @@ export async function POST(req: Request) {
   }
 
   const res = NextResponse.redirect(new URL(next, redirectBase(req)), 303);
-  res.cookies.set(REVIEW_COOKIE, signReviewCookie(otp.email), {
+  res.cookies.set(REVIEW_COOKIE, signReviewCookie(otp.email, access.role ?? "editor"), {
     httpOnly: true,
     sameSite: "lax",
     secure: redirectBase(req).startsWith("https:"),

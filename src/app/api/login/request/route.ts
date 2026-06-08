@@ -7,10 +7,10 @@ import {
   OTP_TTL_S,
   generateCode,
   isAuthEnabled,
-  isEmailAllowed,
   signOtpCookie,
   verifyOtpCookie,
 } from "@/lib/otp";
+import { resolveStudioAccess } from "@/lib/studio-access";
 
 const KYRON_DOMAIN = "kyronedu.it";
 const FROM = `Studio Kyron <noreply@${KYRON_DOMAIN}>`;
@@ -63,7 +63,8 @@ export async function POST(req: Request) {
   if (!email || !email.includes("@")) {
     return NextResponse.redirect(loginUrl(req, { error: "email" }), 303);
   }
-  if (!isEmailAllowed(email)) {
+  const access = await resolveStudioAccess(email);
+  if (!access.allowed) {
     return NextResponse.redirect(
       loginUrl(req, { error: "unauthorized", email }),
       303,

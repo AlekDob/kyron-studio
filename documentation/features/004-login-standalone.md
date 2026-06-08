@@ -31,7 +31,8 @@ Auth gate: app/(authed)/layout.tsx → getCurrentUser() → redirect /login
 
 | File | Ruolo |
 |---|---|
-| `src/lib/otp.ts` | sign/verify cookie OTP HMAC + helper review cookie + allowlist email |
+| `src/lib/otp.ts` | sign/verify cookie OTP HMAC + helper review cookie (porta `role`) |
+| `src/lib/studio-access.ts` | `resolveStudioAccess(email)` → allowlist + ruolo da DB (feature 008) |
 | `src/app/api/login/request/route.ts` | POST email → OTP + email |
 | `src/app/api/login/verify/route.ts` | POST code → setta kyron-rev |
 | `src/app/login/page.tsx` | UI 2-step Server Component |
@@ -43,7 +44,8 @@ Auth gate: app/(authed)/layout.tsx → getCurrentUser() → redirect /login
 | Var | Scopo |
 |---|---|
 | `RESEND_API_KEY` | invio email OTP (stesso account cms staging) |
-| `KYRON_REVIEW_EMAILS` | CSV allowlist email autorizzate |
+| ~~`KYRON_REVIEW_EMAILS`~~ | **deprecato** (feature 008): allowlist ora su collection Payload `studio-users` |
+| `KYRON_ADMIN_EMAILS` | CSV admin di bootstrap: fallback login se studio-server/DB down (feature 008) |
 | `KYRON_REVIEW_ENABLED` | gate killswitch (`"true"` per abilitare) |
 | `KYRON_REVIEW_SECRET` o `PAYLOAD_SECRET` | segreto HMAC (deve matchare cms per transition compat) |
 | `KYRON_COOKIE_DOMAIN` | `.kyronedu.it` per cookie cross-subdomain |
