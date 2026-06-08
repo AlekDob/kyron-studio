@@ -1,6 +1,6 @@
 "use client";
 // Source: Virgilio apps/client/src/shell/AppSidebar.tsx — adattato per Next.js App Router.
-import { LayoutGrid, Moon, Sun, Command } from "lucide-react";
+import { LayoutGrid, Moon, Sun, Command, LogOut } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { Sidebar, Pill } from "@/components/ui";
 import { MODULES } from "./modules";
@@ -137,6 +137,14 @@ export function AppSidebar({ userEmail }: Props) {
           {mode === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           <span>Tema {mode === "dark" ? "chiaro" : "scuro"}</span>
         </button>
+        {/* Brain: feature-008 — logout: re-login applica il ruolo aggiornato */}
+        <a
+          href="/api/logout"
+          className="mt-1 flex w-full items-center gap-3 rounded-[var(--radius-card)] px-3 py-2 text-left text-sm text-[var(--color-ink-soft)] transition-colors hover:bg-[var(--color-action-subtle)] hover:text-[var(--color-ink)]"
+        >
+          <LogOut className="h-4 w-4" />
+          <span>Esci</span>
+        </a>
         {userEmail && (
           <div className="mt-2 px-3 pb-1 text-xs text-[var(--color-ink-muted)] truncate">
             {userEmail}
