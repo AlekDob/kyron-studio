@@ -2,8 +2,8 @@
 type: feature
 project: kyron-studio
 created: 2026-05-27
-last_verified: 2026-06-08
-tags: [portals, onboarding, crud, logo-upload, workstream-04, requested-by]
+last_verified: 2026-06-09
+tags: [portals, onboarding, crud, logo-upload, workstream-04, requested-by, capacita, varianti, outside-bundle]
 ---
 
 # 007 — Modulo Portali
@@ -29,8 +29,8 @@ pannello contestuale a destra (lista portali / scheda live onboarding / dettagli
 | Modificare portale | `update_portal` | Campi singoli (nome, sito, indirizzo, stato), null = invariato |
 | Eliminare portale | `delete_portal` | Richiede conferma scritta del nome |
 | Upload logo | `render_logo_uploader` | Componente generativo con upload diretto |
-| Catalogo (onboarding) | `render_product_picker` | Generative UI, prodotti da Saleor live |
-| Kit (onboarding) | `render_bundle_builder` | Loop esplicito, N kit senza limiti |
+| Catalogo (onboarding) | `render_product_picker` | Generative UI, prodotti da Saleor live; i prodotti con varianti `capacita` (iPad) appaiono come righe-taglio 128/256/512 selezionabili e scontabili singolarmente |
+| Kit (onboarding) | `render_bundle_builder` | Loop esplicito, N kit senza limiti; per i tagli iPad il componente usa `by-attribute` colore (colore scelto al checkout) |
 | Aggiungi kit a portale esistente | `add_bundle_to_portal` | Persiste la submission BundleBuilder su un portale gia' salvato |
 | Cambia catalogo portale | `update_catalog` | Sostituisce intera lista visibleSlugs |
 | Modifica bundle | `update_bundle` | nome / prezzo / componenti (null = invariato) |
@@ -73,6 +73,29 @@ Logo file su Payload Media collection (`/api/media`).
 Fonte di verita' unica. L'hook `cms/payload/hooks/exportPendingSchoolMarkdown.ts`
 resta in vita ma e' solo **artefatto export downstream** quando un portale
 passa a `status === "approved"` (consumato da `ecommerce/seed/onboard-school.ts`).
+
+## Tagli (capacita') + vendita fuori bundle
+
+I prodotti Saleor con attributo variante `capacita` (oggi iPad: 128/256/512, prezzi
+389/519/769, uniformi per colore) vengono espansi dal gateway
+(`studio-server/core/saleor/client.ts`) in **una riga per taglio**. Chiave-riga
+composita `id = slug#capacitySlug` (es. `ipada16#128gb`); il colore resta scelta del
+cliente al checkout.
+
+| Concetto | Modello dati | Dove |
+|---|---|---|
+| Taglio pubblicato a catalogo | `catalog.visibleVariants: [{productSlug, attribute:"capacita", value}]` | solo le SKU del taglio ricevono il channel listing nel seed (es. Orsoline solo 128GB) |
+| Sconto per-taglio | `catalog.productDiscounts[].capacity` | `eur` = prezzo finale sulle SKU del taglio; `percent` = Promotion CATALOGUE `variantPredicate` (seed) |
+| Taglio nel kit | bundle component `selection: by-attribute` colore + `valueFilter:{capacita}` | il cliente sceglie il colore al checkout |
+| Vendibile fuori dal bundle (informativo) | `catalog.heroOutsideBundle` / `catalog.accessoriesOutsideBundle` (bool) | raccolto in onboarding, propagato in mail/descriptor; nessuna logica di vendita (gestita dal seed) |
+
+La selezione catalogo e gli sconti sono iniettati **deterministicamente** dalla submission
+ProductPicker (`extractPickerSelection` in `agent.ts`), non dall'LLM. Submission:
+`{selections:[{slug,capacitySlug?}], productDiscounts:[{slug,capacitySlug?,kind,value}]}`;
+BundleBuilder: `{name, priceEur, components:[{slug,capacitySlug?}]}`.
+
+Campi additivi su Payload (`visibleVariants` json, 2 checkbox outsideBundle) →
+richiede `PAYLOAD_PUSH=true` in dev e rigenerazione `db/schema.sql` per prod.
 
 ## Agente richiedente (`requestedBy`)
 

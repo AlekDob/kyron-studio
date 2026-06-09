@@ -5,6 +5,7 @@ import type {
   GenerativeDescriptor,
   GenerativeSubmission,
 } from "./types";
+import { rowId } from "./ProductPickerRow";
 
 // Lazy: ogni componente generativo e' un chunk separato. Domani aggiungiamo
 // BundleBuilder, DiscountConfig, Summary qui senza toccare nessun altro file.
@@ -98,10 +99,19 @@ function extractInitialProps(
 ): Record<string, unknown> {
   if (!data || typeof data !== "object") return {};
   const d = data as Record<string, unknown>;
+  // Le submission portano selezioni/componenti come {slug, capacitySlug?}; il
+  // replay readonly preseleziona per chiave-riga (rowId).
+  const toRowIds = (rows: unknown): string[] =>
+    Array.isArray(rows)
+      ? rows.map((r) => {
+          const o = r as { slug: string; capacitySlug?: string };
+          return rowId(o.slug, o.capacitySlug);
+        })
+      : [];
   if (component === "ProductPicker") {
-    if (Array.isArray(d.selectedSlugs)) {
+    if (Array.isArray(d.selections)) {
       return {
-        initialSelection: d.selectedSlugs,
+        initialSelection: toRowIds(d.selections),
         initialDiscounts: Array.isArray(d.productDiscounts)
           ? d.productDiscounts
           : [],
@@ -112,7 +122,7 @@ function extractInitialProps(
     const out: Record<string, unknown> = {};
     if (typeof d.name === "string") out.initialName = d.name;
     if (typeof d.priceEur === "number") out.initialPriceEur = d.priceEur;
-    if (Array.isArray(d.components)) out.initialComponents = d.components;
+    if (Array.isArray(d.components)) out.initialComponents = toRowIds(d.components);
     return out;
   }
   if (component === "LogoUploader") {

@@ -4,6 +4,7 @@ import { useMemo, useState, type ReactElement } from "react";
 import {
   ProductRow,
   parseValue,
+  rowId,
   type DiscountDraft,
   type ProductDiscount,
   type ProductPickerProduct,
@@ -11,15 +12,22 @@ import {
 
 export type { ProductPickerProduct, ProductDiscount } from "./ProductPickerRow";
 
+// Riga selezionata: prodotto intero (solo slug) o taglio (slug + capacitySlug).
+export interface PickerSelectionRow {
+  slug: string;
+  capacitySlug?: string;
+}
+
 export interface ProductPickerProps {
   products: ProductPickerProduct[];
   multi: boolean;
   readOnly?: boolean;
   disabled?: boolean;
+  // Chiavi-riga (rowId) preselezionate, per il replay readonly post-submit.
   initialSelection?: string[];
   initialDiscounts?: ProductDiscount[];
   onSubmit?: (data: {
-    selectedSlugs: string[];
+    selections: PickerSelectionRow[];
     productDiscounts: ProductDiscount[];
   }) => void;
 }
@@ -28,7 +36,8 @@ function initialDraftMap(
   discounts: ProductDiscount[],
 ): Record<string, DiscountDraft> {
   const map: Record<string, DiscountDraft> = {};
-  for (const d of discounts) map[d.slug] = { kind: d.kind, value: String(d.value) };
+  for (const d of discounts)
+    map[rowId(d.slug, d.capacitySlug)] = { kind: d.kind, value: String(d.value) };
   return map;
 }
 
@@ -54,15 +63,20 @@ export function ProductPicker(props: ProductPickerProps): ReactElement {
 
   const filtered = useMemo(() => filterProducts(products, query), [products, query]);
   const locked = submittedLocal || readOnly || disabled;
+  // Mappa chiave-riga (id) → prodotto, per risalire a slug/capacitySlug al submit.
+  const byId = useMemo(
+    () => new Map(products.map((p) => [p.id, p])),
+    [products],
+  );
   const allFilteredSelected =
-    filtered.length > 0 && filtered.every((p) => selected.has(p.slug));
+    filtered.length > 0 && filtered.every((p) => selected.has(p.id));
 
-  function toggle(slug: string): void {
+  function toggle(id: string): void {
     if (locked) return;
     setSelected((prev) => {
       const next = new Set(multi ? prev : []);
-      if (prev.has(slug)) next.delete(slug);
-      else next.add(slug);
+      if (prev.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   }
@@ -72,19 +86,19 @@ export function ProductPicker(props: ProductPickerProps): ReactElement {
     setSelected((prev) => {
       const next = new Set(prev);
       for (const p of filtered) {
-        if (allFilteredSelected) next.delete(p.slug);
-        else next.add(p.slug);
+        if (allFilteredSelected) next.delete(p.id);
+        else next.add(p.id);
       }
       return next;
     });
   }
 
-  function setDraft(slug: string, patch: Partial<DiscountDraft>): void {
+  function setDraft(id: string, patch: Partial<DiscountDraft>): void {
     setDrafts((prev) => ({
       ...prev,
-      [slug]: {
-        kind: prev[slug]?.kind ?? "percent",
-        value: prev[slug]?.value ?? "",
+      [id]: {
+        kind: prev[id]?.kind ?? "percent",
+        value: prev[id]?.value ?? "",
         ...patch,
       },
     }));
@@ -93,13 +107,26 @@ export function ProductPicker(props: ProductPickerProps): ReactElement {
   function handleConfirm(): void {
     if (locked || selected.size === 0) return;
     setSubmittedLocal(true);
+    const selections: PickerSelectionRow[] = [];
     const productDiscounts: ProductDiscount[] = [];
-    for (const slug of selected) {
-      const d = drafts[slug];
+    for (const id of selected) {
+      const p = byId.get(id);
+      if (!p) continue;
+      selections.push(
+        p.capacitySlug ? { slug: p.slug, capacitySlug: p.capacitySlug } : { slug: p.slug },
+      );
+      const d = drafts[id];
       const value = d ? parseValue(d.value) : 0;
-      if (value > 0) productDiscounts.push({ slug, kind: d.kind, value });
+      if (value > 0) {
+        productDiscounts.push({
+          slug: p.slug,
+          ...(p.capacitySlug ? { capacitySlug: p.capacitySlug } : {}),
+          kind: d.kind,
+          value,
+        });
+      }
     }
-    onSubmit?.({ selectedSlugs: Array.from(selected), productDiscounts });
+    onSubmit?.({ selections, productDiscounts });
   }
 
   return (
@@ -155,16 +182,16 @@ export function ProductPicker(props: ProductPickerProps): ReactElement {
           </li>
         ) : null}
         {filtered.map((p) => (
-          <li key={p.slug}>
+          <li key={p.id}>
             <ProductRow
               product={p}
-              selected={selected.has(p.slug)}
+              selected={selected.has(p.id)}
               multi={multi}
               locked={locked}
               readOnly={readOnly}
-              draft={drafts[p.slug]}
-              onToggle={() => toggle(p.slug)}
-              onDraft={(patch) => setDraft(p.slug, patch)}
+              draft={drafts[p.id]}
+              onToggle={() => toggle(p.id)}
+              onDraft={(patch) => setDraft(p.id, patch)}
             />
           </li>
         ))}

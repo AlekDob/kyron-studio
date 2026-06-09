@@ -3,17 +3,24 @@
 import { type ReactElement } from "react";
 
 export interface ProductPickerProduct {
+  // Chiave univoca di riga: slug (prodotto intero) o `slug#capacitySlug` (taglio).
+  id: string;
   slug: string;
   name: string;
   priceEur: number;
   category: string;
   imageUrl?: string;
+  // Valorizzati solo per le righe-taglio (prodotti con varianti capacita).
+  capacity?: string; // display, es. "128GB"
+  capacitySlug?: string; // slug Saleor del valore, es. "128gb"
 }
 
 // Sconto per-prodotto. percent = % di sconto (0-100); eur = prezzo finale
 // scontato in EUR. Registrato in DB + md, applicato su Saleor in onboarding.
+// capacitySlug valorizzato => sconto su un taglio specifico (es. solo 256GB).
 export interface ProductDiscount {
   slug: string;
+  capacitySlug?: string;
   kind: "percent" | "eur";
   value: number;
 }
@@ -27,6 +34,12 @@ export const EURO = new Intl.NumberFormat("it-IT", {
   style: "currency",
   currency: "EUR",
 });
+
+// Chiave univoca di riga: slug per i prodotti interi, `slug#capacitySlug` per i
+// tagli. Coerente con l'`id` generato dal gateway Saleor (studio-server).
+export function rowId(slug: string, capacitySlug?: string): string {
+  return capacitySlug ? `${slug}#${capacitySlug}` : slug;
+}
 
 export function parseValue(text: string): number {
   const n = parseFloat(text.replace(",", "."));
@@ -91,7 +104,7 @@ export function ProductRow(props: ProductRowProps): ReactElement {
         <span className="flex flex-col">
           <span className="font-medium text-[var(--color-ink)]">{p.name}</span>
           <span className="text-xs text-[var(--color-ink-muted)]">
-            {p.category} · {p.slug}
+            {p.category} · {p.capacity ? `${p.slug} · ${p.capacity}` : p.slug}
           </span>
         </span>
       </button>

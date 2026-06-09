@@ -3,10 +3,20 @@
 import { useMemo, useState, type ReactElement } from "react";
 
 export interface BundleBuilderProduct {
+  // Chiave univoca di riga: slug (prodotto intero) o `slug#capacitySlug` (taglio).
+  id: string;
   slug: string;
   name: string;
   priceEur: number;
   category: string;
+  capacity?: string; // display, es. "128GB"
+  capacitySlug?: string; // slug Saleor del valore, es. "128gb"
+}
+
+// Componente del kit: prodotto intero (solo slug) o taglio (slug + capacitySlug).
+export interface BundleComponentRow {
+  slug: string;
+  capacitySlug?: string;
 }
 
 export interface BundleBuilderProps {
@@ -15,11 +25,12 @@ export interface BundleBuilderProps {
   disabled?: boolean;
   initialName?: string;
   initialPriceEur?: number;
+  // Chiavi-riga (rowId) preselezionate, per il replay readonly post-submit.
   initialComponents?: string[];
   onSubmit?: (data: {
     name: string;
     priceEur: number;
-    components: string[];
+    components: BundleComponentRow[];
   }) => void;
 }
 
@@ -50,10 +61,14 @@ export function BundleBuilder(props: BundleBuilderProps): ReactElement {
 
   const locked = submittedLocal || readOnly || disabled;
 
+  const byId = useMemo(
+    () => new Map(products.map((p) => [p.id, p])),
+    [products],
+  );
   const fullPrice = useMemo(
     () =>
       products
-        .filter((p) => components.has(p.slug))
+        .filter((p) => components.has(p.id))
         .reduce((sum, p) => sum + p.priceEur, 0),
     [products, components],
   );
@@ -63,12 +78,12 @@ export function BundleBuilder(props: BundleBuilderProps): ReactElement {
   const canSubmit =
     !locked && name.trim().length > 0 && components.size > 0 && priceValid;
 
-  function toggleComponent(slug: string): void {
+  function toggleComponent(id: string): void {
     if (locked) return;
     setComponents((prev) => {
       const next = new Set(prev);
-      if (prev.has(slug)) next.delete(slug);
-      else next.add(slug);
+      if (prev.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   }
@@ -76,10 +91,15 @@ export function BundleBuilder(props: BundleBuilderProps): ReactElement {
   function handleConfirm(): void {
     if (!canSubmit) return;
     setSubmittedLocal(true);
+    const comps: BundleComponentRow[] = Array.from(components).flatMap((id) => {
+      const p = byId.get(id);
+      if (!p) return [];
+      return [p.capacitySlug ? { slug: p.slug, capacitySlug: p.capacitySlug } : { slug: p.slug }];
+    });
     onSubmit?.({
       name: name.trim(),
       priceEur: parsedPrice,
-      components: Array.from(components),
+      components: comps,
     });
   }
 
@@ -133,13 +153,13 @@ export function BundleBuilder(props: BundleBuilderProps): ReactElement {
 
       <ul className="flex flex-col gap-2">
         {products.map((p) => {
-          const isChecked = components.has(p.slug);
+          const isChecked = components.has(p.id);
           return (
-            <li key={p.slug}>
+            <li key={p.id}>
               <button
                 type="button"
                 disabled={locked}
-                onClick={() => toggleComponent(p.slug)}
+                onClick={() => toggleComponent(p.id)}
                 aria-pressed={isChecked}
                 className={`flex w-full items-center justify-between gap-3 rounded-[var(--radius-control)] border px-3 py-2 text-left text-sm transition-colors ${
                   isChecked
@@ -152,7 +172,7 @@ export function BundleBuilder(props: BundleBuilderProps): ReactElement {
                     {p.name}
                   </span>
                   <span className="text-xs text-[var(--color-ink-muted)]">
-                    {p.category} · {p.slug}
+                    {p.category} · {p.capacity ? `${p.slug} · ${p.capacity}` : p.slug}
                   </span>
                 </span>
                 <span className="flex items-center gap-3">

@@ -218,28 +218,32 @@ function renderUserContent(raw: string): string {
   // se il messaggio user e' una submission strutturata, mostra un riepilogo
   // umano invece del JSON crudo.
   try {
+    type Row = { slug: string; capacitySlug?: string };
     const parsed = JSON.parse(raw) as {
       kind?: string;
       component?: string;
       data?: {
-        selectedSlugs?: string[];
+        selections?: Row[];
         name?: string;
         priceEur?: number;
-        components?: string[];
+        components?: Row[];
       };
     };
+    // Etichetta leggibile di una riga: slug o "slug (128gb)" per i tagli.
+    const label = (r: Row): string =>
+      r.capacitySlug ? `${r.slug} (${r.capacitySlug})` : r.slug;
     if (parsed.kind === "generative_submission") {
       if (parsed.component === "ProductPicker") {
-        const slugs = parsed.data?.selectedSlugs ?? [];
-        return slugs.length === 0
+        const rows = parsed.data?.selections ?? [];
+        return rows.length === 0
           ? "(nessun prodotto selezionato)"
-          : `Selezionati ${slugs.length} prodotti: ${slugs.join(", ")}`;
+          : `Selezionati ${rows.length} prodotti: ${rows.map(label).join(", ")}`;
       }
       if (parsed.component === "BundleBuilder") {
         const name = parsed.data?.name ?? "(senza nome)";
         const price = parsed.data?.priceEur ?? 0;
         const comps = parsed.data?.components ?? [];
-        return `Kit "${name}" a ${price.toFixed(2)} EUR (${comps.length} componenti: ${comps.join(", ")})`;
+        return `Kit "${name}" a ${price.toFixed(2)} EUR (${comps.length} componenti: ${comps.map(label).join(", ")})`;
       }
       return `Submission ${parsed.component ?? "?"}`;
     }
