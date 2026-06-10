@@ -47,7 +47,9 @@ export class GatewayError extends Error {
   }
 }
 
-async function gatewayFetch<T>(
+// Esportata per i moduli feature (es. lib/analytics.ts): unico punto
+// auth-aware verso studio-server (cookie kyron-rev + X-Tenant).
+export async function gatewayFetch<T>(
   path: string,
   init: RequestInit = {},
 ): Promise<T> {

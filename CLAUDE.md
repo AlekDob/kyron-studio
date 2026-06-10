@@ -88,6 +88,7 @@ Live su `https://studio.kyronedu.it` (Coolify + Hetzner CCX23).
 - `documentation/features/006-generative-ui-chat.md` — Generative UI in chat onboarding (workstream 04, PoC ProductPicker)
 - `documentation/features/007-portals-module.md` — Modulo Portali: dashboard + onboarding unificati
 - `documentation/features/008-organization-users.md` — Utenti & ruoli (admin/editor), tab Organizzazione, collection `studio-users`
+- `documentation/features/009-analytics-module.md` — Modulo Analytics: KPI + chart Recharts + breakdown dinamica per tenant da PostHog (decision-017, BFF studio-server feature 005)
 - Cross-progetto: `Kyron/documentation/workstreams/03-studio-standalone.md` — login OTP, preview iframe, review system
 - `documentation/diary/` — changelog locale
 - Cross-progetto: `Kyron/documentation/workstreams/01-studio-shell-port.md`

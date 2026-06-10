@@ -6,6 +6,7 @@ import {
   Settings,
   Database,
   Eye,
+  ChartNoAxesColumn,
   type LucideIcon,
 } from "lucide-react";
 
@@ -53,6 +54,16 @@ export const MODULES: ModuleDefinition[] = [
     kind: "tool",
     status: "live",
     tone: { tile: "bg-[#0E4F4E]", icon: "text-white" },
+  },
+  {
+    id: "analytics",
+    label: "Analytics",
+    description: "Visite, funnel e ricavi: sito, shop principale e portali scuola.",
+    href: "/analytics",
+    icon: ChartNoAxesColumn,
+    kind: "tool",
+    status: "live",
+    tone: { tile: "bg-[#1B4FE5]", icon: "text-white" },
   },
   {
     id: "preview",
