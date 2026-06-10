@@ -165,12 +165,72 @@ export function PortalDetail({ portal, onChanged }: Props) {
         </Row>
       </Section>
 
-      <Section title={`Catalogo (${portal.catalog.visibleSlugs.length} prodotti)`}>
+      <Section
+        title={`Catalogo (${
+          portal.catalog.visibleSlugs.length +
+          (portal.catalog.visibleVariants?.length ?? 0)
+        } prodotti)`}
+      >
         <CatalogEditor
           visibleSlugs={portal.catalog.visibleSlugs}
           discounts={portal.catalog.productDiscounts ?? []}
           onSave={patchCatalog}
         />
+      </Section>
+
+      {(portal.catalog.visibleVariants?.length ?? 0) > 0 ? (
+        <Section title={`Tagli pubblicati (${portal.catalog.visibleVariants!.length})`}>
+          <div className="flex flex-wrap gap-1.5">
+            {portal.catalog.visibleVariants!.map((v) => (
+              <span
+                key={`${v.productSlug}-${v.value}`}
+                className="rounded-[var(--radius-control)] border border-[var(--color-line)] px-2 py-0.5 text-xs text-[var(--color-ink-muted)]"
+              >
+                {v.productSlug} ({v.value})
+              </span>
+            ))}
+          </div>
+        </Section>
+      ) : null}
+
+      {(portal.catalog.productDiscounts?.length ?? 0) > 0 ? (
+        <Section title={`Sconti (${portal.catalog.productDiscounts!.length})`}>
+          <div className="flex flex-col gap-1">
+            {portal.catalog.productDiscounts!.map((d, i) => (
+              <div
+                key={`${d.slug}-${d.capacity ?? ""}-${i}`}
+                className="flex items-center justify-between text-xs"
+              >
+                <span className="text-[var(--color-ink)]">
+                  {d.slug}
+                  {d.capacity ? (
+                    <span className="text-[var(--color-ink-muted)]"> ({d.capacity})</span>
+                  ) : null}
+                </span>
+                <span className="tabular-nums text-[var(--color-action)]">
+                  {d.kind === "percent" ? `-${d.value}%` : `→ ${EURO.format(d.value)}`}
+                </span>
+              </div>
+            ))}
+          </div>
+        </Section>
+      ) : null}
+
+      <Section title="Vendita fuori dal bundle">
+        <div className="flex flex-col gap-1 text-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-[var(--color-ink-muted)]">Prodotti hero (iPad/Mac/iPhone)</span>
+            <span className="text-[var(--color-ink)]">
+              {portal.catalog.heroOutsideBundle ? "Sì" : "No"}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-[var(--color-ink-muted)]">Accessori</span>
+            <span className="text-[var(--color-ink)]">
+              {portal.catalog.accessoriesOutsideBundle ? "Sì" : "No"}
+            </span>
+          </div>
+        </div>
       </Section>
 
       <Section title={`Kit (${portal.bundles.length})`}>
