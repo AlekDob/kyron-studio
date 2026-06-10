@@ -122,20 +122,31 @@ export function PortalsChat({
 
   function extractDraftFromSubmission(sub: GenerativeSubmission): void {
     const data = sub.data as Record<string, unknown>;
-    if (data.selectedSlugs) {
+    // Le submission portano selezioni/componenti come {slug, capacitySlug?}.
+    // Per il side panel servono stringhe-etichetta (es. "ipada16 (128gb)"),
+    // mai oggetti: renderizzare un oggetto come child JSX => React error #31.
+    const rowLabel = (r: { slug: string; capacitySlug?: string }): string =>
+      r.capacitySlug ? `${r.slug} (${r.capacitySlug})` : r.slug;
+    if (Array.isArray(data.selections)) {
+      const labels = (data.selections as { slug: string; capacitySlug?: string }[]).map(
+        rowLabel,
+      );
       onDraftUpdate((d) => ({
         ...d,
-        selectedProducts: data.selectedSlugs as string[],
+        selectedProducts: labels,
         productDiscounts: Array.isArray(data.productDiscounts)
           ? (data.productDiscounts as PortalDraft["productDiscounts"])
           : d.productDiscounts,
       }));
     }
     if (data.name && data.priceEur != null) {
+      const components = Array.isArray(data.components)
+        ? (data.components as { slug: string; capacitySlug?: string }[]).map(rowLabel)
+        : [];
       const bundle = {
         name: String(data.name),
         priceEur: Number(data.priceEur),
-        components: (data.components as string[]) ?? [],
+        components,
       };
       onDraftUpdate((d) => ({
         ...d,
