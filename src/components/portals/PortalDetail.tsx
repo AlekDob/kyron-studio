@@ -165,6 +165,20 @@ export function PortalDetail({ portal, onChanged }: Props) {
         </Row>
       </Section>
 
+      <Section title="Logo">
+        {portal.branding?.logoUrl ? (
+          <img
+            src={portal.branding.logoUrl}
+            alt={`Logo ${portal.nome}`}
+            className="h-16 w-16 rounded-[var(--radius-control)] border border-[var(--color-line)] bg-[var(--color-paper-muted)] object-contain p-1"
+          />
+        ) : (
+          <p className="text-xs text-[var(--color-ink-muted)]">
+            Nessun logo caricato.
+          </p>
+        )}
+      </Section>
+
       <Section
         title={`Catalogo (${
           portal.catalog.visibleSlugs.length +

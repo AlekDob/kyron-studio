@@ -179,7 +179,7 @@ export interface PortalDetail extends PortalSummary {
   sitoUfficiale: string;
   codiceMeccanografico: string;
   schoolAddress: Record<string, unknown>;
-  branding: Record<string, unknown>;
+  branding: { nome: string; logoUrl: string | null };
   shipToSchool: boolean;
   shippingMethodLabel: string;
   shippingPriceEur: number;
