@@ -88,6 +88,9 @@ cliente al checkout.
 | Sconto per-taglio | `catalog.productDiscounts[].capacity` | `eur` = prezzo finale sulle SKU del taglio; `percent` = Promotion CATALOGUE `variantPredicate` (seed) |
 | Taglio nel kit | bundle component `selection: by-attribute` colore + `valueFilter:{capacita}` | il cliente sceglie il colore al checkout |
 | Vendibile fuori dal bundle (informativo) | `catalog.heroOutsideBundle` / `catalog.accessoriesOutsideBundle` (bool) | raccolto in onboarding, propagato in mail/descriptor; nessuna logica di vendita (gestita dal seed) |
+| Visualizzazione pannello | `reader.ts` PortalDetail espone visibleVariants + productDiscounts.capacity + flag; `PortalDetail.tsx` sezioni readonly "Tagli pubblicati", "Sconti", "Vendita fuori dal bundle"; `productCount` = visibleSlugs + visibleVariants | il gateway DEVE esporre i campi, altrimenti il pannello non li mostra (bug 2026-06-09) |
+| Logo | upload → Payload Media → `branding.logo` (id); `reader.ts` espone `branding.logoUrl` assoluto (origin payloadApiUrl + media.url, depth:1); `PortalDetail.tsx` sezione "Logo" `<img>` | il file va comunque salvato in `storefront/public/tenants/<slug>/logo.png` per il seed |
+| Logo in mail | `cms/notifyPortalCreated.ts` risolve il media e lo **allega** (base64 da volume `media/` o fetch URL) + inline `<img>` + nota path | solo su `create` (hook afterChange) |
 
 La selezione catalogo e gli sconti sono iniettati **deterministicamente** dalla submission
 ProductPicker (`extractPickerSelection` in `agent.ts`), non dall'LLM. Submission:
