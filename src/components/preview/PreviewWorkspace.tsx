@@ -13,6 +13,7 @@ import { AnnotationsList } from "./AnnotationsList";
 import { ModeToggle } from "./ModeToggle";
 import { MobileChatOverlay } from "@/components/shell/MobileChatOverlay";
 import type { Annotation } from "@/lib/review/types";
+import { PARENT_ORIGINS, PREVIEW_BASE_URL } from "@/lib/preview-config";
 
 interface Props {
   initialUrl: string;
@@ -44,20 +45,14 @@ interface HoverRect {
   height: number;
 }
 
-const PARENT_ORIGINS = [
-  "https://staging.kyronedu.it",
-  "https://kyronedu.it",
-  "http://localhost:3000",
-];
-
 function normalizeUrl(input: string): string {
   const trimmed = input.trim();
-  if (!trimmed) return "https://staging.kyronedu.it/";
+  if (!trimmed) return `${PREVIEW_BASE_URL}/`;
   if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
     return trimmed;
   }
   if (trimmed.startsWith("/")) {
-    return `https://staging.kyronedu.it${trimmed}`;
+    return `${PREVIEW_BASE_URL}${trimmed}`;
   }
   return `https://${trimmed}`;
 }
@@ -194,7 +189,7 @@ export function PreviewWorkspace({
               type="url"
               value={urlInput}
               onChange={(e) => setUrlInput(e.target.value)}
-              placeholder="https://staging.kyronedu.it/..."
+              placeholder={`${PREVIEW_BASE_URL}/...`}
               className="flex-1 rounded-full border border-[var(--color-line)] bg-[var(--color-paper)] px-3 py-1.5 text-xs font-mono outline-none focus:border-[var(--color-ink)]"
             />
             <button
