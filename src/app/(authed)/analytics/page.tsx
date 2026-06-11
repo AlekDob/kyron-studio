@@ -11,6 +11,7 @@ import { FilterBar } from "@/components/analytics/FilterBar";
 import { KpiGrid } from "@/components/analytics/KpiGrid";
 import { TrafficChart } from "@/components/analytics/TrafficChart";
 import { TenantBreakdown } from "@/components/analytics/TenantBreakdown";
+import { FormsBreakdown } from "@/components/analytics/FormsBreakdown";
 import { AnalyticsEmptyState } from "@/components/analytics/EmptyState";
 
 export const metadata = { title: "Analytics — Studio" };
@@ -91,7 +92,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
               in cache e potrebbero non essere aggiornati.
             </p>
           )}
-          <KpiGrid kpis={view.totals} />
+          <KpiGrid kpis={view.totals} leads={view.leads} />
           {noData ? (
             <AnalyticsEmptyState variant="no-data" />
           ) : (
@@ -102,6 +103,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
                 from={view.from}
                 to={view.to}
               />
+              <FormsBreakdown leads={view.leads} />
               <TenantBreakdown tenants={view.tenants} />
             </>
           )}

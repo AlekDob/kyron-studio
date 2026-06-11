@@ -34,6 +34,15 @@ export interface TimeseriesPoint {
   revenueEur: number;
 }
 
+// Lead KPI globali: form compilati (con breakdown per form), iscrizioni
+// newsletter Brevo, registrazioni account shop.
+export interface LeadTotals {
+  formSubmits: number;
+  newsletterSubs: number;
+  registrations: number;
+  forms: Array<{ form: string; count: number }>;
+}
+
 export interface AnalyticsOverview {
   range: RangeKey;
   from: string;
@@ -42,6 +51,7 @@ export interface AnalyticsOverview {
   stale: boolean;
   totals: KpiTotals;
   byApp: Record<AppKey, KpiTotals>;
+  leads: LeadTotals;
   tenants: TenantRow[];
   timeseries: TimeseriesPoint[];
 }
