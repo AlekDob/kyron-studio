@@ -45,6 +45,9 @@ interface HoverRect {
   height: number;
 }
 
+// Chiave versionata: cambiare se lo shape di Annotation diventa incompatibile.
+const ANNOTATIONS_STORAGE_KEY = "kyron-rev-annotations-v1";
+
 function normalizeUrl(input: string): string {
   const trimmed = input.trim();
   if (!trimmed) return `${PREVIEW_BASE_URL}/`;
@@ -76,6 +79,9 @@ export function PreviewWorkspace({
   const [url, setUrl] = useState(initialUrl);
   const [urlInput, setUrlInput] = useState(initialUrl);
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
+  // Skip del primo run dell'effect di persistenza: al mount lo stato e'
+  // ancora [] e scriverlo cancellerebbe le annotazioni salvate.
+  const skipPersist = useRef(true);
   const [pendingTarget, setPendingTarget] = useState<PendingTarget | null>(
     null,
   );
@@ -117,6 +123,36 @@ export function PreviewWorkspace({
   function clearAnnotations(): void {
     setAnnotations([]);
   }
+
+  // Persistenza annotazioni in localStorage: sopravvivono a reload e
+  // navigazioni, finche' non vengono inviate o rimosse esplicitamente.
+  // (localStorage e non cookie: stato client-only, niente limite 4KB.)
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(ANNOTATIONS_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Annotation[];
+        if (Array.isArray(parsed) && parsed.length > 0) setAnnotations(parsed);
+      }
+    } catch {
+      // storage non disponibile o JSON corrotto: si riparte da zero
+    }
+  }, []);
+
+  useEffect(() => {
+    if (skipPersist.current) {
+      skipPersist.current = false;
+      return;
+    }
+    try {
+      window.localStorage.setItem(
+        ANNOTATIONS_STORAGE_KEY,
+        JSON.stringify(annotations),
+      );
+    } catch {
+      // quota piena o storage bloccato: ignora, lo stato in memoria resta
+    }
+  }, [annotations]);
 
   // Bridge postMessage: ack handshake, ricezione select/hover dal cms.
   useEffect(() => {

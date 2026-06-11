@@ -14,10 +14,16 @@ interface Props {
 
 export function DesktopShell({ children, userEmail }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  // Hover sulla rail compatta: espande la sidebar in overlay (no reflow).
+  const [railHover, setRailHover] = useState(false);
   const pathname = usePathname();
+
+  // Su /preview la sidebar parte collassata: massimo spazio all'iframe.
+  const compact = pathname?.startsWith("/preview") ?? false;
 
   useEffect(() => {
     setSidebarOpen(false);
+    setRailHover(false);
   }, [pathname]);
 
   const closeSidebar = useCallback(() => setSidebarOpen(false), []);
@@ -26,10 +32,27 @@ export function DesktopShell({ children, userEmail }: Props) {
     <ThemeProvider>
       <CommandPaletteProvider>
         <div className="flex h-[100dvh] bg-[var(--color-paper)]">
-          {/* Desktop sidebar */}
-          <div className="hidden lg:block w-[248px] shrink-0">
-            <AppSidebar userEmail={userEmail} />
-          </div>
+          {/* Desktop sidebar — su /preview e' una rail di sole icone che
+              si espande in overlay al passaggio del mouse */}
+          {compact ? (
+            <div
+              className="hidden lg:block w-[56px] shrink-0 relative z-40"
+              onMouseEnter={() => setRailHover(true)}
+              onMouseLeave={() => setRailHover(false)}
+            >
+              <div
+                className={`absolute inset-y-0 left-0 overflow-hidden transition-[width] duration-200 ease-out ${
+                  railHover ? "w-[248px] shadow-xl" : "w-[56px]"
+                }`}
+              >
+                <AppSidebar userEmail={userEmail} collapsed={!railHover} />
+              </div>
+            </div>
+          ) : (
+            <div className="hidden lg:block w-[248px] shrink-0">
+              <AppSidebar userEmail={userEmail} />
+            </div>
+          )}
 
           {/* Mobile overlay */}
           {sidebarOpen && (
