@@ -21,12 +21,12 @@ export async function saveRecord(formData: FormData) {
     if (f.type === "relation") {
       if (!isEditableRelation(formData, f.name)) continue;
       const value = String(formData.get(f.name) ?? "");
-      patch[f.name] = value || null;
+      patch[f.name] = value ? toRelationId(value) : null;
       continue;
     }
     if (f.type === "relations") {
       if (!isEditableRelation(formData, f.name)) continue;
-      patch[f.name] = uniqueValues(formData.getAll(f.name));
+      patch[f.name] = uniqueValues(formData.getAll(f.name)).map(toRelationId);
       continue;
     }
     if (f.type === "array") {
@@ -77,6 +77,13 @@ function safeJsonParse(s: string): unknown {
   } catch {
     return s;
   }
+}
+
+// Payload su Postgres usa id numerici: la REST rifiuta gli id stringa
+// ("invalid relationships", 400). I valori dei form arrivano sempre come
+// stringhe -> coerce a number quando l'id e' interamente numerico.
+function toRelationId(value: string): string | number {
+  return /^\d+$/.test(value) ? Number(value) : value;
 }
 
 function isEditableRelation(formData: FormData, name: string): boolean {
