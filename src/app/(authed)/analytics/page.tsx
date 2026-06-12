@@ -12,6 +12,8 @@ import { KpiGrid } from "@/components/analytics/KpiGrid";
 import { TrafficChart } from "@/components/analytics/TrafficChart";
 import { TenantBreakdown } from "@/components/analytics/TenantBreakdown";
 import { FormsBreakdown } from "@/components/analytics/FormsBreakdown";
+import { SourcesBreakdown } from "@/components/analytics/SourcesBreakdown";
+import { VisitorsMap } from "@/components/analytics/VisitorsMap";
 import { AnalyticsEmptyState } from "@/components/analytics/EmptyState";
 
 export const metadata = { title: "Analytics — Studio" };
@@ -119,7 +121,11 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
                 to={view.to}
                 granularity={view.granularity}
               />
-              <FormsBreakdown leads={view.leads} />
+              <VisitorsMap geo={view.geo} />
+              <div className="grid gap-4 lg:grid-cols-2">
+                <SourcesBreakdown sources={view.sources} />
+                <FormsBreakdown leads={view.leads} />
+              </div>
               <TenantBreakdown tenants={view.tenants} />
             </>
           )}
