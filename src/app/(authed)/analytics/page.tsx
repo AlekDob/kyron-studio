@@ -122,10 +122,8 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
                 granularity={view.granularity}
               />
               <VisitorsMap geo={view.geo} />
-              <div className="grid gap-4 lg:grid-cols-2">
-                <SourcesBreakdown sources={view.sources} />
-                <FormsBreakdown leads={view.leads} />
-              </div>
+              <SourcesBreakdown sources={view.sources} />
+              <FormsBreakdown leads={view.leads} />
               <TenantBreakdown tenants={view.tenants} />
             </>
           )}
