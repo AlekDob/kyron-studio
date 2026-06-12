@@ -2,7 +2,7 @@
 type: feature
 project: kyron-studio
 created: 2026-06-10
-last_verified: 2026-06-10
+last_verified: 2026-06-12
 tags: [analytics, posthog, recharts, mobile]
 ---
 # 009 — Modulo Analytics
@@ -46,3 +46,60 @@ Nessun elenco hardcoded: le righe arrivano dal BFF che unisce GROUP BY `school_s
 - Mobile 375px: FilterBar wrap, card breakdown, KPI 2 colonne; dark theme via toggle ok
 - Cache BFF: seconda richiesta 15ms, stesso `generatedAt`
 - Typecheck verde
+
+## Lead KPI (2026-06-11)
+
+| Cosa | Dettaglio |
+|---|---|
+| Eventi | `form_submitted {form}`, `newsletter_subscribed {list}`, `account_registered` |
+| Sorgenti | cms: contatti, lavora-con-noi, richiesta-informazioni; storefront: contatti-shop, AuthForm register |
+| Query | `leadsQuery` (terza HogQL, `[event, form, count]`, filtro `properties.$host` prod-only) |
+| Payload | `overview.leads: { formSubmits, newsletterSubs, registrations, forms[] }` |
+| UI | 3 card KPI extra in `KpiGrid` + `FormsBreakdown.tsx` (barre per-form, hidden a 0 dati) |
+| Nota | Lead KPI globali: NON filtrati dal toggle Sito/Shop (query non raggruppata per app) |
+
+Filtro produzione: tutte le query analytics richiedono `properties.$host IN
+('kyronedu.it','www.kyronedu.it')` e l'init PostHog di cms/storefront e'
+gateato su `location.hostname` (staging/locale non inviano eventi;
+override smoke test `NEXT_PUBLIC_POSTHOG_DEBUG=true`).
+
+## Mappa, citta', fonti (2026-06-12)
+
+| Cosa | Dettaglio |
+|---|---|
+| Query | `geoQuery` ($geoip city/country/lat/lon, top 60) + `sourcesQuery` (utm_source > $referring_domain > $direct, top 20) |
+| Mappa | `VisitorsMap.tsx`: basemap world-atlas offline + d3-geo Mercator, fitExtent sui dot con zoom clampato, dot r~sqrt(visitors) |
+| Citta' | top-10 in `BarList`; GeoIP senza citta' = "Posizione non rilevata" (in lista, mai in mappa) |
+| Fonti | `SourcesBreakdown.tsx`: raggruppamento client-side varianti social (m.facebook → Facebook) |
+| Condiviso | `BarList.tsx` (barre label/valore) riusato da forms/fonti/citta' |
+| Deps | d3-geo, topojson-client, world-atlas — solo chunk /analytics |
+| NB | 6 query HogQL per fill cache: rate limit Query API ~120/h |
+
+## Estensione 2026-06-12 — periodi, confronti, mappa, fonti, pagine, device, nav
+
+**Status**: live su studio.kyronedu.it
+
+| Cosa | Componente | Note |
+|---|---|---|
+| Periodi standard | `FilterBar.tsx` | Oggi/Ieri/Settimana/Mese + 7/30/90gg; chip scrollabili orizzontali su mobile (edge-to-edge, scrollbar nascosta) |
+| Delta vs periodo prec. | `KpiGrid.tsx` | % verde/rosso per card, "nuovo" su base zero, seguono il filtro Sito/Shop (`overview.prev`) |
+| Timeseries oraria | `TrafficChart.tsx` | Oggi/Ieri → bucket `toStartOfHour`, label "09h", zero-fill 24h client-side |
+| Tooltip chart | `TrafficChart.tsx` | custom: Totale in testa, Sito sopra Shop (l'ordine recharts default segue il render) |
+| Mappa visitatori | `VisitorsMap.tsx` + `useMapZoom.ts` | basemap world-atlas OFFLINE (d3-geo Mercator, fitExtent clampato), zoom wheel/pinch/pulsanti, pan drag, **dot cliccabili** (selezionato evidenziato + pannello dettagli, altri dimmed) |
+| Citta' | `VisitorsMap.tsx` | top-10 in BarList; GeoIP senza citta' = "Posizione non rilevata" (in lista, MAI in mappa) |
+| Fonti visite | `SourcesBreakdown.tsx` | full-width; raggruppa varianti social client-side (m.facebook → Facebook) |
+| Pagine top | `PagesBreakdown.tsx` | top 15 per visitatori |
+| Device | `DevicesPie.tsx` | donut recharts + legenda con quote % |
+| Nav sezioni | `SectionNav.tsx` | chip sticky scrollabili, sezione attiva via IntersectionObserver, ancore `scroll-mt-12` |
+| Ricerca origini | `TenantBreakdown.tsx` + `lib/fuzzy.ts` | fuzzy substring>sottosequenza su label+slug, zero dipendenze |
+| Barre condivise | `BarList.tsx` | DRY tra forms/fonti/citta'/pagine |
+
+### Gotcha nuovi
+
+- **d3 + SSR hydration**: la trigonometria della proiezione differisce nell'ultima cifra float tra Node e browser → coordinate arrotondate a 2 decimali (`round2` + `geoPath.digits(2)`), altrimenti mismatch sui `cy` dei circle.
+- **wheel zoom**: listener nativo `{passive:false}` via ref — React non garantisce `preventDefault` su onWheel (la pagina scrollerebbe).
+- **Deploy in coppia**: il frontend assume `overview.prev/geo/sources/pages/devices` — deployare PRIMA studio-server, poi studio (il contrario = 500 "reading totals").
+
+### Report email
+
+Vedi `studio-server` feature 005 §Report: ogni giorno 09:00 Europe/Rome a info@kyronedu.it + gmail@alekdob.com, template skill `kyron-email`, logo inline cid.

@@ -33,7 +33,8 @@ Hub admin Kyron a `studio.kyronedu.it`. Sotto-progetto di `/Kyron`, registrato i
 
 **Studio standalone live** (workstream 03 phase 1-7 done, 2026-05-27):
 - Login OTP proprio (`/login`) — no piu' dipendenza dal cms
-- Modulo "Anteprima": iframe `staging.kyronedu.it` con handshake postMessage cms-side
+- Modulo "Anteprima": iframe sul sito (default `kyronedu.it`, override `NEXT_PUBLIC_PREVIEW_BASE_URL`, vedi `src/lib/preview-config.ts`) con handshake postMessage cms-side
+- Su `/preview` la sidebar e' una rail 56px di sole icone che si espande in overlay al hover (`DesktopShell` compact + `AppSidebar collapsed`); le annotazioni persistono in localStorage (`kyron-rev-annotations-v1`)
 - Selezione/hover live → outline disegnato lato studio, chip pendingTarget nel composer chat
 - Agente Review Editor con `propose_annotation` reso come `ProposalCard` inline (Conferma/Modifica/Annulla)
 - Bundle annotazioni: top-3 inline + drawer "Vedi tutte" responsive (slide-from-right desktop, bottom sheet mobile) con drawer dettaglio annidato
@@ -88,7 +89,7 @@ Live su `https://studio.kyronedu.it` (Coolify + Hetzner CCX23).
 - `documentation/features/006-generative-ui-chat.md` — Generative UI in chat onboarding (workstream 04, PoC ProductPicker)
 - `documentation/features/007-portals-module.md` — Modulo Portali: dashboard + onboarding unificati
 - `documentation/features/008-organization-users.md` — Utenti & ruoli (admin/editor), tab Organizzazione, collection `studio-users`
-- `documentation/features/009-analytics-module.md` — Modulo Analytics: KPI + chart Recharts + breakdown dinamica per tenant da PostHog (decision-017, BFF studio-server feature 005)
+- `documentation/features/009-analytics-module.md` — Modulo Analytics: KPI con delta vs periodo precedente, periodi Oggi/Ieri/Settimana/Mese + rolling, chart (orario su Oggi/Ieri), mappa visitatori zoomabile con dot cliccabili, citta'/fonti/pagine/device, lead KPI (form/newsletter/registrazioni), ricerca fuzzy origini, nav sezioni mobile, report email giornaliero 09:00 (decision-017, BFF studio-server feature 005)
 - Cross-progetto: `Kyron/documentation/workstreams/03-studio-standalone.md` — login OTP, preview iframe, review system
 - `documentation/diary/` — changelog locale
 - Cross-progetto: `Kyron/documentation/workstreams/01-studio-shell-port.md`
