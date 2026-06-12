@@ -1,10 +1,17 @@
+"use client";
+
+import { useState } from "react";
+import { Search } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Pill } from "@/components/ui/Pill";
 import type { TenantRow } from "@/lib/analytics";
+import { fuzzyFilter } from "@/lib/fuzzy";
 import { fmtEur, fmtInt, fmtPct } from "./format";
 
 // Breakdown per tenant: tabella su desktop, stack di card su mobile.
 // Le righe arrivano gia' ordinate dal BFF (sito, shop principale, poi ricavi).
+// Ricerca fuzzy client-side su label+slug: coi portali che crescono la lista
+// va filtrata, e il match a sottosequenza perdona i typo ("mssr" -> Massari).
 
 interface TenantBreakdownProps {
   tenants: TenantRow[];
@@ -101,17 +108,48 @@ function MobileCards({ tenants }: TenantBreakdownProps) {
 }
 
 export function TenantBreakdown({ tenants }: TenantBreakdownProps) {
+  const [query, setQuery] = useState("");
+  const filtered = fuzzyFilter(
+    tenants,
+    query,
+    (t) => `${t.label} ${t.slug ?? ""}`,
+  );
+
   return (
     <Card padding="md">
       <Card.Header>
-        <h2 className="text-sm font-medium">Dettaglio per origine</h2>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-sm font-medium">Dettaglio per origine</h2>
+          <label className="relative flex w-full items-center sm:w-64">
+            <Search
+              aria-hidden="true"
+              className="pointer-events-none absolute left-3 h-3.5 w-3.5 text-[var(--color-ink-muted)]"
+            />
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Cerca portale..."
+              aria-label="Cerca origine o portale"
+              className="w-full rounded-full border border-[var(--color-line)] bg-[var(--color-paper)] py-1.5 pl-9 pr-3 text-sm outline-none placeholder:text-[var(--color-ink-muted)] focus:border-[var(--color-ink)]"
+            />
+          </label>
+        </div>
       </Card.Header>
-      <div className="mt-3 hidden overflow-x-auto lg:block">
-        <DesktopTable tenants={tenants} />
-      </div>
-      <div className="mt-3 lg:hidden">
-        <MobileCards tenants={tenants} />
-      </div>
+      {filtered.length === 0 ? (
+        <p className="mt-4 text-sm text-[var(--color-ink-muted)]">
+          Nessuna origine corrisponde a &ldquo;{query}&rdquo;.
+        </p>
+      ) : (
+        <>
+          <div className="mt-3 hidden overflow-x-auto lg:block">
+            <DesktopTable tenants={filtered} />
+          </div>
+          <div className="mt-3 lg:hidden">
+            <MobileCards tenants={filtered} />
+          </div>
+        </>
+      )}
     </Card>
   );
 }
