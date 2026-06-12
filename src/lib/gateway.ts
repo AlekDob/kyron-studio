@@ -226,6 +226,36 @@ export async function deletePortal(
   return gatewayFetch(`/api/v1/portals/${slug}`, { method: "DELETE" });
 }
 
+export interface EnableTargetReport {
+  target: "staging" | "prod";
+  channelId: string;
+  channelCreated: boolean;
+  productsPublished: number;
+  promotionsApplied: number;
+  vouchers: Record<string, string>;
+  promotionsOnSale: boolean | null;
+  steps: string[];
+}
+
+export interface EnablePortalResult {
+  slug: string;
+  targets: EnableTargetReport[];
+  payloadUpdated: boolean;
+  emailSent: boolean;
+}
+
+// Fase B pipeline onboarding: seed Saleor server-side (staging+prod).
+// Operazione lunga (~30-90s): il chiamante deve mostrare uno stato di attesa.
+export async function enablePortalOnSaleor(
+  slug: string,
+  targets?: Array<"staging" | "prod">,
+): Promise<EnablePortalResult> {
+  return gatewayFetch(`/api/v1/portals/${slug}/enable`, {
+    method: "POST",
+    body: JSON.stringify(targets ? { targets } : {}),
+  });
+}
+
 // Upload logo: multipart server-side (NO Content-Type manuale → fetch imposta
 // il boundary). Non usa gatewayFetch (che forza application/json sul body).
 export async function uploadPortalLogo(

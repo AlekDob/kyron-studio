@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { Pill } from "@/components/ui";
 import { formatDiscount } from "@/components/chat/generative/ProductPickerRow";
+import { EnablePortalButton } from "./EnablePortalButton";
 import type { PortalDetail as PortalDetailType, SaleorProduct } from "@/lib/gateway";
 
 type CatalogDiscount = { slug: string; kind: "percent" | "eur"; value: number };
@@ -84,6 +85,14 @@ export function PortalDetail({ portal, onChanged }: Props) {
 
   return (
     <div className="flex flex-col gap-4">
+      <Section title="Pubblicazione">
+        <EnablePortalButton
+          slug={portal.slug}
+          status={portal.status}
+          onDone={onChanged}
+        />
+      </Section>
+
       <Section title="Informazioni">
         <Row icon={<Hash className="h-4 w-4" />} label="Slug">
           <code className="text-xs text-[var(--color-ink-muted)]">
