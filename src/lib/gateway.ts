@@ -159,6 +159,8 @@ export interface PortalSummary {
   collectedAt: string;
   bundleCount: number;
   productCount: number;
+  // URL assoluto del logo (media Payload) o null se non caricato.
+  logoUrl: string | null;
 }
 
 export async function listPortals(): Promise<PortalSummary[]> {

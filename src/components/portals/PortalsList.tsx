@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { MapPin, Package, ShoppingBag, Trash2, User } from "lucide-react";
+import { PortalLogo } from "./PortalLogo";
 import type { PortalSummary } from "@/lib/gateway";
 
 // Per ora solo 2 stati operativi: Bozza (draft) e Live (onboarded).
@@ -111,8 +112,9 @@ export function PortalsList({
           <button
             type="button"
             onClick={() => onSelect?.(p.slug)}
-            className="text-left text-xs font-medium text-[var(--color-ink)] leading-tight hover:underline"
+            className="flex items-center gap-2 text-left text-xs font-medium text-[var(--color-ink)] leading-tight hover:underline"
           >
+            <PortalLogo logoUrl={p.logoUrl} nome={p.nome} size={28} />
             {p.nome}
           </button>
           <div className="flex items-center gap-1.5 shrink-0">
