@@ -78,6 +78,50 @@ const SERIES: Array<{ key: "cms" | "storefront"; label: string; color: string }>
   { key: "storefront", label: "Shop", color: "var(--color-positive)" },
 ];
 
+// Tooltip custom: Totale in testa, poi Sito sopra e Shop sotto (l'ordine
+// di default di recharts segue le serie renderizzate, non quello voluto).
+interface TooltipEntry {
+  dataKey?: string | number;
+  value?: number | string;
+}
+
+function ChartTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: TooltipEntry[];
+  label?: string | number;
+}) {
+  if (!active || !payload || payload.length === 0) return null;
+  const valueOf = (key: string): number | null => {
+    const entry = payload.find((p) => p.dataKey === key);
+    return entry ? Number(entry.value ?? 0) : null;
+  };
+  const cms = valueOf("cms");
+  const shop = valueOf("storefront");
+  const rows: Array<{ label: string; value: number; color: string }> = [];
+  if (cms !== null && shop !== null) {
+    rows.push({ label: "Totale", value: cms + shop, color: "var(--color-ink)" });
+  }
+  if (cms !== null) rows.push({ label: "Sito", value: cms, color: "var(--color-accent)" });
+  if (shop !== null) rows.push({ label: "Shop", value: shop, color: "var(--color-positive)" });
+
+  return (
+    <div className="rounded-[10px] border border-[var(--color-line)] bg-[var(--color-paper)] px-3 py-2 text-xs text-[var(--color-ink)] shadow-sm">
+      <p className="font-medium">
+        {typeof label === "string" ? shortLabel(label) : label}
+      </p>
+      {rows.map((r) => (
+        <p key={r.label} className="mt-1 tabular-nums" style={{ color: r.color }}>
+          {r.label} : {r.value}
+        </p>
+      ))}
+    </div>
+  );
+}
+
 export function TrafficChart({
   points,
   app,
@@ -134,18 +178,7 @@ export function TrafficChart({
               tickLine={false}
               axisLine={false}
             />
-            <Tooltip
-              labelFormatter={(label) =>
-                typeof label === "string" ? shortLabel(label) : label
-              }
-              contentStyle={{
-                backgroundColor: "var(--color-paper)",
-                border: "1px solid var(--color-line)",
-                borderRadius: 10,
-                fontSize: 12,
-                color: "var(--color-ink)",
-              }}
-            />
+            <Tooltip content={<ChartTooltip />} />
             {series.map((s) => (
               <Area
                 key={s.key}
