@@ -19,7 +19,15 @@ export const metadata = { title: "Analytics — Studio" };
 // Brain: decision-017 — un solo fetch al BFF; i filtri range/app vivono nei
 // searchParams e il filtro app e' applicato sul payload, zero fetch extra.
 
-const RANGE_KEYS: RangeKey[] = ["7d", "30d", "90d"];
+const RANGE_KEYS: RangeKey[] = [
+  "today",
+  "yesterday",
+  "week",
+  "month",
+  "7d",
+  "30d",
+  "90d",
+];
 const APP_KEYS: AppFilter[] = ["all", "cms", "storefront"];
 
 interface PageProps {
@@ -35,12 +43,14 @@ function pickParam<T extends string>(
   return allowed.includes(v as T) ? (v as T) : fallback;
 }
 
-// Deriva il dataset filtrato per origine dal payload completo.
+// Deriva il dataset filtrato per origine dal payload completo. prevTotals
+// segue il filtro (i delta confrontano pere con pere), i lead restano globali.
 function filterView(overview: AnalyticsOverview, app: AppFilter) {
-  if (app === "all") return overview;
+  if (app === "all") return { ...overview, prevTotals: overview.prev.totals };
   return {
     ...overview,
     totals: overview.byApp[app],
+    prevTotals: overview.prev.byApp[app],
     tenants: overview.tenants.filter((t) => t.app === app),
     timeseries: overview.timeseries.filter((p) => p.app === app),
   };
@@ -92,7 +102,12 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
               in cache e potrebbero non essere aggiornati.
             </p>
           )}
-          <KpiGrid kpis={view.totals} leads={view.leads} />
+          <KpiGrid
+            kpis={view.totals}
+            leads={view.leads}
+            prevKpis={view.prevTotals}
+            prevLeads={view.prev.leads}
+          />
           {noData ? (
             <AnalyticsEmptyState variant="no-data" />
           ) : (
@@ -102,6 +117,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
                 app={app}
                 from={view.from}
                 to={view.to}
+                granularity={view.granularity}
               />
               <FormsBreakdown leads={view.leads} />
               <TenantBreakdown tenants={view.tenants} />

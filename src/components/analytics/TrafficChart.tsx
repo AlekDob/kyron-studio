@@ -18,10 +18,12 @@ import type { AppFilter, TimeseriesPoint } from "@/lib/analytics";
 interface TrafficChartProps {
   points: TimeseriesPoint[];
   app: AppFilter;
-  // Estremi del periodo (YYYY-MM-DD): i giorni senza eventi vanno a zero,
-  // altrimenti con 1 solo giorno di dati l'AreaChart non disegna nulla.
+  // Estremi del periodo (YYYY-MM-DD): i bucket senza eventi vanno a zero,
+  // altrimenti con 1 solo punto di dati l'AreaChart non disegna nulla.
   from: string;
   to: string;
+  // "hour" per Oggi/Ieri: bucket orari "YYYY-MM-DDTHH" sul giorno `from`.
+  granularity: "hour" | "day";
 }
 
 interface ChartRow {
@@ -41,11 +43,22 @@ function eachDay(from: string, to: string): string[] {
   return days;
 }
 
-// Pivot (date, app) -> una riga per giorno con le due serie visitatori,
+// Bucket orari del giorno `from` (00..23).
+function eachHour(from: string): string[] {
+  return Array.from(
+    { length: 24 },
+    (_, h) => `${from}T${String(h).padStart(2, "0")}`,
+  );
+}
+
+// Pivot (date, app) -> una riga per bucket con le due serie visitatori,
 // zero-filled su tutto il periodo.
-function pivotByDay(points: TimeseriesPoint[], from: string, to: string): ChartRow[] {
+function pivot(
+  points: TimeseriesPoint[],
+  buckets: string[],
+): ChartRow[] {
   const byDate = new Map<string, ChartRow>(
-    eachDay(from, to).map((d) => [d, { date: d, cms: 0, storefront: 0 }]),
+    buckets.map((d) => [d, { date: d, cms: 0, storefront: 0 }]),
   );
   for (const p of points) {
     const row = byDate.get(p.date);
@@ -54,7 +67,9 @@ function pivotByDay(points: TimeseriesPoint[], from: string, to: string): ChartR
   return [...byDate.values()];
 }
 
-function shortDate(iso: string): string {
+// "2026-06-12" -> "12/06"; "2026-06-12T09" -> "09h".
+function shortLabel(iso: string): string {
+  if (iso.length > 10) return `${iso.slice(11, 13)}h`;
   return `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 }
 
@@ -63,15 +78,24 @@ const SERIES: Array<{ key: "cms" | "storefront"; label: string; color: string }>
   { key: "storefront", label: "Shop", color: "var(--color-positive)" },
 ];
 
-export function TrafficChart({ points, app, from, to }: TrafficChartProps) {
-  const data = pivotByDay(points, from, to);
+export function TrafficChart({
+  points,
+  app,
+  from,
+  to,
+  granularity,
+}: TrafficChartProps) {
+  const buckets = granularity === "hour" ? eachHour(from) : eachDay(from, to);
+  const data = pivot(points, buckets);
   const series = SERIES.filter((s) => app === "all" || s.key === app);
 
   return (
     <Card padding="md">
       <Card.Header>
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="text-sm font-medium">Visitatori per giorno</h2>
+          <h2 className="text-sm font-medium">
+            {granularity === "hour" ? "Visitatori per ora" : "Visitatori per giorno"}
+          </h2>
           <div className="flex gap-4 text-xs text-[var(--color-ink-muted)]">
             {series.map((s) => (
               <span key={s.key} className="inline-flex items-center gap-1.5">
@@ -98,7 +122,7 @@ export function TrafficChart({ points, app, from, to }: TrafficChartProps) {
             <CartesianGrid stroke="var(--color-line)" vertical={false} />
             <XAxis
               dataKey="date"
-              tickFormatter={shortDate}
+              tickFormatter={shortLabel}
               tick={{ fill: "var(--color-ink-muted)", fontSize: 11 }}
               tickLine={false}
               axisLine={{ stroke: "var(--color-line)" }}
@@ -112,7 +136,7 @@ export function TrafficChart({ points, app, from, to }: TrafficChartProps) {
             />
             <Tooltip
               labelFormatter={(label) =>
-                typeof label === "string" ? shortDate(label) : label
+                typeof label === "string" ? shortLabel(label) : label
               }
               contentStyle={{
                 backgroundColor: "var(--color-paper)",

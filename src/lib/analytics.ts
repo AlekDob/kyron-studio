@@ -3,7 +3,14 @@ import { gatewayFetch, GatewayError } from "./gateway";
 // Tipi mirror di studio-server src/features/analytics/types.ts.
 // Brain: decision-017 — il frontend parla solo col BFF, mai con PostHog.
 
-export type RangeKey = "7d" | "30d" | "90d";
+export type RangeKey =
+  | "today"
+  | "yesterday"
+  | "week"
+  | "month"
+  | "7d"
+  | "30d"
+  | "90d";
 export type AppKey = "cms" | "storefront";
 export type AppFilter = "all" | AppKey;
 
@@ -43,15 +50,25 @@ export interface LeadTotals {
   forms: Array<{ form: string; count: number }>;
 }
 
+// Totali del periodo precedente (stessa durata trascorsa): delta card KPI.
+export interface PrevTotals {
+  totals: KpiTotals;
+  byApp: Record<AppKey, KpiTotals>;
+  leads: { formSubmits: number; newsletterSubs: number; registrations: number };
+}
+
 export interface AnalyticsOverview {
   range: RangeKey;
   from: string;
   to: string;
   generatedAt: string;
+  // "hour" per Oggi/Ieri (timeseries oraria), altrimenti "day".
+  granularity: "hour" | "day";
   stale: boolean;
   totals: KpiTotals;
   byApp: Record<AppKey, KpiTotals>;
   leads: LeadTotals;
+  prev: PrevTotals;
   tenants: TenantRow[];
   timeseries: TimeseriesPoint[];
 }
