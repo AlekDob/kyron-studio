@@ -14,6 +14,9 @@ import { TenantBreakdown } from "@/components/analytics/TenantBreakdown";
 import { FormsBreakdown } from "@/components/analytics/FormsBreakdown";
 import { SourcesBreakdown } from "@/components/analytics/SourcesBreakdown";
 import { VisitorsMap } from "@/components/analytics/VisitorsMap";
+import { PagesBreakdown } from "@/components/analytics/PagesBreakdown";
+import { DevicesPie } from "@/components/analytics/DevicesPie";
+import { SectionNav } from "@/components/analytics/SectionNav";
 import { AnalyticsEmptyState } from "@/components/analytics/EmptyState";
 
 export const metadata = { title: "Analytics — Studio" };
@@ -104,27 +107,44 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
               in cache e potrebbero non essere aggiornati.
             </p>
           )}
-          <KpiGrid
-            kpis={view.totals}
-            leads={view.leads}
-            prevKpis={view.prevTotals}
-            prevLeads={view.prev.leads}
-          />
+          <SectionNav />
+          <section id="kpi" className="scroll-mt-12">
+            <KpiGrid
+              kpis={view.totals}
+              leads={view.leads}
+              prevKpis={view.prevTotals}
+              prevLeads={view.prev.leads}
+            />
+          </section>
           {noData ? (
             <AnalyticsEmptyState variant="no-data" />
           ) : (
             <>
-              <TrafficChart
-                points={view.timeseries}
-                app={app}
-                from={view.from}
-                to={view.to}
-                granularity={view.granularity}
-              />
-              <VisitorsMap geo={view.geo} />
-              <SourcesBreakdown sources={view.sources} />
+              <section id="andamento" className="scroll-mt-12">
+                <TrafficChart
+                  points={view.timeseries}
+                  app={app}
+                  from={view.from}
+                  to={view.to}
+                  granularity={view.granularity}
+                />
+              </section>
+              <section id="citta" className="scroll-mt-12">
+                <VisitorsMap geo={view.geo} />
+              </section>
+              <section id="fonti" className="scroll-mt-12">
+                <SourcesBreakdown sources={view.sources} />
+              </section>
+              <section id="pagine" className="scroll-mt-12">
+                <PagesBreakdown pages={view.pages} />
+              </section>
+              <section id="device" className="scroll-mt-12">
+                <DevicesPie devices={view.devices} />
+              </section>
               <FormsBreakdown leads={view.leads} />
-              <TenantBreakdown tenants={view.tenants} />
+              <section id="origini" className="scroll-mt-12">
+                <TenantBreakdown tenants={view.tenants} />
+              </section>
             </>
           )}
         </div>

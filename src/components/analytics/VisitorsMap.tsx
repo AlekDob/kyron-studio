@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Minus, Plus, RotateCcw } from "lucide-react";
 import { geoMercator, geoPath, type GeoProjection } from "d3-geo";
 import { feature } from "topojson-client";
@@ -115,6 +115,8 @@ export function VisitorsMap({ geo }: VisitorsMapProps) {
   const maxVisitors = dots[0]?.visitors || 1;
   const { svgRef, transform, zoomIn, zoomOut, reset, handlers } = useMapZoom(W, H);
   const k = transform.k;
+  // Dot selezionato al click: evidenziato + pannellino dettagli in overlay.
+  const [selected, setSelected] = useState<GeoCity | null>(null);
 
   if (geo.length === 0) return null;
 
@@ -126,6 +128,7 @@ export function VisitorsMap({ geo }: VisitorsMapProps) {
           <svg
             ref={svgRef}
             {...handlers}
+            onClick={() => setSelected(null)}
             viewBox={`0 0 ${W} ${H}`}
             role="img"
             aria-label="Mappa delle citta' dei visitatori"
@@ -144,16 +147,22 @@ export function VisitorsMap({ geo }: VisitorsMapProps) {
               {dots.map((d) => {
                 const pos = projection([d.lon, d.lat]);
                 if (!pos) return null;
+                const isSelected = selected === d;
                 return (
                   <circle
                     key={`${d.city}-${d.country}`}
                     cx={round2(pos[0])}
                     cy={round2(pos[1])}
                     r={round2(dotRadius(d.visitors, maxVisitors) / Math.sqrt(k))}
-                    fill="var(--color-action)"
-                    fillOpacity={0.7}
-                    stroke="var(--color-paper)"
-                    strokeWidth={1 / k}
+                    fill={isSelected ? "var(--color-accent)" : "var(--color-action)"}
+                    fillOpacity={!selected || isSelected ? 0.85 : 0.3}
+                    stroke={isSelected ? "var(--color-ink)" : "var(--color-paper)"}
+                    strokeWidth={(isSelected ? 2 : 1) / k}
+                    className="cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelected(isSelected ? null : d);
+                    }}
                   >
                     <title>{`${cityLabel(d)} — ${fmtInt(d.visitors)} visitatori`}</title>
                   </circle>
@@ -161,6 +170,14 @@ export function VisitorsMap({ geo }: VisitorsMapProps) {
               })}
             </g>
           </svg>
+          {selected && (
+            <div className="absolute bottom-3 left-3 rounded-xl border border-[var(--color-line)] bg-[var(--color-paper)] px-3.5 py-2.5 shadow-sm">
+              <p className="text-sm font-medium">{cityLabel(selected)}</p>
+              <p className="text-xs text-[var(--color-ink-muted)]">
+                {fmtInt(selected.visitors)} visitatori nel periodo
+              </p>
+            </div>
+          )}
           <div className="absolute right-3 top-3 flex flex-col gap-1.5">
             <ZoomButton label="Aumenta zoom" onClick={zoomIn}>
               <Plus className="h-4 w-4" />
