@@ -1,12 +1,13 @@
 "use client";
 import { useMemo, useState } from "react";
+import { Search } from "lucide-react";
 import type { OrdersResponse, OrderRow } from "@/lib/gateway";
-import { Card } from "@/components/ui";
+import { Card, Input } from "@/components/ui";
 import { OrdersFilters, type PortalOption } from "./OrdersFilters";
-import { OrdersTable } from "./OrdersTable";
-import { OrderCard } from "./OrderCard";
+import { OrdersList } from "./OrdersList";
+import { OrderDrawer } from "./OrderDrawer";
 import { OrdersEmptyState } from "./OrdersEmptyState";
-import { agentName, formatEur } from "./format";
+import { agentName, dayKey, dayLabel, formatEur } from "./format";
 
 interface OrdersViewProps {
   data: OrdersResponse;
@@ -23,34 +24,72 @@ function portalOptions(orders: OrderRow[]): PortalOption[] {
   );
 }
 
-// Agenti unici (local-part) presenti negli ordini del periodo.
 function agentOptions(orders: OrderRow[]): string[] {
   const set = new Set<string>();
   for (const o of orders) if (o.agent) set.add(agentName(o.agent));
   return Array.from(set).sort();
 }
 
+// Ricerca su numero ordine, dati cliente (nome/email/telefono) e Stripe.
+function matchesQuery(o: OrderRow, q: string): boolean {
+  if (!q) return true;
+  const hay = [
+    o.number,
+    o.customerName,
+    o.userEmail,
+    o.customerPhone,
+    o.pspReference,
+  ]
+    .join(" ")
+    .toLowerCase();
+  return hay.includes(q.toLowerCase());
+}
+
+export interface DayGroup {
+  key: string;
+  label: string;
+  orders: OrderRow[];
+}
+
+// Raggruppa ordini (gia' ordinati desc) per giorno preservando l'ordine.
+function groupByDay(orders: OrderRow[]): DayGroup[] {
+  const groups: DayGroup[] = [];
+  for (const o of orders) {
+    const key = dayKey(o.created);
+    const last = groups[groups.length - 1];
+    if (last && last.key === key) last.orders.push(o);
+    else groups.push({ key, label: dayLabel(o.created), orders: [o] });
+  }
+  return groups;
+}
+
 export function OrdersView({ data, from, to }: OrdersViewProps) {
   const [portal, setPortal] = useState("all");
   const [agent, setAgent] = useState("all");
+  const [query, setQuery] = useState("");
+  const [selected, setSelected] = useState<OrderRow | null>(null);
 
   const portals = useMemo(() => portalOptions(data.orders), [data.orders]);
   const agents = useMemo(() => agentOptions(data.orders), [data.orders]);
 
   const filtered = useMemo(
     () =>
-      data.orders.filter(
-        (o) =>
-          (portal === "all" || o.channelSlug === portal) &&
-          (agent === "all" || agentName(o.agent) === agent),
-      ),
-    [data.orders, portal, agent],
+      data.orders
+        .filter(
+          (o) =>
+            (portal === "all" || o.channelSlug === portal) &&
+            (agent === "all" || agentName(o.agent) === agent) &&
+            matchesQuery(o, query),
+        )
+        .sort((a, b) => b.created.localeCompare(a.created)),
+    [data.orders, portal, agent, query],
   );
 
   const total = useMemo(
     () => filtered.reduce((sum, o) => sum + o.totalGross, 0),
     [filtered],
   );
+  const groups = useMemo(() => groupByDay(filtered), [filtered]);
 
   return (
     <div className="flex flex-col gap-5">
@@ -58,6 +97,14 @@ export function OrdersView({ data, from, to }: OrdersViewProps) {
         <Kpi label="Ordini" value={String(filtered.length)} />
         <Kpi label="Totale" value={formatEur(total)} />
       </div>
+
+      <Input
+        size="sm"
+        placeholder="Cerca per n° ordine, cliente o transazione Stripe…"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        iconLeft={<Search size={15} />}
+      />
 
       <OrdersFilters
         from={from}
@@ -73,17 +120,10 @@ export function OrdersView({ data, from, to }: OrdersViewProps) {
       {filtered.length === 0 ? (
         <OrdersEmptyState variant="no-data" />
       ) : (
-        <>
-          <div className="hidden lg:block">
-            <OrdersTable orders={filtered} />
-          </div>
-          <div className="flex flex-col gap-3 lg:hidden">
-            {filtered.map((o) => (
-              <OrderCard key={o.number} order={o} />
-            ))}
-          </div>
-        </>
+        <OrdersList groups={groups} onSelect={setSelected} />
       )}
+
+      <OrderDrawer order={selected} onClose={() => setSelected(null)} />
     </div>
   );
 }

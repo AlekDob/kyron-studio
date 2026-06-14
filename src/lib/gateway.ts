@@ -338,14 +338,19 @@ export interface OrderRow {
   channelSlug: string;
   channelName: string;
   userEmail: string;
+  customerName: string;
+  customerPhone: string;
+  customerAddress: string;
   totalGross: number;
   currency: string;
   status: string; // evasione Saleor (UNFULFILLED, FULFILLED, ...)
   paymentStatus: string; // pagamento Saleor (FULLY_CHARGED, ...)
+  pspReference: string; // Stripe PaymentIntent (pi_...) o vuoto
   agent: string; // email agente commerciale (requestedBy portale)
   codiceMeccanografico: string;
   portalName: string;
   portalUrl: string;
+  stripeUrl: string; // link diretto dashboard Stripe o vuoto
   lines: OrderLine[];
 }
 

@@ -1,0 +1,186 @@
+"use client";
+import { useEffect, useState, type ReactNode } from "react";
+import { X, ExternalLink } from "lucide-react";
+import type { OrderRow } from "@/lib/gateway";
+import { OrderLines } from "./OrderLines";
+import { StatusBadges, PortalLink } from "./StatusBadges";
+import { agentName, formatDate, formatEur, formatTime } from "./format";
+
+interface OrderDrawerProps {
+  order: OrderRow | null;
+  onClose: () => void;
+}
+
+// Drawer dettaglio ordine. Desktop: scivola da SINISTRA. Mobile: bottom sheet.
+// Riusa il pattern animato di AnnotationsDrawer (transform inline + media query
+// inietta il translateX per desktop, non esprimibile inline in Tailwind v4).
+export function OrderDrawer({ order, onClose }: OrderDrawerProps) {
+  const [mounted, setMounted] = useState(false);
+  const [current, setCurrent] = useState<OrderRow | null>(null);
+  const open = order !== null;
+
+  useEffect(() => {
+    if (order) {
+      setCurrent(order);
+      setMounted(true);
+      return;
+    }
+    const t = setTimeout(() => setMounted(false), 240);
+    return () => clearTimeout(t);
+  }, [order]);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    if (mounted) window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [mounted, onClose]);
+
+  if (!mounted || !current) return null;
+
+  return (
+    <div
+      aria-hidden={!open}
+      className="fixed inset-0 z-50"
+      style={{ pointerEvents: open ? "auto" : "none" }}
+    >
+      <div
+        onClick={onClose}
+        aria-hidden
+        className="absolute inset-0 bg-black/30 backdrop-blur-[2px] transition-opacity duration-200"
+        style={{ opacity: open ? 1 : 0 }}
+      />
+      <aside
+        role="dialog"
+        aria-label={`Ordine ${current.number}`}
+        className="absolute flex flex-col bg-[var(--color-paper)] shadow-2xl
+                   inset-x-0 bottom-0 max-h-[90vh] rounded-t-2xl
+                   lg:inset-y-4 lg:left-4 lg:right-auto lg:bottom-auto
+                   lg:w-[440px] lg:max-h-none lg:rounded-2xl
+                   lg:border lg:border-[var(--color-line)]"
+        style={{
+          transform: open ? "translateY(0)" : "translateY(100%)",
+          transition: "transform 280ms cubic-bezier(0.32, 0.72, 0, 1)",
+        }}
+        data-order-drawer
+      >
+        <DrawerTransform open={open} />
+        <DrawerHeader order={current} onClose={onClose} />
+        <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5 flex flex-col gap-6">
+          <Section title="Cliente">
+            <InfoRow label="Nome" value={current.customerName || "—"} />
+            <InfoRow label="Email" value={current.userEmail || "—"} />
+            {current.customerPhone && (
+              <InfoRow label="Telefono" value={current.customerPhone} />
+            )}
+            {current.customerAddress && (
+              <InfoRow label="Indirizzo" value={current.customerAddress} />
+            )}
+          </Section>
+
+          <Section title="Pagamento">
+            <div className="flex items-center justify-between gap-3">
+              <StatusBadges order={current} />
+              <span className="font-medium tabular-nums">
+                {formatEur(current.totalGross)}
+              </span>
+            </div>
+            {current.pspReference && <StripeLink order={current} />}
+          </Section>
+
+          <Section title="Portale">
+            <InfoRow
+              label="Scuola"
+              value={
+                <PortalLink name={current.portalName} url={current.portalUrl} />
+              }
+            />
+            <InfoRow label="Agente" value={agentName(current.agent)} />
+            <InfoRow
+              label="Cod. mecc."
+              value={current.codiceMeccanografico || "—"}
+            />
+          </Section>
+
+          <Section title="Prodotti">
+            <OrderLines lines={current.lines} />
+          </Section>
+        </div>
+      </aside>
+    </div>
+  );
+}
+
+function DrawerHeader({ order, onClose }: { order: OrderRow; onClose: () => void }) {
+  return (
+    <header className="flex items-start justify-between border-b border-[var(--color-line)] px-6 py-5">
+      <div>
+        <p className="eyebrow">Ordine</p>
+        <p className="mt-1 text-lg font-medium tabular-nums">#{order.number}</p>
+        <p className="text-xs text-[var(--color-ink-muted)]">
+          {formatDate(order.created)} · {formatTime(order.created)}
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label="Chiudi"
+        className="rounded-full p-1.5 text-[var(--color-ink-muted)] hover:bg-[var(--color-ink)]/5 hover:text-[var(--color-ink)]"
+      >
+        <X size={16} />
+      </button>
+    </header>
+  );
+}
+
+function StripeLink({ order }: { order: OrderRow }) {
+  return (
+    <a
+      href={order.stripeUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="mt-3 inline-flex items-center gap-2 rounded-[var(--radius-pill)] border border-[var(--color-line)] bg-[var(--color-paper-soft)] px-3 py-2 text-sm hover:border-[var(--color-line-strong)]"
+    >
+      <span className="font-medium">Apri su Stripe</span>
+      <span className="font-mono text-xs text-[var(--color-ink-muted)]">
+        {order.pspReference}
+      </span>
+      <ExternalLink size={14} className="text-[var(--color-ink-muted)]" />
+    </a>
+  );
+}
+
+function Section({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section>
+      <p className="mb-2 text-xs font-medium uppercase tracking-wide text-[var(--color-ink-muted)]">
+        {title}
+      </p>
+      <div className="flex flex-col gap-1.5">{children}</div>
+    </section>
+  );
+}
+
+function InfoRow({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <div className="flex items-baseline justify-between gap-4 text-sm">
+      <span className="shrink-0 text-[var(--color-ink-muted)]">{label}</span>
+      <span className="text-right">{value}</span>
+    </div>
+  );
+}
+
+// Desktop: il transform iniziale e' translateX(-100%) (entra da sinistra);
+// mobile resta translateY (bottom sheet, gestito inline).
+function DrawerTransform({ open }: { open: boolean }) {
+  return (
+    <style>{`
+      @media (min-width: 1024px) {
+        [data-order-drawer] {
+          transform: ${open ? "translateX(0)" : "translateX(-100%)"} !important;
+        }
+      }
+    `}</style>
+  );
+}

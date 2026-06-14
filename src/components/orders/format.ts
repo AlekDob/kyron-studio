@@ -25,6 +25,50 @@ export function formatDate(iso: string): string {
   return DATE.format(new Date(iso));
 }
 
+// Ora locale (Europe/Rome) HH:MM per il dettaglio ordine.
+const TIME = new Intl.DateTimeFormat("it-IT", {
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: "Europe/Rome",
+});
+
+export function formatTime(iso: string): string {
+  if (!iso) return "";
+  return TIME.format(new Date(iso));
+}
+
+// Chiave giorno YYYY-MM-DD in fuso Europe/Rome (raggruppamento per giorno).
+const DAY_KEY = new Intl.DateTimeFormat("en-CA", {
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  timeZone: "Europe/Rome",
+});
+
+const DAY_LABEL = new Intl.DateTimeFormat("it-IT", {
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+  timeZone: "Europe/Rome",
+});
+
+export function dayKey(iso: string): string {
+  return iso ? DAY_KEY.format(new Date(iso)) : "";
+}
+
+// Etichetta giorno: "Oggi" / "Ieri" / "martedì 10 giugno" (maiuscola iniziale).
+export function dayLabel(iso: string): string {
+  if (!iso) return "—";
+  const key = dayKey(iso);
+  const today = DAY_KEY.format(new Date());
+  const y = new Date();
+  y.setDate(y.getDate() - 1);
+  if (key === today) return "Oggi";
+  if (key === DAY_KEY.format(y)) return "Ieri";
+  const s = DAY_LABEL.format(new Date(iso));
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
 // Local-part dell'email agente come nome breve; "—" se assente.
 export function agentName(email: string): string {
   if (!email) return "—";
