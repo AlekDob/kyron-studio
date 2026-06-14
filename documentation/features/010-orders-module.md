@@ -25,23 +25,29 @@ filtro **agente** che ognuno usa per restringere ai propri portali. Read-only.
 |---|---|
 | `src/app/(authed)/orders/page.tsx` | Server Component: auth, default periodo 30g, `listOrders({from,to})` |
 | `src/app/(authed)/orders/loading.tsx` | Skeleton |
-| `src/components/orders/OrdersView.tsx` | Client: stato filtri portale/agente, KPI, deriva opzioni, render table/card |
+| `src/components/orders/OrdersView.tsx` | Client: filtri portale/agente + **ricerca**, sort **desc**, **grouping per giorno**, stato drawer, KPI |
 | `src/components/orders/OrdersFilters.tsx` | Date (→ URL, refetch) + select portale/agente (→ client state) |
-| `src/components/orders/OrdersTable.tsx` | Tabella desktop, righe espandibili |
-| `src/components/orders/OrderCard.tsx` | Card mobile (`lg:hidden`), tap espande |
+| `src/components/orders/OrdersList.tsx` | Gruppi giorno (header data + conteggio) |
+| `src/components/orders/OrderListRow.tsx` | Riga ordine cliccabile responsive → apre drawer |
+| `src/components/orders/OrderDrawer.tsx` | Drawer dettaglio: **sx desktop / bottom sheet mobile**, cliente + Stripe + portale + prodotti |
 | `src/components/orders/OrderLines.tsx` | Righe prodotto (cod + descr × qty + €) — condiviso |
 | `src/components/orders/StatusBadges.tsx` | Pill stato pagamento+evasione + link portale — condiviso |
 | `src/components/orders/OrdersEmptyState.tsx` | Stati errore / nessun ordine |
-| `src/components/orders/format.ts` | Formatter EUR/data + mapping stato Saleor → label IT (unico punto) |
+| `src/components/orders/format.ts` | Formatter EUR/data/ora + grouping giorno (`dayKey`/`dayLabel`) + stato Saleor → label IT |
 | `src/lib/gateway.ts` | `listOrders()` + tipi `OrderRow`/`OrdersResponse` |
 | `src/components/shell/modules.ts` | Entry modulo "Ordini" (icona ShoppingBag, live) |
 
 ## Pattern
 
-- **Un solo fetch** al BFF per periodo (date nei searchParams → refetch server); portale e
-  agente filtrano **client-side** sul payload (zero refetch), come Analytics (feature 009).
-- Riuso UI: `Card`, `Select`, `Input`, `Pill` da `components/ui`. Niente emoji.
-- Stato Saleor → label IT: `FULLY_CHARGED`→"Pagato", `UNFULFILLED`→"Da evadere", ecc.
+- **Un solo fetch** al BFF per periodo (date nei searchParams → refetch server); portale,
+  agente e **ricerca** filtrano **client-side** sul payload (zero refetch), come Analytics.
+- **Ordine desc per data**, **raggruppato per giorno** (Oggi/Ieri/data, fuso Europe/Rome).
+- **Ricerca** per n° ordine, dati cliente (nome/email/telefono) o transazione Stripe.
+- **Drawer dettaglio** (pattern animato di `AnnotationsDrawer`): scivola da sinistra su
+  desktop, bottom sheet su mobile. Mostra cliente (nome/email/telefono/indirizzo),
+  pagamento + **link diretto a Stripe** (`pspReference` → `dashboard.stripe.com/payments`),
+  portale/agente/cod. mecc., righe prodotto.
+- Riuso UI: `Card`, `Input`, `Pill` da `components/ui`. Niente emoji.
 
 ## Note
 
