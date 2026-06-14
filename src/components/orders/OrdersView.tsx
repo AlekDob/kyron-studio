@@ -71,14 +71,24 @@ export function OrdersView({ data, from, to }: OrdersViewProps) {
   const [portal, setPortal] = useState("all");
   const [agent, setAgent] = useState("all");
   const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState<OrderRow | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  // Override ottimistici dello stato lavorazione (id -> status) dopo un cambio.
+  const [overrides, setOverrides] = useState<Record<string, string>>({});
 
-  const portals = useMemo(() => portalOptions(data.orders), [data.orders]);
-  const agents = useMemo(() => agentOptions(data.orders), [data.orders]);
+  const orders = useMemo(
+    () =>
+      data.orders.map((o) =>
+        overrides[o.id] ? { ...o, workflowStatus: overrides[o.id] } : o,
+      ),
+    [data.orders, overrides],
+  );
+
+  const portals = useMemo(() => portalOptions(orders), [orders]);
+  const agents = useMemo(() => agentOptions(orders), [orders]);
 
   const filtered = useMemo(
     () =>
-      data.orders
+      orders
         .filter(
           (o) =>
             (portal === "all" || o.channelSlug === portal) &&
@@ -86,7 +96,12 @@ export function OrdersView({ data, from, to }: OrdersViewProps) {
             matchesQuery(o, query),
         )
         .sort((a, b) => b.created.localeCompare(a.created)),
-    [data.orders, portal, agent, query],
+    [orders, portal, agent, query],
+  );
+
+  const selected = useMemo(
+    () => orders.find((o) => o.id === selectedId) ?? null,
+    [orders, selectedId],
   );
 
   const total = useMemo(
@@ -124,10 +139,16 @@ export function OrdersView({ data, from, to }: OrdersViewProps) {
       {filtered.length === 0 ? (
         <OrdersEmptyState variant="no-data" />
       ) : (
-        <OrdersList groups={groups} onSelect={setSelected} />
+        <OrdersList groups={groups} onSelect={(o) => setSelectedId(o.id)} />
       )}
 
-      <OrderDrawer order={selected} onClose={() => setSelected(null)} />
+      <OrderDrawer
+        order={selected}
+        onClose={() => setSelectedId(null)}
+        onStatusChange={(id, status) =>
+          setOverrides((prev) => ({ ...prev, [id]: status }))
+        }
+      />
     </div>
   );
 }

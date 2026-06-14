@@ -1,8 +1,8 @@
 "use client";
 import { ChevronRight } from "lucide-react";
 import type { OrderRow } from "@/lib/gateway";
-import { StatusBadges } from "./StatusBadges";
-import { agentName, formatEur, formatTime } from "./format";
+import { Pill } from "@/components/ui";
+import { agentName, formatEur, formatTime, paymentBadge, workflowBadge } from "./format";
 
 interface OrderListRowProps {
   order: OrderRow;
@@ -40,7 +40,14 @@ export function OrderListRow({ order, onSelect }: OrderListRowProps) {
         <span className="font-medium tabular-nums">
           {formatEur(order.totalGross)}
         </span>
-        <StatusBadges order={order} />
+        <span className="inline-flex flex-wrap justify-end gap-1.5">
+          <Pill size="sm" variant={workflowBadge(order.workflowStatus).variant}>
+            {workflowBadge(order.workflowStatus).label}
+          </Pill>
+          <Pill size="sm" variant={paymentBadge(order.paymentStatus).variant}>
+            {paymentBadge(order.paymentStatus).label}
+          </Pill>
+        </span>
       </div>
 
       <ChevronRight
