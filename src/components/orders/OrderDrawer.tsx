@@ -56,7 +56,7 @@ export function OrderDrawer({ order, onClose }: OrderDrawerProps) {
         aria-label={`Ordine ${current.number}`}
         className="absolute flex flex-col bg-[var(--color-paper)] shadow-2xl
                    inset-x-0 bottom-0 max-h-[90vh] rounded-t-2xl
-                   lg:inset-y-4 lg:left-4 lg:right-auto lg:bottom-auto
+                   lg:inset-y-4 lg:right-4 lg:left-auto lg:inset-x-auto
                    lg:w-[440px] lg:max-h-none lg:rounded-2xl
                    lg:border lg:border-[var(--color-line)]"
         style={{
@@ -78,6 +78,8 @@ export function OrderDrawer({ order, onClose }: OrderDrawerProps) {
               <InfoRow label="Indirizzo" value={current.customerAddress} />
             )}
           </Section>
+
+          <FiscalSection order={current} />
 
           <Section title="Pagamento">
             <div className="flex items-center justify-between gap-3">
@@ -134,6 +136,26 @@ function DrawerHeader({ order, onClose }: { order: OrderRow; onClose: () => void
   );
 }
 
+// Dati fiscali (CF / P.IVA / SDI / azienda). Renderizzata solo se c'e' almeno
+// un valore. Codici in mono per leggibilita'.
+function FiscalSection({ order }: { order: OrderRow }) {
+  const has = order.fiscalCode || order.vatNumber || order.sdiCode || order.companyName;
+  if (!has) return null;
+  const mono = (v: string) => <span className="font-mono text-xs">{v}</span>;
+  return (
+    <Section title="Dati fiscali">
+      {order.companyName && (
+        <InfoRow label="Azienda" value={order.companyName} />
+      )}
+      {order.fiscalCode && (
+        <InfoRow label="Cod. fiscale" value={mono(order.fiscalCode)} />
+      )}
+      {order.vatNumber && <InfoRow label="P. IVA" value={mono(order.vatNumber)} />}
+      {order.sdiCode && <InfoRow label="SDI" value={mono(order.sdiCode)} />}
+    </Section>
+  );
+}
+
 function StripeLink({ order }: { order: OrderRow }) {
   return (
     <a
@@ -171,14 +193,14 @@ function InfoRow({ label, value }: { label: string; value: ReactNode }) {
   );
 }
 
-// Desktop: il transform iniziale e' translateX(-100%) (entra da sinistra);
+// Desktop: il drawer entra da DESTRA (translateX(100%) → 0);
 // mobile resta translateY (bottom sheet, gestito inline).
 function DrawerTransform({ open }: { open: boolean }) {
   return (
     <style>{`
       @media (min-width: 1024px) {
         [data-order-drawer] {
-          transform: ${open ? "translateX(0)" : "translateX(-100%)"} !important;
+          transform: ${open ? "translateX(0)" : "translateX(100%)"} !important;
         }
       }
     `}</style>
