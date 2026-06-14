@@ -34,13 +34,26 @@ export function OrderDrawer({ order, onClose, onStatusChange }: OrderDrawerProps
     if (order) {
       setCurrent(order);
       setRender(true);
-      const t = setTimeout(() => setShow(true), 10); // un paint a riposo, poi anima
-      return () => clearTimeout(t);
+      return;
     }
     setShow(false);
-    const t = setTimeout(() => setRender(false), 300); // attende l'uscita
+    const t = setTimeout(() => setRender(false), 320); // attende l'uscita
     return () => clearTimeout(t);
   }, [order]);
+
+  // Animazione di ENTRATA: monta a riposo (show=false), poi al frame successivo
+  // (doppio rAF, affidabile su iOS Safari) passa ad aperto → il transform anima.
+  useEffect(() => {
+    if (!render) return;
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => setShow(true));
+    });
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+    };
+  }, [render]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -69,6 +82,7 @@ export function OrderDrawer({ order, onClose, onStatusChange }: OrderDrawerProps
         aria-label={`Ordine ${current.number}`}
         className="absolute flex flex-col bg-[var(--color-paper)] shadow-2xl
                    inset-x-0 bottom-0 max-h-[88vh] rounded-t-2xl
+                   pt-[env(safe-area-inset-top)] lg:pt-0
                    lg:inset-y-4 lg:right-4 lg:left-auto lg:inset-x-auto
                    lg:w-[440px] lg:max-h-none lg:rounded-2xl
                    lg:border lg:border-[var(--color-line)]"
