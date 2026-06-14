@@ -7,6 +7,7 @@ import {
   Database,
   Eye,
   ChartNoAxesColumn,
+  ShoppingBag,
   type LucideIcon,
 } from "lucide-react";
 
@@ -54,6 +55,16 @@ export const MODULES: ModuleDefinition[] = [
     kind: "tool",
     status: "live",
     tone: { tile: "bg-[#0E4F4E]", icon: "text-white" },
+  },
+  {
+    id: "orders",
+    label: "Ordini",
+    description: "Tutti gli ordini dei portali: filtra per scuola e data, vedi agente e stato.",
+    href: "/orders",
+    icon: ShoppingBag,
+    kind: "tool",
+    status: "live",
+    tone: { tile: "bg-[#B45309]", icon: "text-white" },
   },
   {
     id: "analytics",
