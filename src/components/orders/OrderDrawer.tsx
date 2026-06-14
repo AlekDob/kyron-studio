@@ -81,8 +81,8 @@ export function OrderDrawer({ order, onClose, onStatusChange }: OrderDrawerProps
         role="dialog"
         aria-label={`Ordine ${current.number}`}
         className="absolute flex flex-col bg-[var(--color-paper)] shadow-2xl
-                   inset-x-0 bottom-0 max-h-[88vh] rounded-t-2xl
-                   pt-[env(safe-area-inset-top)] lg:pt-0
+                   inset-x-0 bottom-0 rounded-t-2xl
+                   max-h-[calc(100dvh-env(safe-area-inset-top)-3rem)]
                    lg:inset-y-4 lg:right-4 lg:left-auto lg:inset-x-auto
                    lg:w-[440px] lg:max-h-none lg:rounded-2xl
                    lg:border lg:border-[var(--color-line)]"

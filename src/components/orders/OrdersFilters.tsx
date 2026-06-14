@@ -44,6 +44,7 @@ export function OrdersFilters({
         <Input
           type="date"
           size="sm"
+          className="min-w-0 appearance-none"
           value={from}
           max={to}
           onChange={(e) => pushDates(e.target.value || from, to)}
@@ -53,6 +54,7 @@ export function OrdersFilters({
         <Input
           type="date"
           size="sm"
+          className="min-w-0 appearance-none"
           value={to}
           min={from}
           onChange={(e) => pushDates(from, e.target.value || to)}
