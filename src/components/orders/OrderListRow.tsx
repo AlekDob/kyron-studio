@@ -19,12 +19,12 @@ export function OrderListRow({ order, onSelect }: OrderListRowProps) {
       className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-[var(--color-paper-soft)]"
     >
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <span className="font-medium tabular-nums">#{order.number}</span>
-          <span className="text-xs text-[var(--color-ink-muted)]">
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="shrink-0 font-medium tabular-nums">#{order.number}</span>
+          <span className="shrink-0 text-xs text-[var(--color-ink-muted)]">
             {formatTime(order.created)}
           </span>
-          <span className="truncate text-sm text-[var(--color-ink-soft)]">
+          <span className="min-w-0 truncate text-sm text-[var(--color-ink-soft)]">
             · {order.portalName}
           </span>
         </div>
