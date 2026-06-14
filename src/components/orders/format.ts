@@ -123,6 +123,20 @@ export function fulfillmentBadge(status: string): StatusBadge {
   }
 }
 
+// Stato lavorazione interno Kyron (workflow commerciali). Ordine = ciclo ordine.
+export const WORKFLOW_STATUSES: Array<{ value: string; label: string; variant: PillVariant }> = [
+  { value: "nuovo", label: "Nuovo", variant: "neutral" },
+  { value: "in_preparazione", label: "In preparazione", variant: "warning" },
+  { value: "spedito", label: "Spedito", variant: "accent" },
+  { value: "consegnato", label: "Consegnato", variant: "tertiary" },
+  { value: "annullato", label: "Annullato", variant: "critical" },
+];
+
+export function workflowBadge(status: string): StatusBadge {
+  const found = WORKFLOW_STATUSES.find((s) => s.value === status);
+  return found ?? { label: prettify(status), variant: "neutral" };
+}
+
 // "PARTIALLY_FULFILLED" -> "Partially fulfilled" per stati non mappati.
 function prettify(raw: string): string {
   if (!raw) return "—";

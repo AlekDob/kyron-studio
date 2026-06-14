@@ -333,8 +333,10 @@ export interface OrderLine {
 }
 
 export interface OrderRow {
+  id: string; // global ID Saleor (per il cambio stato)
   number: string;
   created: string; // ISO datetime
+  workflowStatus: string; // stato lavorazione interno (nuovo|spedito|...)
   channelSlug: string;
   channelName: string;
   userEmail: string;

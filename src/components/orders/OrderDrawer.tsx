@@ -2,19 +2,28 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { X, ExternalLink } from "lucide-react";
 import type { OrderRow } from "@/lib/gateway";
+import { cn } from "@/lib/cn";
+import { updateOrderStatusAction } from "@/app/(authed)/orders/actions";
 import { OrderLines } from "./OrderLines";
 import { StatusBadges, PortalLink } from "./StatusBadges";
-import { agentName, formatDate, formatEur, formatTime } from "./format";
+import {
+  agentName,
+  formatDate,
+  formatEur,
+  formatTime,
+  WORKFLOW_STATUSES,
+} from "./format";
 
 interface OrderDrawerProps {
   order: OrderRow | null;
   onClose: () => void;
+  onStatusChange: (id: string, status: string) => void;
 }
 
 // Drawer dettaglio ordine. Desktop: scivola da SINISTRA. Mobile: bottom sheet.
 // Riusa il pattern animato di AnnotationsDrawer (transform inline + media query
 // inietta il translateX per desktop, non esprimibile inline in Tailwind v4).
-export function OrderDrawer({ order, onClose }: OrderDrawerProps) {
+export function OrderDrawer({ order, onClose, onStatusChange }: OrderDrawerProps) {
   const [mounted, setMounted] = useState(false);
   const [current, setCurrent] = useState<OrderRow | null>(null);
   const open = order !== null;
@@ -68,6 +77,10 @@ export function OrderDrawer({ order, onClose }: OrderDrawerProps) {
         <DrawerTransform open={open} />
         <DrawerHeader order={current} onClose={onClose} />
         <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5 flex flex-col gap-6">
+          <Section title="Stato lavorazione">
+            <StatusSelector order={current} onStatusChange={onStatusChange} />
+          </Section>
+
           <Section title="Cliente">
             <InfoRow label="Nome" value={current.customerName || "—"} />
             <InfoRow label="Email" value={current.userEmail || "—"} />
@@ -133,6 +146,63 @@ function DrawerHeader({ order, onClose }: { order: OrderRow; onClose: () => void
         <X size={16} />
       </button>
     </header>
+  );
+}
+
+// Selettore stato lavorazione: bottoni segmentati. Al click salva via server
+// action, aggiorna ottimisticamente (onStatusChange) e mostra feedback (incluso
+// se e' partita la mail "spedito" al cliente).
+function StatusSelector({
+  order,
+  onStatusChange,
+}: {
+  order: OrderRow;
+  onStatusChange: (id: string, status: string) => void;
+}) {
+  const [saving, setSaving] = useState<string | null>(null);
+  const [note, setNote] = useState<string>("");
+
+  async function pick(status: string) {
+    if (status === order.workflowStatus || saving) return;
+    setSaving(status);
+    setNote("");
+    onStatusChange(order.id, status); // ottimistico
+    try {
+      const res = await updateOrderStatusAction(order.id, status);
+      setNote(res.emailed ? "Email di spedizione inviata al cliente." : "Stato aggiornato.");
+    } catch {
+      setNote("Errore nel salvataggio. Riprova.");
+      onStatusChange(order.id, order.workflowStatus); // rollback
+    } finally {
+      setSaving(null);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap gap-1.5">
+        {WORKFLOW_STATUSES.map((s) => {
+          const active = order.workflowStatus === s.value;
+          return (
+            <button
+              key={s.value}
+              type="button"
+              disabled={!!saving}
+              onClick={() => pick(s.value)}
+              className={cn(
+                "rounded-[var(--radius-pill)] border px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50",
+                active
+                  ? "border-[var(--color-ink)] bg-[var(--color-ink)] text-[var(--color-paper)]"
+                  : "border-[var(--color-line)] bg-[var(--color-paper-soft)] text-[var(--color-ink-soft)] hover:border-[var(--color-line-strong)]",
+              )}
+            >
+              {saving === s.value ? "…" : s.label}
+            </button>
+          );
+        })}
+      </div>
+      {note && <p className="text-xs text-[var(--color-ink-muted)]">{note}</p>}
+    </div>
   );
 }
 
