@@ -1,0 +1,34 @@
+import type { OrderRow } from "@/lib/gateway";
+import { Pill } from "@/components/ui";
+import { paymentBadge, fulfillmentBadge } from "./format";
+
+// Coppia di badge stato (pagamento + evasione) — condivisa table/card (DRY).
+export function StatusBadges({ order }: { order: OrderRow }) {
+  const pay = paymentBadge(order.paymentStatus);
+  const ful = fulfillmentBadge(order.status);
+  return (
+    <span className="inline-flex flex-wrap gap-1.5">
+      <Pill size="sm" variant={pay.variant}>
+        {pay.label}
+      </Pill>
+      <Pill size="sm" variant={ful.variant}>
+        {ful.label}
+      </Pill>
+    </span>
+  );
+}
+
+// Link al portale pubblico (nuova scheda). Niente link se url vuoto.
+export function PortalLink({ name, url }: { name: string; url: string }) {
+  if (!url) return <span>{name}</span>;
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-[var(--color-accent)] hover:underline"
+    >
+      {name}
+    </a>
+  );
+}

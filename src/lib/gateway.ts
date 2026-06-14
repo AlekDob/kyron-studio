@@ -322,3 +322,56 @@ export async function removeBundle(
     method: "DELETE",
   });
 }
+
+// --- Ordini (feature 008): vista situazione ordini per i commerciali ---
+
+export interface OrderLine {
+  sku: string;
+  name: string;
+  quantity: number;
+  totalGross: number;
+}
+
+export interface OrderRow {
+  number: string;
+  created: string; // ISO datetime
+  channelSlug: string;
+  channelName: string;
+  userEmail: string;
+  totalGross: number;
+  currency: string;
+  status: string; // evasione Saleor (UNFULFILLED, FULFILLED, ...)
+  paymentStatus: string; // pagamento Saleor (FULLY_CHARGED, ...)
+  agent: string; // email agente commerciale (requestedBy portale)
+  codiceMeccanografico: string;
+  portalName: string;
+  portalUrl: string;
+  lines: OrderLine[];
+}
+
+export interface OrdersResponse {
+  from: string;
+  to: string;
+  count: number;
+  totalGross: number;
+  orders: OrderRow[];
+}
+
+export interface ListOrdersParams {
+  from?: string;
+  to?: string;
+  portal?: string;
+  agent?: string;
+}
+
+export async function listOrders(
+  params: ListOrdersParams = {},
+): Promise<OrdersResponse> {
+  const search = new URLSearchParams();
+  if (params.from) search.set("from", params.from);
+  if (params.to) search.set("to", params.to);
+  if (params.portal) search.set("portal", params.portal);
+  if (params.agent) search.set("agent", params.agent);
+  const qs = search.toString();
+  return gatewayFetch<OrdersResponse>(`/api/v1/orders${qs ? `?${qs}` : ""}`);
+}
