@@ -24,17 +24,21 @@ interface OrderDrawerProps {
 // Riusa il pattern animato di AnnotationsDrawer (transform inline + media query
 // inietta il translateX per desktop, non esprimibile inline in Tailwind v4).
 export function OrderDrawer({ order, onClose, onStatusChange }: OrderDrawerProps) {
-  const [mounted, setMounted] = useState(false);
+  // render = presenza nel DOM; show = posizione "aperto". Lo sfasamento di un
+  // frame tra i due fa partire l'animazione di entrata (Mac e iPhone).
+  const [render, setRender] = useState(false);
+  const [show, setShow] = useState(false);
   const [current, setCurrent] = useState<OrderRow | null>(null);
-  const open = order !== null;
 
   useEffect(() => {
     if (order) {
       setCurrent(order);
-      setMounted(true);
-      return;
+      setRender(true);
+      const t = setTimeout(() => setShow(true), 10); // un paint a riposo, poi anima
+      return () => clearTimeout(t);
     }
-    const t = setTimeout(() => setMounted(false), 240);
+    setShow(false);
+    const t = setTimeout(() => setRender(false), 300); // attende l'uscita
     return () => clearTimeout(t);
   }, [order]);
 
@@ -42,41 +46,41 @@ export function OrderDrawer({ order, onClose, onStatusChange }: OrderDrawerProps
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
     }
-    if (mounted) window.addEventListener("keydown", onKey);
+    if (render) window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [mounted, onClose]);
+  }, [render, onClose]);
 
-  if (!mounted || !current) return null;
+  if (!render || !current) return null;
 
   return (
     <div
-      aria-hidden={!open}
+      aria-hidden={!show}
       className="fixed inset-0 z-50"
-      style={{ pointerEvents: open ? "auto" : "none" }}
+      style={{ pointerEvents: show ? "auto" : "none" }}
     >
       <div
         onClick={onClose}
         aria-hidden
-        className="absolute inset-0 bg-black/30 backdrop-blur-[2px] transition-opacity duration-200"
-        style={{ opacity: open ? 1 : 0 }}
+        className="absolute inset-0 bg-black/30 backdrop-blur-[2px] transition-opacity duration-300"
+        style={{ opacity: show ? 1 : 0 }}
       />
       <aside
         role="dialog"
         aria-label={`Ordine ${current.number}`}
         className="absolute flex flex-col bg-[var(--color-paper)] shadow-2xl
-                   inset-x-0 bottom-0 max-h-[90vh] rounded-t-2xl
+                   inset-x-0 bottom-0 max-h-[88vh] rounded-t-2xl
                    lg:inset-y-4 lg:right-4 lg:left-auto lg:inset-x-auto
                    lg:w-[440px] lg:max-h-none lg:rounded-2xl
                    lg:border lg:border-[var(--color-line)]"
         style={{
-          transform: open ? "translateY(0)" : "translateY(100%)",
-          transition: "transform 280ms cubic-bezier(0.32, 0.72, 0, 1)",
+          transform: show ? "translateY(0)" : "translateY(100%)",
+          transition: "transform 320ms cubic-bezier(0.32, 0.72, 0, 1)",
         }}
         data-order-drawer
       >
-        <DrawerTransform open={open} />
+        <DrawerTransform open={show} />
         <DrawerHeader order={current} onClose={onClose} />
-        <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5 flex flex-col gap-6">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-6 py-5 flex flex-col gap-6">
           <Section title="Stato lavorazione">
             <StatusSelector order={current} onStatusChange={onStatusChange} />
           </Section>
