@@ -36,8 +36,12 @@ function matchesQuery(o: OrderRow, q: string): boolean {
   const hay = [
     o.number,
     o.customerName,
+    o.companyName,
     o.userEmail,
     o.customerPhone,
+    o.fiscalCode,
+    o.vatNumber,
+    o.sdiCode,
     o.pspReference,
   ]
     .join(" ")

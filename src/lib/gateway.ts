@@ -341,6 +341,10 @@ export interface OrderRow {
   customerName: string;
   customerPhone: string;
   customerAddress: string;
+  companyName: string;
+  fiscalCode: string;
+  vatNumber: string;
+  sdiCode: string;
   totalGross: number;
   currency: string;
   status: string; // evasione Saleor (UNFULFILLED, FULFILLED, ...)
