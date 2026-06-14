@@ -89,7 +89,8 @@ Live su `https://studio.kyronedu.it` (Coolify + Hetzner CCX23).
 - `documentation/features/006-generative-ui-chat.md` — Generative UI in chat onboarding (workstream 04, PoC ProductPicker)
 - `documentation/features/007-portals-module.md` — Modulo Portali: dashboard + onboarding unificati
 - `documentation/features/008-organization-users.md` — Utenti & ruoli (admin/editor), tab Organizzazione, collection `studio-users`
-- `documentation/features/010-orders-module.md` — Modulo Ordini: lista ordini portali filtrabile per data/portale/agente, stato pagamento+evasione, righe prodotto espandibili, link al portale (BFF studio-server feature 008)
+- `documentation/features/010-orders-module.md` — Modulo Ordini: lista per giorno (desc) filtrabile per data/portale/agente + ricerca (n°/cliente/Stripe), drawer dettaglio (cliente + dati fiscali + Stripe), cambio stato lavorazione (Nuovo→Spedito→Consegnato, mail "spedito" gata), responsive mobile (BFF studio-server feature 008)
+- Gotcha iOS frontend: `documentation/gotchas/gotcha-ios-bottom-sheet-dvh-not-vh.md` (drawer/notch/animazione) + `gotcha-ios-date-input-too-wide.md` (date input appearance-none)
 - `documentation/features/009-analytics-module.md` — Modulo Analytics: KPI con delta vs periodo precedente, periodi Oggi/Ieri/Settimana/Mese + rolling, chart (orario su Oggi/Ieri), mappa visitatori zoomabile con dot cliccabili, citta'/fonti/pagine/device, lead KPI (form/newsletter/registrazioni), ricerca fuzzy origini, nav sezioni mobile, report email giornaliero 09:00 (decision-017, BFF studio-server feature 005)
 - Cross-progetto: `Kyron/documentation/workstreams/03-studio-standalone.md` — login OTP, preview iframe, review system
 - `documentation/diary/` — changelog locale

@@ -25,6 +25,7 @@ filtro **agente** che ognuno usa per restringere ai propri portali. Read-only.
 |---|---|
 | `src/app/(authed)/orders/page.tsx` | Server Component: auth, default periodo 30g, `listOrders({from,to})` |
 | `src/app/(authed)/orders/loading.tsx` | Skeleton |
+| `src/app/(authed)/orders/actions.ts` | Server action `updateOrderStatusAction` (PATCH stato via BFF) |
 | `src/components/orders/OrdersView.tsx` | Client: filtri portale/agente + **ricerca**, sort **desc**, **grouping per giorno**, stato drawer, KPI |
 | `src/components/orders/OrdersFilters.tsx` | Date (→ URL, refetch) + select portale/agente (→ client state) |
 | `src/components/orders/OrdersList.tsx` | Gruppi giorno (header data + conteggio) |
@@ -43,15 +44,26 @@ filtro **agente** che ognuno usa per restringere ai propri portali. Read-only.
   agente e **ricerca** filtrano **client-side** sul payload (zero refetch), come Analytics.
 - **Ordine desc per data**, **raggruppato per giorno** (Oggi/Ieri/data, fuso Europe/Rome).
 - **Ricerca** per n° ordine, dati cliente (nome/email/telefono) o transazione Stripe.
-- **Drawer dettaglio** (pattern animato di `AnnotationsDrawer`): scivola da sinistra su
-  desktop, bottom sheet su mobile. Mostra cliente (nome/email/telefono/indirizzo),
-  pagamento + **link diretto a Stripe** (`pspReference` → `dashboard.stripe.com/payments`),
-  portale/agente/cod. mecc., righe prodotto.
+- **Drawer dettaglio** (pattern animato di `AnnotationsDrawer`): scivola da **destra** su
+  desktop (full-height, gap 16px), **bottom sheet** su mobile. Sezioni: **Stato lavorazione**
+  (selettore), Cliente (nome/email/telefono/indirizzo), **Dati fiscali** (CF/P.IVA/SDI/azienda,
+  solo se presenti), Pagamento + **link diretto a Stripe**, Portale (agente/cod. mecc.), Prodotti.
+- **Stato lavorazione** (Nuovo/In preparazione/Spedito/Consegnato/Annullato): server action
+  `updateOrderStatusAction` → `PATCH /api/v1/orders/status` (BFF). Update ottimistico via
+  override locale; su "Spedito" feedback se è partita la mail al cliente (gata allowlist lato BFF).
 - Riuso UI: `Card`, `Input`, `Pill` da `components/ui`. Niente emoji.
+
+## Mobile / responsive
+
+- Filtri `grid-cols-1` su mobile (full-width a capo) → `sm:grid-cols-2 lg:grid-cols-4`.
+- Date input con `appearance-none`+`min-w-0`: vedi `documentation/gotchas/gotcha-ios-date-input-too-wide.md`.
+- Drawer bottom-sheet `100dvh`+safe-area (non `vh`) + animazione apertura doppio rAF:
+  `documentation/gotchas/gotcha-ios-bottom-sheet-dvh-not-vh.md`.
+- Righe lista con `min-w-0`/truncate sul nome portale (no scroll orizzontale).
 
 ## Note
 
 - Ordini su channel senza portale Payload (es. main shop `scuola-demo`) → agente/cod.
   meccanografico "—", link al main shop.
-- Mostra anche eventuali ordini di test (vista operativa interna); toggle "nascondi test"
-  è fuori scope v1.
+- **Ordini di test esclusi** lato BFF (`ORDERS_REPORT_EXCLUDE_EMAILS`, default alek/gmail).
+- Ricerca Stripe = PaymentIntent `pi_` (non PaymentMethod `pm_`, non salvato da Saleor).
