@@ -12,10 +12,12 @@ import {
 
 export type { ProductPickerProduct, ProductDiscount } from "./ProductPickerRow";
 
-// Riga selezionata: prodotto intero (solo slug) o taglio (slug + capacitySlug).
+// Riga selezionata: prodotto intero (solo slug), taglio (slug + capacitySlug) o
+// variante protezione (slug + variantSku).
 export interface PickerSelectionRow {
   slug: string;
   capacitySlug?: string;
+  variantSku?: string;
 }
 
 export interface ProductPickerProps {
@@ -113,7 +115,11 @@ export function ProductPicker(props: ProductPickerProps): ReactElement {
       const p = byId.get(id);
       if (!p) continue;
       selections.push(
-        p.capacitySlug ? { slug: p.slug, capacitySlug: p.capacitySlug } : { slug: p.slug },
+        p.variantSku
+          ? { slug: p.slug, variantSku: p.variantSku }
+          : p.capacitySlug
+            ? { slug: p.slug, capacitySlug: p.capacitySlug }
+            : { slug: p.slug },
       );
       const d = drafts[id];
       const value = d ? parseValue(d.value) : 0;

@@ -3,7 +3,8 @@
 import { type ReactElement } from "react";
 
 export interface ProductPickerProduct {
-  // Chiave univoca di riga: slug (prodotto intero) o `slug#capacitySlug` (taglio).
+  // Chiave univoca di riga: slug (prodotto intero), `slug#capacitySlug` (taglio)
+  // o `slug#variantSku` (riga-variante protezione, es. Kyron Shield 24/36).
   id: string;
   slug: string;
   name: string;
@@ -13,6 +14,10 @@ export interface ProductPickerProduct {
   // Valorizzati solo per le righe-taglio (prodotti con varianti capacita).
   capacity?: string; // display, es. "128GB"
   capacitySlug?: string; // slug Saleor del valore, es. "128gb"
+  // Valorizzati solo per le righe-variante protezione (Kyron Shield 24/36).
+  variantSku?: string; // SKU Saleor della variante, es. "KSHIELD24"
+  variantLabel?: string; // display, es. "24 mesi"
+  isProtectionPlan?: boolean;
 }
 
 // Sconto per-prodotto. percent = % di sconto (0-100); eur = prezzo finale
@@ -36,8 +41,14 @@ export const EURO = new Intl.NumberFormat("it-IT", {
 });
 
 // Chiave univoca di riga: slug per i prodotti interi, `slug#capacitySlug` per i
-// tagli. Coerente con l'`id` generato dal gateway Saleor (studio-server).
-export function rowId(slug: string, capacitySlug?: string): string {
+// tagli, `slug#variantSku` per le righe-variante protezione. Coerente con l'`id`
+// generato dal gateway Saleor (studio-server).
+export function rowId(
+  slug: string,
+  capacitySlug?: string,
+  variantSku?: string,
+): string {
+  if (variantSku) return `${slug}#${variantSku}`;
   return capacitySlug ? `${slug}#${capacitySlug}` : slug;
 }
 
@@ -104,7 +115,12 @@ export function ProductRow(props: ProductRowProps): ReactElement {
         <span className="flex flex-col">
           <span className="font-medium text-[var(--color-ink)]">{p.name}</span>
           <span className="text-xs text-[var(--color-ink-muted)]">
-            {p.category} · {p.capacity ? `${p.slug} · ${p.capacity}` : p.slug}
+            {p.category} ·{" "}
+            {p.variantLabel
+              ? `${p.slug} · ${p.variantLabel}`
+              : p.capacity
+                ? `${p.slug} · ${p.capacity}`
+                : p.slug}
           </span>
         </span>
       </button>

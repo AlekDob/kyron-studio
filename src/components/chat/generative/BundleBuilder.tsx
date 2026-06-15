@@ -3,7 +3,8 @@
 import { useMemo, useState, type ReactElement } from "react";
 
 export interface BundleBuilderProduct {
-  // Chiave univoca di riga: slug (prodotto intero) o `slug#capacitySlug` (taglio).
+  // Chiave univoca di riga: slug (prodotto intero), `slug#capacitySlug` (taglio)
+  // o `slug#variantSku` (riga-variante protezione, es. Kyron Shield 24/36).
   id: string;
   slug: string;
   name: string;
@@ -11,12 +12,18 @@ export interface BundleBuilderProduct {
   category: string;
   capacity?: string; // display, es. "128GB"
   capacitySlug?: string; // slug Saleor del valore, es. "128gb"
+  // Valorizzati solo per le righe-variante protezione (Kyron Shield 24/36).
+  variantSku?: string; // SKU Saleor della variante, es. "KSHIELD24"
+  variantLabel?: string; // display, es. "24 mesi"
+  isProtectionPlan?: boolean;
 }
 
-// Componente del kit: prodotto intero (solo slug) o taglio (slug + capacitySlug).
+// Componente del kit: prodotto intero (solo slug), taglio (slug + capacitySlug)
+// o variante protezione fissa (slug + variantSku).
 export interface BundleComponentRow {
   slug: string;
   capacitySlug?: string;
+  variantSku?: string;
 }
 
 export interface BundleBuilderProps {
@@ -94,7 +101,9 @@ export function BundleBuilder(props: BundleBuilderProps): ReactElement {
     const comps: BundleComponentRow[] = Array.from(components).flatMap((id) => {
       const p = byId.get(id);
       if (!p) return [];
-      return [p.capacitySlug ? { slug: p.slug, capacitySlug: p.capacitySlug } : { slug: p.slug }];
+      if (p.variantSku) return [{ slug: p.slug, variantSku: p.variantSku }];
+      if (p.capacitySlug) return [{ slug: p.slug, capacitySlug: p.capacitySlug }];
+      return [{ slug: p.slug }];
     });
     onSubmit?.({
       name: name.trim(),
@@ -172,7 +181,12 @@ export function BundleBuilder(props: BundleBuilderProps): ReactElement {
                     {p.name}
                   </span>
                   <span className="text-xs text-[var(--color-ink-muted)]">
-                    {p.category} · {p.capacity ? `${p.slug} · ${p.capacity}` : p.slug}
+                    {p.category} ·{" "}
+                    {p.variantLabel
+                      ? `${p.slug} · ${p.variantLabel}`
+                      : p.capacity
+                        ? `${p.slug} · ${p.capacity}`
+                        : p.slug}
                   </span>
                 </span>
                 <span className="flex items-center gap-3">

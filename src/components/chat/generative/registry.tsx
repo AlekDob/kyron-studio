@@ -99,13 +99,17 @@ function extractInitialProps(
 ): Record<string, unknown> {
   if (!data || typeof data !== "object") return {};
   const d = data as Record<string, unknown>;
-  // Le submission portano selezioni/componenti come {slug, capacitySlug?}; il
-  // replay readonly preseleziona per chiave-riga (rowId).
+  // Le submission portano selezioni/componenti come {slug, capacitySlug?,
+  // variantSku?}; il replay readonly preseleziona per chiave-riga (rowId).
   const toRowIds = (rows: unknown): string[] =>
     Array.isArray(rows)
       ? rows.map((r) => {
-          const o = r as { slug: string; capacitySlug?: string };
-          return rowId(o.slug, o.capacitySlug);
+          const o = r as {
+            slug: string;
+            capacitySlug?: string;
+            variantSku?: string;
+          };
+          return rowId(o.slug, o.capacitySlug, o.variantSku);
         })
       : [];
   if (component === "ProductPicker") {

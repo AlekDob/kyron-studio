@@ -190,3 +190,15 @@ STUDIO_DEV_USER=tua@email npm run dev
 - Submission: `{ selectedSlugs: string[], productDiscounts: Array<{slug, kind:"percent"|"eur", value}> }` (solo prodotti con value > 0).
 - `registry.tsx` mappa `productDiscounts` → prop `initialDiscounts` per il render readonly dei turn confermati.
 - A valle: `PortalDraft.productDiscounts` + schema studio-server `catalog.productDiscounts` + Payload `catalog.productDiscounts` + md/mail (cms feature 032). Applicazione Saleor delegata a onboard-school.
+
+## Update 2026-06-15 — Protezione (AppleCare / Kyron Shield) come righe-variante nel BundleBuilder
+
+Problema: i piani protezione con varianti distinte solo per NOME ("24 mesi"/"36 mesi", SKU KSHIELD24/36) senza attributo Saleor apparivano come UNA riga sola → impossibile includere una durata specifica nel kit (caso Russo/Massari). NODO: espandere a tappeto rompe Pintor/Pacinotti (lì Kyron Shield serve come prodotto INTERO a catalogo per il toggle add-on storefront).
+
+Soluzione condizionata al CONTESTO:
+- **backend** `core/saleor/client.ts`: `fetchSaleorProducts(channel, first, {expandProtectionVariants?})` + `expandByVariant` (gate `isProtectionPlan` via metadata/prefisso slug, >1 variante, nessuna `capacita`) → righe `slug#sku` con `variantSku`/`variantLabel`/`isProtectionPlan`. Query estesa con `metadata{key value}` e variant `name`.
+- `render_product_picker` (catalogo) = `expandProtectionVariants:false` → Kyron Shield resta 1 prodotto intero. `render_bundle_builder` = `true` + nuovo param `includeProtection` (bool): true solo in modalità inclusa-nel-bundle → aggiunge le righe protezione (no doppio-vendita in add-on).
+- **frontend**: `variantSku`/`variantLabel` in `ProductPickerProduct`/`BundleBuilderProduct`/`PickerSelectionRow`/`BundleComponentRow`; `rowId(slug, capacitySlug?, variantSku?)` → `slug#sku`; `toRowIds` (registry) gestisce `variantSku`; display riga mostra `variantLabel` ("24 mesi") al posto di `capacity`; submission BundleBuilder/ProductPicker porta `variantSku`.
+- **agente** `prompt.ts`: nuovo step 6b — CHIEDE protezione (si/no → quale → inclusa-bundle [durata fissa, includeProtection=true] vs add-on a catalogo [toggle cliente, plan in visibleSlugs]). Mapping componenti: `{slug, variantSku}` → `{productSlug, variantSku, capacity:null}` → `toComponentSelection`/`toCanonicalPendingSchool` → `{kind:"variant"}` (= fixed). Invariati.
+
+Verificato (preview, props reali Saleor staging): BundleBuilder mostra KS 24/36 (79/139€) selezionabili; KS24 → submission `{slug:"kyron-shield-ipad", variantSku:"KSHIELD24"}`, iPad → `capacitySlug:"128gb"`. Catalogo non rotto (KS 1 riga). Typecheck + 19 test vitest verdi.
