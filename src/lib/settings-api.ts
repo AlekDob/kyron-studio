@@ -127,3 +127,36 @@ export async function saveProcessConfig(
     return false;
   }
 }
+
+// --- Ecommerce (decision-019): % sconto bonifico ------------------------
+
+export interface EcommerceSettings {
+  bankTransferDiscountPercent: number;
+}
+
+const DEFAULT_ECOMMERCE: EcommerceSettings = { bankTransferDiscountPercent: 1.5 };
+
+export async function getEcommerceSettings(): Promise<EcommerceSettings> {
+  try {
+    const res = await fetch(`${BASE}/ecommerce`, { cache: "no-store" });
+    if (!res.ok) return DEFAULT_ECOMMERCE;
+    return (await res.json()) as EcommerceSettings;
+  } catch {
+    return DEFAULT_ECOMMERCE;
+  }
+}
+
+export async function saveEcommerceSettings(
+  settings: EcommerceSettings,
+): Promise<boolean> {
+  try {
+    const res = await fetch(`${BASE}/ecommerce`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(settings),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}

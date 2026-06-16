@@ -9,8 +9,16 @@ import { ModelRoutingSection } from "./ModelRoutingSection";
 import { ThemeSection } from "./ThemeSection";
 import { ComingSoonSection } from "./ComingSoonSection";
 import { OrganizationSection } from "./OrganizationSection";
+import { EcommerceSection } from "./EcommerceSection";
 
-type Tab = "profile" | "connections" | "models" | "theme" | "org" | "mcp";
+type Tab =
+  | "profile"
+  | "connections"
+  | "models"
+  | "theme"
+  | "org"
+  | "ecommerce"
+  | "mcp";
 
 // Brain: feature-008 — adminOnly: connessioni AI, modelli, MCP e organizzazione
 // (gestione utenti) sono riservate agli admin. Gli editor vedono solo Tema
@@ -26,6 +34,7 @@ const TABS: Array<{
   { id: "models", label: "Modelli AI", adminOnly: true },
   { id: "theme", label: "Tema" },
   { id: "org", label: "Organizzazione", adminOnly: true },
+  { id: "ecommerce", label: "Ecommerce", adminOnly: true },
   { id: "mcp", label: "MCP Servers", disabled: true, adminOnly: true },
 ];
 
@@ -87,6 +96,7 @@ export function SettingsLayout({ userEmail, isAdmin }: Props) {
             />
           )}
           {active === "org" && <OrganizationSection currentEmail={userEmail} />}
+          {active === "ecommerce" && <EcommerceSection />}
           {active === "mcp" && (
             <ComingSoonSection
               title="MCP Servers"
