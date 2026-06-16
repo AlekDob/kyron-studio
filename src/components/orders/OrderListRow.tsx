@@ -47,6 +47,13 @@ export function OrderListRow({ order, onSelect }: OrderListRowProps) {
           <Pill size="sm" variant={paymentBadge(order.paymentStatus).variant}>
             {paymentBadge(order.paymentStatus).label}
           </Pill>
+          {order.paymentMethod === "teacher-card" && (
+            <Pill size="sm" variant={order.teacherCardAcquired ? "tertiary" : "warning"}>
+              {order.teacherCardAcquired
+                ? "Carta docente acquisita"
+                : "Carta docente da riscuotere"}
+            </Pill>
+          )}
         </span>
       </div>
 
