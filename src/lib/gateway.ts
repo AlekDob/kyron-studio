@@ -357,6 +357,10 @@ export interface OrderRow {
   portalName: string;
   portalUrl: string;
   stripeUrl: string; // link diretto dashboard Stripe o vuoto
+  // Brain: decision-019 — metodo offline + stato buono Carta del Docente.
+  paymentMethod: string; // "bank-transfer" | "teacher-card" | ""
+  teacherCardAmount: number | null;
+  teacherCardAcquired: boolean;
   lines: OrderLine[];
 }
 

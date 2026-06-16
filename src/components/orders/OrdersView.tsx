@@ -74,13 +74,18 @@ export function OrdersView({ data, from, to }: OrdersViewProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // Override ottimistici dello stato lavorazione (id -> status) dopo un cambio.
   const [overrides, setOverrides] = useState<Record<string, string>>({});
+  // Override ottimistico "carta del docente acquisita" (id -> true).
+  const [acquired, setAcquired] = useState<Record<string, boolean>>({});
 
   const orders = useMemo(
     () =>
-      data.orders.map((o) =>
-        overrides[o.id] ? { ...o, workflowStatus: overrides[o.id] } : o,
-      ),
-    [data.orders, overrides],
+      data.orders.map((o) => {
+        let next = o;
+        if (overrides[o.id]) next = { ...next, workflowStatus: overrides[o.id] };
+        if (acquired[o.id]) next = { ...next, teacherCardAcquired: true };
+        return next;
+      }),
+    [data.orders, overrides, acquired],
   );
 
   const portals = useMemo(() => portalOptions(orders), [orders]);
@@ -147,6 +152,9 @@ export function OrdersView({ data, from, to }: OrdersViewProps) {
         onClose={() => setSelectedId(null)}
         onStatusChange={(id, status) =>
           setOverrides((prev) => ({ ...prev, [id]: status }))
+        }
+        onTeacherCardAcquired={(id) =>
+          setAcquired((prev) => ({ ...prev, [id]: true }))
         }
       />
     </div>

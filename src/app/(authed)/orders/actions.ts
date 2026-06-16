@@ -12,3 +12,14 @@ export async function updateOrderStatusAction(
     body: JSON.stringify({ id, status }),
   });
 }
+
+// Brain: decision-019 — segna il buono Carta del Docente come acquisito e manda
+// la mail di conferma al cliente (POST /api/v1/orders/teacher-card-acquired).
+export async function markTeacherCardAcquiredAction(
+  id: string,
+): Promise<{ ok: boolean; acquiredAt: string; emailed: boolean }> {
+  return gatewayFetch("/api/v1/orders/teacher-card-acquired", {
+    method: "POST",
+    body: JSON.stringify({ id }),
+  });
+}

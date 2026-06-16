@@ -3,7 +3,10 @@ import { useEffect, useState, type ReactNode } from "react";
 import { X, ExternalLink } from "lucide-react";
 import type { OrderRow } from "@/lib/gateway";
 import { cn } from "@/lib/cn";
-import { updateOrderStatusAction } from "@/app/(authed)/orders/actions";
+import {
+  updateOrderStatusAction,
+  markTeacherCardAcquiredAction,
+} from "@/app/(authed)/orders/actions";
 import { OrderLines } from "./OrderLines";
 import { StatusBadges, PortalLink } from "./StatusBadges";
 import {
@@ -18,12 +21,18 @@ interface OrderDrawerProps {
   order: OrderRow | null;
   onClose: () => void;
   onStatusChange: (id: string, status: string) => void;
+  onTeacherCardAcquired: (id: string) => void;
 }
 
 // Drawer dettaglio ordine. Desktop: scivola da SINISTRA. Mobile: bottom sheet.
 // Riusa il pattern animato di AnnotationsDrawer (transform inline + media query
 // inietta il translateX per desktop, non esprimibile inline in Tailwind v4).
-export function OrderDrawer({ order, onClose, onStatusChange }: OrderDrawerProps) {
+export function OrderDrawer({
+  order,
+  onClose,
+  onStatusChange,
+  onTeacherCardAcquired,
+}: OrderDrawerProps) {
   // render = presenza nel DOM; show = posizione "aperto". Lo sfasamento di un
   // frame tra i due fa partire l'animazione di entrata (Mac e iPhone).
   const [render, setRender] = useState(false);
@@ -122,6 +131,15 @@ export function OrderDrawer({ order, onClose, onStatusChange }: OrderDrawerProps
             {current.pspReference && <StripeLink order={current} />}
           </Section>
 
+          {current.paymentMethod === "teacher-card" && (
+            <Section title="Carta del Docente">
+              <TeacherCardBlock
+                order={current}
+                onAcquired={onTeacherCardAcquired}
+              />
+            </Section>
+          )}
+
           <Section title="Portale">
             <InfoRow
               label="Scuola"
@@ -219,6 +237,67 @@ function StatusSelector({
           );
         })}
       </div>
+      {note && <p className="text-xs text-[var(--color-ink-muted)]">{note}</p>}
+    </div>
+  );
+}
+
+// Brain: decision-019 — blocco Carta del Docente: importo buono + azione
+// "acquisita". Al click registra l'acquisizione (metadata) e manda la mail di
+// conferma al cliente; aggiorna ottimisticamente il badge in lista (onAcquired).
+function TeacherCardBlock({
+  order,
+  onAcquired,
+}: {
+  order: OrderRow;
+  onAcquired: (id: string) => void;
+}) {
+  const [acquired, setAcquired] = useState(order.teacherCardAcquired);
+  const [saving, setSaving] = useState(false);
+  const [note, setNote] = useState("");
+
+  async function acquire() {
+    if (acquired || saving) return;
+    setSaving(true);
+    setNote("");
+    try {
+      const res = await markTeacherCardAcquiredAction(order.id);
+      setAcquired(true);
+      onAcquired(order.id);
+      setNote(
+        res.emailed
+          ? "Buono acquisito. Email di conferma inviata al cliente."
+          : "Buono acquisito.",
+      );
+    } catch {
+      setNote("Errore nel salvataggio. Riprova.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      {order.teacherCardAmount != null && (
+        <InfoRow
+          label="Importo buono"
+          value={<span className="tabular-nums">{formatEur(order.teacherCardAmount)}</span>}
+        />
+      )}
+      {acquired ? (
+        <p className="text-sm text-[var(--color-ink-soft)]">
+          Buono acquisito sul portale del Ministero. Ordine confermato.
+        </p>
+      ) : (
+        <button
+          type="button"
+          disabled={saving}
+          onClick={acquire}
+          className="rounded-[var(--radius-pill)] border border-[var(--color-ink)] bg-[var(--color-ink)] px-3 py-2 text-sm font-medium text-[var(--color-paper)] transition-opacity disabled:opacity-50"
+        >
+          {saving ? "Salvataggio…" : "Carta del docente acquisita"}
+        </button>
+      )}
       {note && <p className="text-xs text-[var(--color-ink-muted)]">{note}</p>}
     </div>
   );
