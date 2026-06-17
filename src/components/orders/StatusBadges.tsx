@@ -9,6 +9,11 @@ export function StatusBadges({ order }: { order: OrderRow }) {
   const pay = paymentBadge(order.paymentStatus);
   const ful = fulfillmentBadge(order.status);
   const isTeacherCard = order.paymentMethod === "teacher-card";
+  // Bonifico ancora da incassare: attenziona finche' non e' segnato pagato.
+  const bankTransferToCollect =
+    order.paymentMethod === "bank-transfer" &&
+    !order.bankTransferPaid &&
+    order.paymentStatus !== "FULLY_CHARGED";
   return (
     <span className="inline-flex flex-wrap gap-1.5">
       <Pill size="sm" variant={pay.variant}>
@@ -22,6 +27,11 @@ export function StatusBadges({ order }: { order: OrderRow }) {
           {order.teacherCardAcquired
             ? "Carta docente acquisita"
             : "Carta docente da riscuotere"}
+        </Pill>
+      )}
+      {bankTransferToCollect && (
+        <Pill size="sm" variant="warning">
+          Bonifico da incassare
         </Pill>
       )}
     </span>

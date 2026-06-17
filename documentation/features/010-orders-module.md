@@ -8,6 +8,15 @@ tags: [orders, ordini, commerciali, portali, saleor]
 
 # Feature 010 — Modulo Ordini
 
+> **Update 2026-06-17**: il drawer mostra **Studente** + **Classe** (da
+> `billingAddress.metadata`, ecommerce feature 028) nella sezione Cliente. Nuovo
+> blocco/azione **"Bonifico pagato"** per i `paymentMethod=bank-transfer`: marca
+> l'ordine pagato in Saleor (`orderMarkAsPaid` → `FULLY_CHARGED`, coerente con
+> badge/Danea/report) + metadata `bankTransferPaidAt` + email "bonifico ricevuto"
+> al cliente. Badge "Bonifico da incassare" finché non pagato. Backend:
+> studio-server `POST /api/v1/orders/bank-transfer-paid` + `core/saleor/orders.markOrderAsPaid`.
+
+
 Modulo `/orders` che elenca tutti gli ordini dei portali scuola, filtrabili per
 **data**, **portale** e **agente commerciale**. Per ogni ordine: portale (link allo
 shop), agente, codice meccanografico, cliente, totale, **stato** pagamento/evasione,

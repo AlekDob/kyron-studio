@@ -23,3 +23,14 @@ export async function markTeacherCardAcquiredAction(
     body: JSON.stringify({ id }),
   });
 }
+
+// Brain: decision-019 — segna il bonifico come incassato: marca l'ordine pagato
+// in Saleor e manda la mail "bonifico ricevuto" (POST /api/v1/orders/bank-transfer-paid).
+export async function markBankTransferPaidAction(
+  id: string,
+): Promise<{ ok: boolean; paidAt: string; emailed: boolean }> {
+  return gatewayFetch("/api/v1/orders/bank-transfer-paid", {
+    method: "POST",
+    body: JSON.stringify({ id }),
+  });
+}

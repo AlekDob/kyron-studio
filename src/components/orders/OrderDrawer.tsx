@@ -6,6 +6,7 @@ import { cn } from "@/lib/cn";
 import {
   updateOrderStatusAction,
   markTeacherCardAcquiredAction,
+  markBankTransferPaidAction,
 } from "@/app/(authed)/orders/actions";
 import { OrderLines } from "./OrderLines";
 import { StatusBadges, PortalLink } from "./StatusBadges";
@@ -22,6 +23,7 @@ interface OrderDrawerProps {
   onClose: () => void;
   onStatusChange: (id: string, status: string) => void;
   onTeacherCardAcquired: (id: string) => void;
+  onBankTransferPaid: (id: string) => void;
 }
 
 // Drawer dettaglio ordine. Desktop: scivola da SINISTRA. Mobile: bottom sheet.
@@ -32,6 +34,7 @@ export function OrderDrawer({
   onClose,
   onStatusChange,
   onTeacherCardAcquired,
+  onBankTransferPaid,
 }: OrderDrawerProps) {
   // render = presenza nel DOM; show = posizione "aperto". Lo sfasamento di un
   // frame tra i due fa partire l'animazione di entrata (Mac e iPhone).
@@ -117,6 +120,13 @@ export function OrderDrawer({
             {current.customerAddress && (
               <InfoRow label="Indirizzo" value={current.customerAddress} />
             )}
+            {/* Dati studente (portali scuola, feature 028). Mostrati se presenti. */}
+            {current.studentName && (
+              <InfoRow label="Studente" value={current.studentName} />
+            )}
+            {current.studentClass && (
+              <InfoRow label="Classe" value={current.studentClass} />
+            )}
           </Section>
 
           <FiscalSection order={current} />
@@ -137,6 +147,12 @@ export function OrderDrawer({
                 order={current}
                 onAcquired={onTeacherCardAcquired}
               />
+            </Section>
+          )}
+
+          {current.paymentMethod === "bank-transfer" && (
+            <Section title="Bonifico">
+              <BankTransferBlock order={current} onPaid={onBankTransferPaid} />
             </Section>
           )}
 
@@ -296,6 +312,63 @@ function TeacherCardBlock({
           className="rounded-[var(--radius-pill)] border border-[var(--color-ink)] bg-[var(--color-ink)] px-3 py-2 text-sm font-medium text-[var(--color-paper)] transition-opacity disabled:opacity-50"
         >
           {saving ? "Salvataggio…" : "Carta del docente acquisita"}
+        </button>
+      )}
+      {note && <p className="text-xs text-[var(--color-ink-muted)]">{note}</p>}
+    </div>
+  );
+}
+
+// Brain: decision-019 — blocco Bonifico: azione "Bonifico pagato". Al click marca
+// l'ordine pagato in Saleor (paymentStatus FULLY_CHARGED), manda la mail "bonifico
+// ricevuto" e aggiorna ottimisticamente il badge in lista (onPaid).
+function BankTransferBlock({
+  order,
+  onPaid,
+}: {
+  order: OrderRow;
+  onPaid: (id: string) => void;
+}) {
+  const alreadyPaid =
+    order.bankTransferPaid || order.paymentStatus === "FULLY_CHARGED";
+  const [paid, setPaid] = useState(alreadyPaid);
+  const [saving, setSaving] = useState(false);
+  const [note, setNote] = useState("");
+
+  async function confirm() {
+    if (paid || saving) return;
+    setSaving(true);
+    setNote("");
+    try {
+      const res = await markBankTransferPaidAction(order.id);
+      setPaid(true);
+      onPaid(order.id);
+      setNote(
+        res.emailed
+          ? "Bonifico segnato pagato. Email di conferma inviata al cliente."
+          : "Bonifico segnato pagato.",
+      );
+    } catch {
+      setNote("Errore nel salvataggio. Riprova.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      {paid ? (
+        <p className="text-sm text-[var(--color-ink-soft)]">
+          Bonifico incassato. Ordine segnato come pagato.
+        </p>
+      ) : (
+        <button
+          type="button"
+          disabled={saving}
+          onClick={confirm}
+          className="rounded-[var(--radius-pill)] border border-[var(--color-ink)] bg-[var(--color-ink)] px-3 py-2 text-sm font-medium text-[var(--color-paper)] transition-opacity disabled:opacity-50"
+        >
+          {saving ? "Salvataggio…" : "Bonifico pagato"}
         </button>
       )}
       {note && <p className="text-xs text-[var(--color-ink-muted)]">{note}</p>}

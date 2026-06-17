@@ -76,6 +76,8 @@ export function OrdersView({ data, from, to }: OrdersViewProps) {
   const [overrides, setOverrides] = useState<Record<string, string>>({});
   // Override ottimistico "carta del docente acquisita" (id -> true).
   const [acquired, setAcquired] = useState<Record<string, boolean>>({});
+  // Override ottimistico "bonifico pagato" (id -> true): flippa anche paymentStatus.
+  const [paid, setPaid] = useState<Record<string, boolean>>({});
 
   const orders = useMemo(
     () =>
@@ -83,9 +85,11 @@ export function OrdersView({ data, from, to }: OrdersViewProps) {
         let next = o;
         if (overrides[o.id]) next = { ...next, workflowStatus: overrides[o.id] };
         if (acquired[o.id]) next = { ...next, teacherCardAcquired: true };
+        if (paid[o.id])
+          next = { ...next, bankTransferPaid: true, paymentStatus: "FULLY_CHARGED" };
         return next;
       }),
-    [data.orders, overrides, acquired],
+    [data.orders, overrides, acquired, paid],
   );
 
   const portals = useMemo(() => portalOptions(orders), [orders]);
@@ -155,6 +159,9 @@ export function OrdersView({ data, from, to }: OrdersViewProps) {
         }
         onTeacherCardAcquired={(id) =>
           setAcquired((prev) => ({ ...prev, [id]: true }))
+        }
+        onBankTransferPaid={(id) =>
+          setPaid((prev) => ({ ...prev, [id]: true }))
         }
       />
     </div>

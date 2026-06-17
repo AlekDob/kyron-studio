@@ -347,6 +347,9 @@ export interface OrderRow {
   fiscalCode: string;
   vatNumber: string;
   sdiCode: string;
+  // Dati studente (portali scuola, feature 028). Vuoti se assenti / main shop.
+  studentName: string;
+  studentClass: string;
   totalGross: number;
   currency: string;
   status: string; // evasione Saleor (UNFULFILLED, FULFILLED, ...)
@@ -361,6 +364,7 @@ export interface OrderRow {
   paymentMethod: string; // "bank-transfer" | "teacher-card" | ""
   teacherCardAmount: number | null;
   teacherCardAcquired: boolean;
+  bankTransferPaid: boolean; // bonifico segnato incassato dal team
   lines: OrderLine[];
 }
 
