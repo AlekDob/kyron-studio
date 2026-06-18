@@ -15,6 +15,12 @@ interface OrdersViewProps {
   to: string;
 }
 
+// true se il buono Carta del Docente copre l'intero totale ordine (tolleranza
+// 0,5 cent): in quel caso l'acquisizione salda l'ordine -> badge "Pagato".
+function teacherCardCoversTotal(o: OrderRow): boolean {
+  return o.teacherCardAmount !== null && o.teacherCardAmount + 0.005 >= o.totalGross;
+}
+
 // Opzioni portale uniche dal payload del periodo (channelSlug -> nome).
 function portalOptions(orders: OrderRow[]): PortalOption[] {
   const map = new Map<string, string>();
@@ -84,7 +90,13 @@ export function OrdersView({ data, from, to }: OrdersViewProps) {
       data.orders.map((o) => {
         let next = o;
         if (overrides[o.id]) next = { ...next, workflowStatus: overrides[o.id] };
-        if (acquired[o.id]) next = { ...next, teacherCardAcquired: true };
+        if (acquired[o.id]) {
+          next = { ...next, teacherCardAcquired: true };
+          // Se il buono copre l'intero ordine, l'acquisizione lo salda
+          // (markOrderAsPaid lato server): flippa subito il badge a "Pagato".
+          if (teacherCardCoversTotal(o))
+            next = { ...next, paymentStatus: "FULLY_CHARGED" };
+        }
         if (paid[o.id])
           next = { ...next, bankTransferPaid: true, paymentStatus: "FULLY_CHARGED" };
         return next;
