@@ -8,6 +8,14 @@ tags: [orders, ordini, commerciali, portali, saleor]
 
 # Feature 010 — Modulo Ordini
 
+> **Update 2026-06-20**: fix link Stripe sbagliato nel drawer. Un checkout può
+> generare più PaymentIntent (re-init Stripe su remount) e il primo resta orfano
+> "Incomplete" su Stripe; il drawer mostrava quello invece del PI realmente
+> incassato → l'ordine sembrava non pagato. Ora il BFF (`pickStripeRef` in
+> studio-server `core/saleor/orders.ts`) sceglie la transazione con
+> `chargedAmount > 0`. Vedi
+> `../../../documentation/gotchas/gotcha-stripe-duplicate-payment-intent-orphan.md`.
+
 > **Update 2026-06-17**: il drawer mostra **Studente** + **Classe** (da
 > `billingAddress.metadata`, ecommerce feature 028) nella sezione Cliente. Nuovo
 > blocco/azione **"Bonifico pagato"** per i `paymentMethod=bank-transfer`: marca
