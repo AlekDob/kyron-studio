@@ -96,6 +96,8 @@ resta aperto col messaggio. `duplicatePortal(sourceSlug, {newSlug, newNome})` in
 Endpoint: `POST /api/portals/[slug]/duplicate` (proxy) → studio-server
 `POST /api/v1/portals/:slug/duplicate` (`requestedBy = c.get("studioUser").email`).
 
+**Go-live**: in produzione su `studio.kyronedu.it` dal 2026-06-22 (commit `feat(portals): duplica portale` su studio + studio-server, redeploy Coolify manuale via API — l'autodeploy webhook non e' attivo). Annuncio interno al team via mail "da Panzerottino" (`documentation/emails/2026-06-22-duplica-portale-panzerottino/`).
+
 ## Persistenza
 
 Collection Payload `pending-schools` (vedi `cms/payload/collections/PendingSchools.ts`),
