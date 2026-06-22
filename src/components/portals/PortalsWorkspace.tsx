@@ -127,6 +127,30 @@ export function PortalsWorkspace({ initialPortals, initialDetailSlug }: Props): 
     [detailSlug],
   );
 
+  // Duplica portale → POST + refresh, poi apre il dettaglio della nuova Bozza
+  // cosi' il commerciale aggiusta subito indirizzo/cod. meccanografico/logo.
+  // Su errore (es. slug esistente) rilancia: il modal mostra il messaggio.
+  const handleDuplicatePortal = useCallback(
+    async (
+      sourceSlug: string,
+      body: { newSlug: string; newNome: string },
+    ): Promise<void> => {
+      const res = await fetch(`/api/portals/${sourceSlug}/duplicate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(data.error ?? "duplicazione fallita");
+      }
+      setPortals(await fetchPortals());
+      const detail = await fetchPortalDetail(body.newSlug);
+      if (detail) setPanel({ kind: "detail", portal: detail });
+    },
+    [],
+  );
+
   const isDetail = panel.kind === "detail";
 
   return (
@@ -160,6 +184,7 @@ export function PortalsWorkspace({ initialPortals, initialDetailSlug }: Props): 
           onDetailChanged={handleRefreshDetail}
           onChangeStatus={handleChangeStatus}
           onDeletePortal={handleDeletePortal}
+          onDuplicatePortal={handleDuplicatePortal}
         />
       </aside>
       <MobileChatOverlay
@@ -176,6 +201,7 @@ export function PortalsWorkspace({ initialPortals, initialDetailSlug }: Props): 
           onDetailChanged={handleRefreshDetail}
           onChangeStatus={handleChangeStatus}
           onDeletePortal={handleDeletePortal}
+          onDuplicatePortal={handleDuplicatePortal}
         />
       </MobileChatOverlay>
     </div>
@@ -193,6 +219,7 @@ function SidePanel({
   onDetailChanged,
   onChangeStatus,
   onDeletePortal,
+  onDuplicatePortal,
 }: {
   mode: SidePanelMode;
   draft: PortalDraft;
@@ -202,6 +229,10 @@ function SidePanel({
   onDetailChanged?: () => void;
   onChangeStatus?: (slug: string, status: string) => Promise<void> | void;
   onDeletePortal?: (slug: string) => Promise<void> | void;
+  onDuplicatePortal?: (
+    sourceSlug: string,
+    body: { newSlug: string; newNome: string },
+  ) => Promise<void>;
 }) {
   if (mode.kind === "creating") {
     return (
@@ -271,6 +302,7 @@ function SidePanel({
           onSelect={onSelectPortal}
           onChangeStatus={onChangeStatus}
           onDelete={onDeletePortal}
+          onDuplicate={onDuplicatePortal}
         />
       </div>
     </>

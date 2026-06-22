@@ -228,6 +228,18 @@ export async function deletePortal(
   return gatewayFetch(`/api/v1/portals/${slug}`, { method: "DELETE" });
 }
 
+// Duplica un portale come nuova Bozza: catalogo/bundle/sconti/spedizione
+// clonati, identita' scuola resettata. Non tocca Saleor. Vedi feature 007.
+export async function duplicatePortal(
+  slug: string,
+  body: { newSlug: string; newNome: string },
+): Promise<{ ok: boolean; slug: string; nome: string }> {
+  return gatewayFetch(`/api/v1/portals/${slug}/duplicate`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
 export interface EnableTargetReport {
   target: "staging" | "prod";
   channelId: string;

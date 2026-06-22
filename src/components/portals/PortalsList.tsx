@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { MapPin, Package, ShoppingBag, Trash2, User } from "lucide-react";
+import { Copy, MapPin, Package, ShoppingBag, Trash2, User } from "lucide-react";
 import { PortalLogo } from "./PortalLogo";
+import { DuplicatePortalModal } from "./DuplicatePortalModal";
 import type { PortalSummary } from "@/lib/gateway";
 
 // Per ora solo 2 stati operativi: Bozza (draft) e Live (onboarded).
@@ -22,6 +23,10 @@ interface Props {
   onSelect?: (slug: string) => void;
   onChangeStatus?: (slug: string, status: string) => Promise<void> | void;
   onDelete?: (slug: string) => Promise<void> | void;
+  onDuplicate?: (
+    sourceSlug: string,
+    body: { newSlug: string; newNome: string },
+  ) => Promise<void>;
 }
 
 export function PortalsList({
@@ -29,10 +34,12 @@ export function PortalsList({
   onSelect,
   onChangeStatus,
   onDelete,
+  onDuplicate,
 }: Props) {
   const [query, setQuery] = useState("");
   const [busySlug, setBusySlug] = useState<string | null>(null);
   const [confirmSlug, setConfirmSlug] = useState<string | null>(null);
+  const [duplicateSource, setDuplicateSource] = useState<PortalSummary | null>(null);
 
   async function handleStatus(slug: string, status: string): Promise<void> {
     setBusySlug(slug);
@@ -99,6 +106,18 @@ export function PortalsList({
 
       <PortalGroup label="Bozze" items={drafts} render={renderRow} />
       <PortalGroup label="Live" items={live} render={renderRow} />
+
+      {duplicateSource && onDuplicate ? (
+        <DuplicatePortalModal
+          sourceSlug={duplicateSource.slug}
+          sourceNome={duplicateSource.nome}
+          onClose={() => setDuplicateSource(null)}
+          onConfirm={async (body) => {
+            await onDuplicate(duplicateSource.slug, body);
+            setDuplicateSource(null);
+          }}
+        />
+      ) : null}
     </div>
   );
 
@@ -131,6 +150,18 @@ export function PortalsList({
                 </option>
               ))}
             </select>
+            {onDuplicate ? (
+              <button
+                type="button"
+                onClick={() => setDuplicateSource(p)}
+                disabled={busySlug === p.slug}
+                aria-label={`Duplica ${p.nome}`}
+                title="Duplica portale"
+                className="rounded-[var(--radius-control)] border border-[var(--color-line)] px-1.5 py-0.5 text-[var(--color-ink-muted)] hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink)] disabled:opacity-50"
+              >
+                <Copy className="h-3 w-3" />
+              </button>
+            ) : null}
             {onDelete ? (
               <button
                 type="button"

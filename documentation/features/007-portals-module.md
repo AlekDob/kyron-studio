@@ -2,8 +2,8 @@
 type: feature
 project: kyron-studio
 created: 2026-05-27
-last_verified: 2026-06-09
-tags: [portals, onboarding, crud, logo-upload, workstream-04, requested-by, capacita, varianti, outside-bundle]
+last_verified: 2026-06-22
+tags: [portals, onboarding, crud, logo-upload, workstream-04, requested-by, capacita, varianti, outside-bundle, duplicate]
 ---
 
 # 007 — Modulo Portali
@@ -62,6 +62,39 @@ lazy-loaded da `/api/portals/_catalog` (Saleor passthrough).
 **Refresh post-edit**: `PortalsWorkspace.handleRefreshDetail()` viene passato come
 `onChanged` al PortalDetail. Dopo ogni mutation refetcha sia il portale aperto
 sia la lista (le card si aggiornano in tempo reale).
+
+## Duplica portale (2026-06-22)
+
+Molte scuole hanno **catalogo e kit identici**: cambia solo l'identita' (nome,
+indirizzo, cod. meccanografico, logo). Il bottone **Duplica** (icona `Copy`) su
+ogni card della lista crea una nuova **Bozza** clonando la struttura e resettando
+l'identita'. Niente piu' ricostruzione a mano dell'onboarding conversazionale.
+
+| Campo | Azione nella copia |
+|---|---|
+| `catalog` (visibleSlugs, visibleVariants, hiddenSlugs, productDiscounts, flag outsideBundle) | **copiato** verbatim |
+| `bundles[]` (slug, name, finalPriceEur, components) | **copiato** verbatim (drop `id` Payload via `writableBundle`) |
+| `shipToSchool`, `shippingMethodLabel`, `shippingPriceEur` | **copiati** |
+| `slug`, `nome` | **nuovi** (dal popup; slug validato kebab-case + univoco) |
+| `branding.nome` | = nuovo nome; `branding.logo` → **reset** (re-upload) |
+| `codiceMeccanografico` → `"TBD"`, `sitoUfficiale` → `""` | **reset** |
+| `schoolAddress` | **svuotato** (solo `country="IT"`) → reinserimento obbligatorio, evita spedizioni al vecchio indirizzo |
+| `status` → `"draft"`, `collectedBy` → `"manual"`, `requestedBy` → utente loggato | **reset/nuovi** |
+| `channelId`, `saleorVoucherIds` | **non copiati** — rigenerati all'enable |
+
+**Sicurezza**: la copia non tocca Saleor/Stripe. Channel, voucher, promotion e
+Stripe config si generano solo quando si clicca "Abilita" (endpoint `enable`),
+coerente col gotcha "channelId diverge staging/prod". Finche' resta Bozza non
+compare su `kyronedu.it/shop`.
+
+**Flusso UI**: click Duplica → `DuplicatePortalModal` (nome + slug, slug derivato
+dal nome finche' non toccato) → POST → la Bozza appare in lista e si apre subito
+il dettaglio per gli aggiustamenti inline. Slug gia' esistente → 400, il modal
+resta aperto col messaggio. `duplicatePortal(sourceSlug, {newSlug, newNome})` in
+`writer.ts` legge la sorgente via `getPortal()` e fa `gateway.create()`.
+
+Endpoint: `POST /api/portals/[slug]/duplicate` (proxy) → studio-server
+`POST /api/v1/portals/:slug/duplicate` (`requestedBy = c.get("studioUser").email`).
 
 ## Persistenza
 
@@ -182,7 +215,7 @@ link diretto, e redirect da route obsolete senza perdere il contesto workspace.
 - `src/features/portals/gateway.ts` — helper `getPortalsGateway()` lazy singleton sul Payload gateway (decision-016)
 - `src/features/portals/route.ts` — CRUD routes + logo upload + catalog/bundles + `_catalog` Saleor passthrough
 - `src/features/portals/reader.ts` — `listPortals()`, `getPortal()`, `findPortalDoc()`, `resolvePortal(query)` (fuzzy in-memory) sopra Payload REST
-- `src/features/portals/writer.ts` — `updatePortal()`, `updatePortalCatalog()`, `addBundleToPortal()`, `updateBundleInPortal()`, `removeBundleFromPortal()`, `deletePortal()` (PATCH/DELETE Payload)
+- `src/features/portals/writer.ts` — `updatePortal()`, `updatePortalCatalog()`, `addBundleToPortal()`, `updateBundleInPortal()`, `removeBundleFromPortal()`, `duplicatePortal()`, `deletePortal()` (PATCH/DELETE/create Payload)
 - `src/features/portals/logo.ts` — `savePortalLogo()`: multipart POST a `/api/media` + PATCH `branding.logo` con Media ID
 - `src/features/onboard-school/markdown-writer.ts` — `writePendingSchoolMarkdown()` -> create/update su `pending-schools` (nome del file storico, semantica Payload)
 - `src/features/onboard-school/agent.ts` — tutti i tool (12 totali, incl. add/update/remove bundle + update_catalog)
@@ -196,8 +229,10 @@ link diretto, e redirect da route obsolete senza perdere il contesto workspace.
 - `src/app/api/portals/[slug]/route.ts` — proxy GET + PUT /api/portals/:slug
 - `src/app/api/portals/[slug]/catalog/route.ts` — proxy PUT catalog
 - `src/app/api/portals/[slug]/bundles/[bundleSlug]/route.ts` — proxy PUT + DELETE bundle
+- `src/app/api/portals/[slug]/duplicate/route.ts` — proxy POST duplica portale (2026-06-22)
 - `src/app/api/portals/_catalog/route.ts` — proxy GET Saleor catalog
-- `src/components/portals/PortalsWorkspace.tsx` — split-pane + 3-mode panel + memo + `handleRefreshDetail` on mutation
+- `src/components/portals/PortalsWorkspace.tsx` — split-pane + 3-mode panel + memo + `handleRefreshDetail` on mutation + `handleDuplicatePortal`
+- `src/components/portals/DuplicatePortalModal.tsx` — popup duplica (nome + slug, slugify live) (2026-06-22)
 - `src/components/portals/PortalDetail.tsx` — **editor inline** (InlineText, InlinePrice, CatalogEditor, BundleCard)
 - `src/components/portals/PortalsChat.tsx` — chat con rAF throttle + draft extraction
 - `src/components/portals/LivePortalCard.tsx` — skeleton→data card
