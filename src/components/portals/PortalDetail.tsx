@@ -21,7 +21,11 @@ import {
 import { Pill } from "@/components/ui";
 import { formatDiscount } from "@/components/chat/generative/ProductPickerRow";
 import { EnablePortalButton } from "./EnablePortalButton";
-import type { PortalDetail as PortalDetailType, SaleorProduct } from "@/lib/gateway";
+import type {
+  PortalDetail as PortalDetailType,
+  SaleorProduct,
+  BundleComponent,
+} from "@/lib/gateway";
 
 type CatalogDiscount = { slug: string; kind: "percent" | "eur"; value: number };
 
@@ -519,6 +523,55 @@ function CatalogEditor({
   );
 }
 
+// --- Helper componenti kit (forma canonica selection) ---
+
+function componentProductSlug(c: Record<string, unknown>): string {
+  return typeof c.productSlug === "string" ? c.productSlug : "";
+}
+
+// Etichetta leggibile del componente: slug + taglio (by-attribute) o + SKU reale.
+function componentLabel(c: Record<string, unknown>): string {
+  const slug = componentProductSlug(c);
+  const sel = c.selection as Record<string, unknown> | undefined;
+  if (sel && sel.kind === "by-attribute") {
+    const vf = sel.valueFilter as Record<string, unknown> | undefined;
+    const cap = vf && typeof vf.capacita === "string" ? vf.capacita : null;
+    return cap ? `${slug} · ${cap}` : slug;
+  }
+  const sku =
+    sel && typeof sel.variantSku === "string"
+      ? sel.variantSku
+      : typeof c.variantSku === "string"
+        ? c.variantSku
+        : null;
+  return sku && sku !== slug ? `${slug} · ${sku}` : slug;
+}
+
+// Costruisce la selection canonica da una riga catalogo Saleor. Taglio (capacita)
+// => by-attribute colore col taglio fissato (il cliente sceglie il colore al
+// checkout). Prodotto single-variant => fixed sullo SKU reale. Multi-variante
+// senza taglio => null (non aggiungibile dalla UI manuale: serve l'agente).
+// Brain: gotcha-portal-kit-slug-mismatch — mai usare lo slug come variantSku.
+function buildComponent(row: SaleorProduct): BundleComponent | null {
+  if (row.capacitySlug) {
+    return {
+      productSlug: row.slug,
+      selection: {
+        kind: "by-attribute",
+        attribute: "colore",
+        valueFilter: { capacita: row.capacitySlug },
+      },
+    };
+  }
+  if (row.variantSku) {
+    return {
+      productSlug: row.slug,
+      selection: { kind: "variant", variantSku: row.variantSku },
+    };
+  }
+  return null;
+}
+
 function BundleCard({
   slug,
   bundle,
@@ -534,9 +587,13 @@ function BundleCard({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const confirmTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const componentSlugs = bundle.components
-    .map((c) => String((c as { productSlug?: string }).productSlug ?? ""))
-    .filter(Boolean);
+  // I componenti raw del kit (jsonb Payload). Si trattano VERBATIM: aggiungere o
+  // rimuovere un componente non deve toccare la `selection` degli altri (era il
+  // bug che riscriveva tutto a variantSku=slug). Brain: gotcha-portal-kit-slug-mismatch.
+  const components = (bundle.components ?? []) as Array<Record<string, unknown>>;
+  const presentSlugs = new Set(
+    components.map(componentProductSlug).filter(Boolean),
+  );
 
   const callPut = useCallback(
     async (patch: Record<string, unknown>) => {
@@ -551,12 +608,13 @@ function BundleCard({
     [slug, bundle.slug, onChanged],
   );
 
+  // Rimuove SOLO il componente col productSlug dato; gli altri restano verbatim.
   const removeComponent = async (productSlug: string) => {
     setBusy(true);
     try {
-      const next = componentSlugs
-        .filter((s) => s !== productSlug)
-        .map((s) => ({ productSlug: s, variantSku: s }));
+      const next = components.filter(
+        (c) => componentProductSlug(c) !== productSlug,
+      );
       await callPut({ components: next });
     } finally {
       setBusy(false);
@@ -569,14 +627,14 @@ function BundleCard({
     if (res.ok) setAvailable((await res.json()) as SaleorProduct[]);
   };
 
-  const addComponent = async (productSlug: string) => {
+  // Costruisce la selection canonica dallo SKU/taglio REALE della riga catalogo
+  // (mai dallo slug) e la appende, lasciando intatti i componenti esistenti.
+  const addComponent = async (row: SaleorProduct) => {
+    const built = buildComponent(row);
+    if (!built) return;
     setBusy(true);
     try {
-      const next = [...componentSlugs, productSlug].map((s) => ({
-        productSlug: s,
-        variantSku: s,
-      }));
-      await callPut({ components: next });
+      await callPut({ components: [...components, built] });
       setAdding(false);
     } finally {
       setBusy(false);
@@ -603,9 +661,7 @@ function BundleCard({
     }
   };
 
-  const candidates = (available ?? []).filter(
-    (p) => !componentSlugs.includes(p.slug),
-  );
+  const candidates = (available ?? []).filter((p) => !presentSlugs.has(p.slug));
 
   return (
     <div className="rounded-[var(--radius-control)] border border-[var(--color-line)] p-3">
@@ -628,23 +684,26 @@ function BundleCard({
         </button>
       </div>
       <div className="flex flex-wrap gap-1">
-        {componentSlugs.map((s, i) => (
-          <span
-            key={`${s}-${i}`}
-            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--color-paper-muted)] text-[10px] text-[var(--color-ink-soft)]"
-          >
-            {s}
-            <button
-              type="button"
-              onClick={() => removeComponent(s)}
-              disabled={busy}
-              className="hover:text-[var(--color-ink)]"
-              aria-label={`Rimuovi ${s}`}
+        {components.map((c, i) => {
+          const cslug = componentProductSlug(c);
+          return (
+            <span
+              key={`${cslug}-${i}`}
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--color-paper-muted)] text-[10px] text-[var(--color-ink-soft)]"
             >
-              <X className="h-2.5 w-2.5" />
-            </button>
-          </span>
-        ))}
+              {componentLabel(c)}
+              <button
+                type="button"
+                onClick={() => removeComponent(cslug)}
+                disabled={busy}
+                className="hover:text-[var(--color-ink)]"
+                aria-label={`Rimuovi ${cslug}`}
+              >
+                <X className="h-2.5 w-2.5" />
+              </button>
+            </span>
+          );
+        })}
         <button
           type="button"
           onClick={() => {
@@ -668,20 +727,28 @@ function BundleCard({
               Nessun altro prodotto disponibile.
             </p>
           ) : (
-            candidates.map((p) => (
-              <button
-                key={p.slug}
-                type="button"
-                onClick={() => addComponent(p.slug)}
-                disabled={busy}
-                className="w-full flex justify-between items-center px-2 py-1.5 text-left text-xs hover:bg-[var(--color-paper-muted)]"
-              >
-                <span className="text-[var(--color-ink)] truncate">{p.name}</span>
-                <span className="font-mono text-[10px] text-[var(--color-ink-muted)] shrink-0 ml-2">
-                  {p.slug}
-                </span>
-              </button>
-            ))
+            candidates.map((p) => {
+              const buildable = buildComponent(p) !== null;
+              return (
+                <button
+                  key={p.id ?? p.slug}
+                  type="button"
+                  onClick={() => addComponent(p)}
+                  disabled={busy || !buildable}
+                  title={
+                    buildable
+                      ? undefined
+                      : "Prodotto multi-variante: scegli un taglio specifico"
+                  }
+                  className="w-full flex justify-between items-center px-2 py-1.5 text-left text-xs hover:bg-[var(--color-paper-muted)] disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <span className="text-[var(--color-ink)] truncate">{p.name}</span>
+                  <span className="font-mono text-[10px] text-[var(--color-ink-muted)] shrink-0 ml-2">
+                    {p.capacitySlug ?? p.variantSku ?? p.slug}
+                  </span>
+                </button>
+              );
+            })
           )}
         </div>
       ) : null}

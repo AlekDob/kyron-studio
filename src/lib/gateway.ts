@@ -168,11 +168,23 @@ export async function listPortals(): Promise<PortalSummary[]> {
 }
 
 export interface SaleorProduct {
+  // Chiave riga: slug (prodotto intero), `slug#capacitySlug` (taglio) o
+  // `slug#variantSku` (riga-variante protezione). Vedi studio-server saleor/client.
+  id?: string;
   slug: string;
   name: string;
   priceEur: number;
   category: string;
   imageUrl?: string;
+  // Valorizzati solo per le righe-taglio (prodotti con attributo `capacita`):
+  // il componente diventa by-attribute (il cliente sceglie il colore al checkout).
+  capacity?: string;
+  capacitySlug?: string;
+  // SKU reale: righe-variante protezione (24/36) + prodotti single-variant
+  // (accessori). E' lo SKU da usare in selection.variantSku, MAI lo slug.
+  variantSku?: string;
+  variantLabel?: string;
+  isProtectionPlan?: boolean;
 }
 
 export async function listSaleorCatalog(): Promise<SaleorProduct[]> {
@@ -301,13 +313,24 @@ export async function updatePortalCatalog(
   });
 }
 
+// Forma canonica del componente bundle (allineata a studio-server
+// onboard-school/agent.ts + portals/enable/config.ts). variantSku DEVE essere lo
+// SKU reale Saleor, mai lo slug; per i prodotti multi-taglio (iPad) si usa
+// by-attribute col taglio fissato in valueFilter e il colore scelto dal cliente.
+export type BundleComponentSelection =
+  | { kind: "variant"; variantSku: string }
+  | { kind: "fixed"; variantSku: string }
+  | { kind: "by-attribute"; attribute: string; valueFilter?: Record<string, string> };
+
+export interface BundleComponent {
+  productSlug: string;
+  selection: BundleComponentSelection;
+}
+
 export interface BundlePatch {
   name?: string;
   finalPriceEur?: number;
-  components?: Array<{
-    productSlug: string;
-    selection: { kind: "variant"; variantSku: string };
-  }>;
+  components?: BundleComponent[];
 }
 
 export async function updateBundle(
