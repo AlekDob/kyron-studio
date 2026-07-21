@@ -14,10 +14,18 @@ export function StatusBadges({ order }: { order: OrderRow }) {
     order.paymentMethod === "bank-transfer" &&
     !order.bankTransferPaid &&
     order.paymentStatus !== "FULLY_CHARGED";
+  // Pagamento misto: buono acquisito ma residuo bonifico ancora da incassare
+  // (tranche 2). L'ordine e' un "acconto" finche' il residuo non e' saldato.
+  const residualToCollect =
+    isTeacherCard &&
+    order.residualMethod === "bank-transfer" &&
+    order.teacherCardAcquired &&
+    !order.residualPaid &&
+    order.paymentStatus !== "FULLY_CHARGED";
   return (
     <span className="inline-flex flex-wrap gap-1.5">
-      <Pill size="sm" variant={pay.variant}>
-        {pay.label}
+      <Pill size="sm" variant={residualToCollect ? "warning" : pay.variant}>
+        {residualToCollect ? "Acconto" : pay.label}
       </Pill>
       <Pill size="sm" variant={ful.variant}>
         {ful.label}
@@ -27,6 +35,11 @@ export function StatusBadges({ order }: { order: OrderRow }) {
           {order.teacherCardAcquired
             ? "Carta docente acquisita"
             : "Carta docente da riscuotere"}
+        </Pill>
+      )}
+      {residualToCollect && (
+        <Pill size="sm" variant="warning">
+          Residuo bonifico da incassare
         </Pill>
       )}
       {bankTransferToCollect && (

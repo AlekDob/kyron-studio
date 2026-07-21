@@ -21,6 +21,34 @@ function teacherCardCoversTotal(o: OrderRow): boolean {
   return o.teacherCardAmount !== null && o.teacherCardAmount + 0.005 >= o.totalGross;
 }
 
+// Overrides ottimistici applicati a un ordine dopo un'azione nel drawer.
+interface OrderOverrides {
+  workflow?: string;
+  acquired?: boolean;
+  paid?: boolean; // bonifico puro incassato
+  residualPaid?: boolean; // residuo bonifico (pagamento misto) incassato
+}
+
+// L'acquisizione del buono salda l'ordine solo se non resta un residuo bonifico:
+// buono che copre tutto, oppure residuo su carta (gia' incassato da Stripe).
+function acquisitionPaysOrder(o: OrderRow): boolean {
+  return o.residualMethod !== "bank-transfer" &&
+    (teacherCardCoversTotal(o) || o.residualMethod === "card");
+}
+
+// Applica gli override ottimistici a un ordine (badge/stati aggiornati subito).
+function applyOverrides(o: OrderRow, ov: OrderOverrides): OrderRow {
+  let next = o;
+  if (ov.workflow) next = { ...next, workflowStatus: ov.workflow };
+  if (ov.acquired) {
+    next = { ...next, teacherCardAcquired: true };
+    if (acquisitionPaysOrder(o)) next = { ...next, paymentStatus: "FULLY_CHARGED" };
+  }
+  if (ov.paid) next = { ...next, bankTransferPaid: true, paymentStatus: "FULLY_CHARGED" };
+  if (ov.residualPaid) next = { ...next, residualPaid: true, paymentStatus: "FULLY_CHARGED" };
+  return next;
+}
+
 // Opzioni portale uniche dal payload del periodo (channelSlug -> nome).
 function portalOptions(orders: OrderRow[]): PortalOption[] {
   const map = new Map<string, string>();
@@ -78,30 +106,16 @@ export function OrdersView({ data, from, to }: OrdersViewProps) {
   const [agent, setAgent] = useState("all");
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  // Override ottimistici dello stato lavorazione (id -> status) dopo un cambio.
-  const [overrides, setOverrides] = useState<Record<string, string>>({});
-  // Override ottimistico "carta del docente acquisita" (id -> true).
-  const [acquired, setAcquired] = useState<Record<string, boolean>>({});
-  // Override ottimistico "bonifico pagato" (id -> true): flippa anche paymentStatus.
-  const [paid, setPaid] = useState<Record<string, boolean>>({});
+  // Override ottimistici per ordine (id -> override) dopo un'azione nel drawer.
+  const [overrides, setOverrides] = useState<Record<string, OrderOverrides>>({});
+
+  // Merge di un override parziale sull'ordine (helper per gli handler del drawer).
+  const patch = (id: string, delta: OrderOverrides) =>
+    setOverrides((prev) => ({ ...prev, [id]: { ...prev[id], ...delta } }));
 
   const orders = useMemo(
-    () =>
-      data.orders.map((o) => {
-        let next = o;
-        if (overrides[o.id]) next = { ...next, workflowStatus: overrides[o.id] };
-        if (acquired[o.id]) {
-          next = { ...next, teacherCardAcquired: true };
-          // Se il buono copre l'intero ordine, l'acquisizione lo salda
-          // (markOrderAsPaid lato server): flippa subito il badge a "Pagato".
-          if (teacherCardCoversTotal(o))
-            next = { ...next, paymentStatus: "FULLY_CHARGED" };
-        }
-        if (paid[o.id])
-          next = { ...next, bankTransferPaid: true, paymentStatus: "FULLY_CHARGED" };
-        return next;
-      }),
-    [data.orders, overrides, acquired, paid],
+    () => data.orders.map((o) => applyOverrides(o, overrides[o.id] ?? {})),
+    [data.orders, overrides],
   );
 
   const portals = useMemo(() => portalOptions(orders), [orders]);
@@ -166,15 +180,10 @@ export function OrdersView({ data, from, to }: OrdersViewProps) {
       <OrderDrawer
         order={selected}
         onClose={() => setSelectedId(null)}
-        onStatusChange={(id, status) =>
-          setOverrides((prev) => ({ ...prev, [id]: status }))
-        }
-        onTeacherCardAcquired={(id) =>
-          setAcquired((prev) => ({ ...prev, [id]: true }))
-        }
-        onBankTransferPaid={(id) =>
-          setPaid((prev) => ({ ...prev, [id]: true }))
-        }
+        onStatusChange={(id, status) => patch(id, { workflow: status })}
+        onTeacherCardAcquired={(id) => patch(id, { acquired: true })}
+        onBankTransferPaid={(id) => patch(id, { paid: true })}
+        onResidualPaid={(id) => patch(id, { residualPaid: true })}
       />
     </div>
   );

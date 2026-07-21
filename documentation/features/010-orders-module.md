@@ -8,6 +8,24 @@ tags: [orders, ordini, commerciali, portali, saleor]
 
 # Feature 010 — Modulo Ordini
 
+> **Update 2026-07-21**: tre estensioni richieste dal cliente (uso reale backoffice).
+> **(A) Pagamento misto Carta del Docente + bonifico** (punti "acquisizione parziale"
+> + "ricezione BB dopo carta docente"): il BFF ora legge i metadata residuo
+> (`teacherCardResidualMethod`/`teacherCardResidualAmount`, già scritti dallo
+> storefront) → nuovo campo `OrderRow.residual*`. Modello a **due tranche**: l'azione
+> "Carta del docente acquisita" salda l'ordine solo se il buono copre tutto o il
+> residuo è su carta (già su Stripe); se il residuo è bonifico l'ordine resta
+> **"Acconto"** (badge) con nuova azione **"Residuo bonifico incassato"** (endpoint
+> `POST /api/v1/orders/teacher-card-residual-paid`) che marca pagato solo a saldo.
+> **(B) Campo Note**: textarea nel drawer → `PATCH /api/v1/orders/note` (metadata
+> `kyron_note`), riportata nelle FootNotes dell'export Danea. **(C) Modifiche ordine
+> (ibrido)**: sezione **IVA (Danea)** con override aliquota (`PATCH /orders/vat-override`
+> → metadata `kyron_vat_override`, letto da `resolveVat` ecommerce; l'IVA non esiste
+> su Saleor) + **editing reale righe** (qty/colore) SOLO su ordini `UNCONFIRMED` via
+> `EditableLines` → `POST /api/v1/orders/line` (money-path, re-adjust totale). Drawer
+> refactor per file corti: blocchi in `OrderBlocks.tsx`, primitive in
+> `drawer-primitives.tsx`. Cross-cutting: `decision-019` + gotcha editing UNCONFIRMED.
+
 > **Update 2026-06-20**: fix link Stripe sbagliato nel drawer. Un checkout può
 > generare più PaymentIntent (re-init Stripe su remount) e il primo resta orfano
 > "Incomplete" su Stripe; il drawer mostrava quello invece del PI realmente
@@ -34,7 +52,9 @@ in autonomia. Backend: studio-server feature 008 (`GET /api/v1/orders`).
 ## Accesso
 
 Tutti gli utenti Studio loggati (admin + editor). Nessun ruolo "commerciale": c'è un
-filtro **agente** che ognuno usa per restringere ai propri portali. Read-only.
+filtro **agente** che ognuno usa per restringere ai propri portali. Non più read-only:
+stato lavorazione, incasso pagamenti (bonifico / carta docente / residuo), note, IVA
+Danea e — su ordini `UNCONFIRMED` — editing righe (qty/colore).
 
 ## File
 
@@ -42,14 +62,17 @@ filtro **agente** che ognuno usa per restringere ai propri portali. Read-only.
 |---|---|
 | `src/app/(authed)/orders/page.tsx` | Server Component: auth, default periodo 30g, `listOrders({from,to})` |
 | `src/app/(authed)/orders/loading.tsx` | Skeleton |
-| `src/app/(authed)/orders/actions.ts` | Server action `updateOrderStatusAction` (PATCH stato via BFF) |
+| `src/app/(authed)/orders/actions.ts` | Server action: stato, carta docente, bonifico, **residuo**, **note**, **IVA**, **edit riga** (via BFF) |
 | `src/components/orders/OrdersView.tsx` | Client: filtri portale/agente + **ricerca**, sort **desc**, **grouping per giorno**, stato drawer, KPI |
 | `src/components/orders/OrdersFilters.tsx` | Date (→ URL, refetch) + select portale/agente (→ client state) |
 | `src/components/orders/OrdersList.tsx` | Gruppi giorno (header data + conteggio) |
 | `src/components/orders/OrderListRow.tsx` | Riga ordine cliccabile responsive → apre drawer |
-| `src/components/orders/OrderDrawer.tsx` | Drawer dettaglio: **sx desktop / bottom sheet mobile**, cliente + Stripe + portale + prodotti |
-| `src/components/orders/OrderLines.tsx` | Righe prodotto (cod + descr × qty + €) — condiviso |
-| `src/components/orders/StatusBadges.tsx` | Pill stato pagamento+evasione + link portale — condiviso |
+| `src/components/orders/OrderDrawer.tsx` | Drawer dettaglio (shell + composizione sezioni): **dx desktop / bottom sheet mobile** |
+| `src/components/orders/OrderBlocks.tsx` | Blocchi azione: stato, Carta del Docente (+residuo), Bonifico, Note, IVA |
+| `src/components/orders/drawer-primitives.tsx` | Primitive condivise: `Section`, `InfoRow`, `ActionButton`, `FeedbackNote` |
+| `src/components/orders/EditableLines.tsx` | Editing righe (qty/colore) per ordini `UNCONFIRMED` (Parte C2) |
+| `src/components/orders/OrderLines.tsx` | Righe prodotto read-only (cod + descr × qty + €) — condiviso |
+| `src/components/orders/StatusBadges.tsx` | Pill stato pagamento+evasione (+ "Acconto"/"Residuo") + link portale |
 | `src/components/orders/OrdersEmptyState.tsx` | Stati errore / nessun ordine |
 | `src/components/orders/format.ts` | Formatter EUR/data/ora + grouping giorno (`dayKey`/`dayLabel`) + stato Saleor → label IT |
 | `src/lib/gateway.ts` | `listOrders()` + tipi `OrderRow`/`OrdersResponse` |

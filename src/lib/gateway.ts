@@ -400,6 +400,14 @@ export interface OrderRow {
   teacherCardAmount: number | null;
   teacherCardAcquired: boolean;
   bankTransferPaid: boolean; // bonifico segnato incassato dal team
+  // Pagamento misto: residuo dopo il buono. residualMethod "card" = gia' su Stripe,
+  // "bank-transfer" = tranche 2 da incassare a mano; residualPaid = residuo saldato.
+  residualMethod: string;
+  residualAmount: number | null;
+  residualPaid: boolean;
+  // Nota operatore (kyron_note) + override IVA Danea (kyron_vat_override, es. "4").
+  note: string;
+  vatOverride: string;
   lines: OrderLine[];
 }
 

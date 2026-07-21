@@ -1,22 +1,19 @@
 "use client";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { X, ExternalLink } from "lucide-react";
 import type { OrderRow } from "@/lib/gateway";
-import { cn } from "@/lib/cn";
-import {
-  updateOrderStatusAction,
-  markTeacherCardAcquiredAction,
-  markBankTransferPaidAction,
-} from "@/app/(authed)/orders/actions";
 import { OrderLines } from "./OrderLines";
+import { EditableLines } from "./EditableLines";
 import { StatusBadges, PortalLink } from "./StatusBadges";
+import { Section, InfoRow } from "./drawer-primitives";
 import {
-  agentName,
-  formatDate,
-  formatEur,
-  formatTime,
-  WORKFLOW_STATUSES,
-} from "./format";
+  StatusSelector,
+  TeacherCardBlock,
+  BankTransferBlock,
+  NoteSection,
+  VatOverrideSection,
+} from "./OrderBlocks";
+import { agentName, formatDate, formatEur, formatTime } from "./format";
 
 interface OrderDrawerProps {
   order: OrderRow | null;
@@ -24,9 +21,10 @@ interface OrderDrawerProps {
   onStatusChange: (id: string, status: string) => void;
   onTeacherCardAcquired: (id: string) => void;
   onBankTransferPaid: (id: string) => void;
+  onResidualPaid: (id: string) => void;
 }
 
-// Drawer dettaglio ordine. Desktop: scivola da SINISTRA. Mobile: bottom sheet.
+// Drawer dettaglio ordine. Desktop: scivola da DESTRA. Mobile: bottom sheet.
 // Riusa il pattern animato di AnnotationsDrawer (transform inline + media query
 // inietta il translateX per desktop, non esprimibile inline in Tailwind v4).
 export function OrderDrawer({
@@ -35,6 +33,7 @@ export function OrderDrawer({
   onStatusChange,
   onTeacherCardAcquired,
   onBankTransferPaid,
+  onResidualPaid,
 }: OrderDrawerProps) {
   // render = presenza nel DOM; show = posizione "aperto". Lo sfasamento di un
   // frame tra i due fa partire l'animazione di entrata (Mac e iPhone).
@@ -146,6 +145,7 @@ export function OrderDrawer({
               <TeacherCardBlock
                 order={current}
                 onAcquired={onTeacherCardAcquired}
+                onResidualPaid={onResidualPaid}
               />
             </Section>
           )}
@@ -170,8 +170,24 @@ export function OrderDrawer({
             />
           </Section>
 
+          {/* Prodotti: editabili (qty/colore) solo su ordini UNCONFIRMED (Parte C2),
+              altrimenti read-only — le modifiche si annotano per Danea. */}
           <Section title="Prodotti">
-            <OrderLines lines={current.lines} />
+            {current.status === "UNCONFIRMED" ? (
+              <EditableLines order={current} />
+            ) : (
+              <OrderLines order={current} />
+            )}
+          </Section>
+
+          {/* Parte C1: override IVA per l'export Danea (non tocca Saleor). */}
+          <Section title="IVA (Danea)">
+            <VatOverrideSection order={current} />
+          </Section>
+
+          {/* Parte B: nota libera interna + FootNotes Danea. */}
+          <Section title="Note">
+            <NoteSection order={current} />
           </Section>
         </div>
       </aside>
@@ -198,181 +214,6 @@ function DrawerHeader({ order, onClose }: { order: OrderRow; onClose: () => void
         <X size={16} />
       </button>
     </header>
-  );
-}
-
-// Selettore stato lavorazione: bottoni segmentati. Al click salva via server
-// action, aggiorna ottimisticamente (onStatusChange) e mostra feedback (incluso
-// se e' partita la mail "spedito" al cliente).
-function StatusSelector({
-  order,
-  onStatusChange,
-}: {
-  order: OrderRow;
-  onStatusChange: (id: string, status: string) => void;
-}) {
-  const [saving, setSaving] = useState<string | null>(null);
-  const [note, setNote] = useState<string>("");
-
-  async function pick(status: string) {
-    if (status === order.workflowStatus || saving) return;
-    setSaving(status);
-    setNote("");
-    onStatusChange(order.id, status); // ottimistico
-    try {
-      const res = await updateOrderStatusAction(order.id, status);
-      setNote(res.emailed ? "Email di spedizione inviata al cliente." : "Stato aggiornato.");
-    } catch {
-      setNote("Errore nel salvataggio. Riprova.");
-      onStatusChange(order.id, order.workflowStatus); // rollback
-    } finally {
-      setSaving(null);
-    }
-  }
-
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="flex flex-wrap gap-1.5">
-        {WORKFLOW_STATUSES.map((s) => {
-          const active = order.workflowStatus === s.value;
-          return (
-            <button
-              key={s.value}
-              type="button"
-              disabled={!!saving}
-              onClick={() => pick(s.value)}
-              className={cn(
-                "rounded-[var(--radius-pill)] border px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50",
-                active
-                  ? "border-[var(--color-ink)] bg-[var(--color-ink)] text-[var(--color-paper)]"
-                  : "border-[var(--color-line)] bg-[var(--color-paper-soft)] text-[var(--color-ink-soft)] hover:border-[var(--color-line-strong)]",
-              )}
-            >
-              {saving === s.value ? "…" : s.label}
-            </button>
-          );
-        })}
-      </div>
-      {note && <p className="text-xs text-[var(--color-ink-muted)]">{note}</p>}
-    </div>
-  );
-}
-
-// Brain: decision-019 — blocco Carta del Docente: importo buono + azione
-// "acquisita". Al click registra l'acquisizione (metadata) e manda la mail di
-// conferma al cliente; aggiorna ottimisticamente il badge in lista (onAcquired).
-function TeacherCardBlock({
-  order,
-  onAcquired,
-}: {
-  order: OrderRow;
-  onAcquired: (id: string) => void;
-}) {
-  const [acquired, setAcquired] = useState(order.teacherCardAcquired);
-  const [saving, setSaving] = useState(false);
-  const [note, setNote] = useState("");
-
-  async function acquire() {
-    if (acquired || saving) return;
-    setSaving(true);
-    setNote("");
-    try {
-      const res = await markTeacherCardAcquiredAction(order.id);
-      setAcquired(true);
-      onAcquired(order.id);
-      setNote(
-        res.emailed
-          ? "Buono acquisito. Email di conferma inviata al cliente."
-          : "Buono acquisito.",
-      );
-    } catch {
-      setNote("Errore nel salvataggio. Riprova.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <div className="flex flex-col gap-2">
-      {order.teacherCardAmount != null && (
-        <InfoRow
-          label="Importo buono"
-          value={<span className="tabular-nums">{formatEur(order.teacherCardAmount)}</span>}
-        />
-      )}
-      {acquired ? (
-        <p className="text-sm text-[var(--color-ink-soft)]">
-          Buono acquisito sul portale del Ministero. Ordine confermato.
-        </p>
-      ) : (
-        <button
-          type="button"
-          disabled={saving}
-          onClick={acquire}
-          className="rounded-[var(--radius-pill)] border border-[var(--color-ink)] bg-[var(--color-ink)] px-3 py-2 text-sm font-medium text-[var(--color-paper)] transition-opacity disabled:opacity-50"
-        >
-          {saving ? "Salvataggio…" : "Carta del docente acquisita"}
-        </button>
-      )}
-      {note && <p className="text-xs text-[var(--color-ink-muted)]">{note}</p>}
-    </div>
-  );
-}
-
-// Brain: decision-019 — blocco Bonifico: azione "Bonifico pagato". Al click marca
-// l'ordine pagato in Saleor (paymentStatus FULLY_CHARGED), manda la mail "bonifico
-// ricevuto" e aggiorna ottimisticamente il badge in lista (onPaid).
-function BankTransferBlock({
-  order,
-  onPaid,
-}: {
-  order: OrderRow;
-  onPaid: (id: string) => void;
-}) {
-  const alreadyPaid =
-    order.bankTransferPaid || order.paymentStatus === "FULLY_CHARGED";
-  const [paid, setPaid] = useState(alreadyPaid);
-  const [saving, setSaving] = useState(false);
-  const [note, setNote] = useState("");
-
-  async function confirm() {
-    if (paid || saving) return;
-    setSaving(true);
-    setNote("");
-    try {
-      const res = await markBankTransferPaidAction(order.id);
-      setPaid(true);
-      onPaid(order.id);
-      setNote(
-        res.emailed
-          ? "Bonifico segnato pagato. Email di conferma inviata al cliente."
-          : "Bonifico segnato pagato.",
-      );
-    } catch {
-      setNote("Errore nel salvataggio. Riprova.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <div className="flex flex-col gap-2">
-      {paid ? (
-        <p className="text-sm text-[var(--color-ink-soft)]">
-          Bonifico incassato. Ordine segnato come pagato.
-        </p>
-      ) : (
-        <button
-          type="button"
-          disabled={saving}
-          onClick={confirm}
-          className="rounded-[var(--radius-pill)] border border-[var(--color-ink)] bg-[var(--color-ink)] px-3 py-2 text-sm font-medium text-[var(--color-paper)] transition-opacity disabled:opacity-50"
-        >
-          {saving ? "Salvataggio…" : "Bonifico pagato"}
-        </button>
-      )}
-      {note && <p className="text-xs text-[var(--color-ink-muted)]">{note}</p>}
-    </div>
   );
 }
 
@@ -410,26 +251,6 @@ function StripeLink({ order }: { order: OrderRow }) {
       </span>
       <ExternalLink size={14} className="text-[var(--color-ink-muted)]" />
     </a>
-  );
-}
-
-function Section({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section>
-      <p className="mb-2 text-xs font-medium uppercase tracking-wide text-[var(--color-ink-muted)]">
-        {title}
-      </p>
-      <div className="flex flex-col gap-1.5">{children}</div>
-    </section>
-  );
-}
-
-function InfoRow({ label, value }: { label: string; value: ReactNode }) {
-  return (
-    <div className="flex items-baseline justify-between gap-4 text-sm">
-      <span className="shrink-0 text-[var(--color-ink-muted)]">{label}</span>
-      <span className="text-right">{value}</span>
-    </div>
   );
 }
 
