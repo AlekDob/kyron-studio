@@ -22,6 +22,8 @@ interface OrderDrawerProps {
   onTeacherCardAcquired: (id: string) => void;
   onBankTransferPaid: (id: string) => void;
   onResidualPaid: (id: string) => void;
+  onNoteSaved: (id: string, note: string) => void;
+  onVatSaved: (id: string, vat: string) => void;
 }
 
 // Drawer dettaglio ordine. Desktop: scivola da DESTRA. Mobile: bottom sheet.
@@ -34,6 +36,8 @@ export function OrderDrawer({
   onTeacherCardAcquired,
   onBankTransferPaid,
   onResidualPaid,
+  onNoteSaved,
+  onVatSaved,
 }: OrderDrawerProps) {
   // render = presenza nel DOM; show = posizione "aperto". Lo sfasamento di un
   // frame tra i due fa partire l'animazione di entrata (Mac e iPhone).
@@ -182,12 +186,12 @@ export function OrderDrawer({
 
           {/* Parte C1: override IVA per l'export Danea (non tocca Saleor). */}
           <Section title="IVA (Danea)">
-            <VatOverrideSection order={current} />
+            <VatOverrideSection order={current} onSaved={onVatSaved} />
           </Section>
 
           {/* Parte B: nota libera interna + FootNotes Danea. */}
           <Section title="Note">
-            <NoteSection order={current} />
+            <NoteSection order={current} onSaved={onNoteSaved} />
           </Section>
         </div>
       </aside>

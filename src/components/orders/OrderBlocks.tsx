@@ -218,7 +218,15 @@ export function BankTransferBlock({
 }
 
 // Nota libera dell'operatore (Parte B): interno Studio + FootNotes export Danea.
-export function NoteSection({ order }: { order: OrderRow }) {
+// onSaved propaga il valore a OrdersView cosi' resta visibile riaprendo il drawer
+// (senza ricaricare la pagina).
+export function NoteSection({
+  order,
+  onSaved,
+}: {
+  order: OrderRow;
+  onSaved: (id: string, note: string) => void;
+}) {
   const [value, setValue] = useState(order.note ?? "");
   const [saving, setSaving] = useState(false);
   const [note, setNote] = useState("");
@@ -229,7 +237,9 @@ export function NoteSection({ order }: { order: OrderRow }) {
     setSaving(true);
     setNote("");
     try {
-      await updateOrderNoteAction(order.id, value.trim());
+      const trimmed = value.trim();
+      await updateOrderNoteAction(order.id, trimmed);
+      onSaved(order.id, trimmed);
       setNote("Nota salvata.");
     } catch {
       setNote("Errore nel salvataggio. Riprova.");
@@ -265,7 +275,14 @@ const VAT_OPTIONS = [
 
 // Override aliquota IVA a livello ordine (Parte C1): annotazione letta dall'export
 // Danea, non tocca Saleor. Utile per correzioni fiscali (es. IVA agevolata 4%).
-export function VatOverrideSection({ order }: { order: OrderRow }) {
+// onSaved propaga il valore a OrdersView (persiste alla riapertura del drawer).
+export function VatOverrideSection({
+  order,
+  onSaved,
+}: {
+  order: OrderRow;
+  onSaved: (id: string, vat: string) => void;
+}) {
   const [value, setValue] = useState(order.vatOverride ?? "");
   const [saving, setSaving] = useState(false);
   const [note, setNote] = useState("");
@@ -277,6 +294,7 @@ export function VatOverrideSection({ order }: { order: OrderRow }) {
     setNote("");
     try {
       await updateOrderVatAction(order.id, value);
+      onSaved(order.id, value);
       setNote(value ? `IVA forzata al ${value}% per Danea.` : "Override IVA rimosso.");
     } catch {
       setNote("Errore nel salvataggio. Riprova.");
