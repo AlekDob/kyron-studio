@@ -14,13 +14,15 @@ export function StatusBadges({ order }: { order: OrderRow }) {
     order.paymentMethod === "bank-transfer" &&
     !order.bankTransferPaid &&
     order.paymentStatus !== "FULLY_CHARGED";
-  // Pagamento misto: buono acquisito ma residuo bonifico ancora da incassare
-  // (tranche 2). L'ordine e' un "acconto" finche' il residuo non e' saldato.
+  // Pagamento misto: buono acquisito ma saldo (di norma bonifico) ancora da
+  // incassare. L'ordine e' un "acconto" finche' il residuo non e' saldato. Il
+  // residuo su carta va gia' su Stripe -> escluso. Non gatiamo su residualMethod
+  // ="bank-transfer" (spesso non impostato sugli ordini misti reali).
   const residualToCollect =
     isTeacherCard &&
-    order.residualMethod === "bank-transfer" &&
     order.teacherCardAcquired &&
     !order.residualPaid &&
+    order.residualMethod !== "card" &&
     order.paymentStatus !== "FULLY_CHARGED";
   return (
     <span className="inline-flex flex-wrap gap-1.5">

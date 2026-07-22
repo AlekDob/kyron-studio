@@ -85,7 +85,13 @@ export function TeacherCardBlock({
   const [acquired, setAcquired] = useState(order.teacherCardAcquired);
   const [saving, setSaving] = useState(false);
   const [note, setNote] = useState("");
-  const residualBank = order.residualMethod === "bank-transfer";
+  // Dopo l'acquisizione del buono, se l'ordine NON e' saldato e il residuo non e'
+  // su carta (quello va gia' su Stripe), serve incassare il saldo a mano (di norma
+  // bonifico). NON gatiamo su residualMethod==="bank-transfer": molti ordini misti
+  // reali non hanno quel metadata impostato, ma il saldo va comunque chiuso.
+  const residualOnCard = order.residualMethod === "card";
+  const settled = order.residualPaid || order.paymentStatus === "FULLY_CHARGED";
+  const needsResidual = acquired && !settled && !residualOnCard;
 
   async function acquire() {
     if (acquired || saving) return;
@@ -113,20 +119,20 @@ export function TeacherCardBlock({
       )}
       {order.residualAmount != null && order.residualAmount > 0 && (
         <InfoRow
-          label={residualBank ? "Residuo (bonifico)" : "Residuo (carta)"}
+          label={residualOnCard ? "Residuo (carta)" : "Residuo (bonifico)"}
           value={<span className="tabular-nums">{formatEur(order.residualAmount)}</span>}
         />
       )}
       {acquired ? (
         <p className="text-sm text-[var(--color-ink-soft)]">
           Buono acquisito sul portale del Ministero.
-          {!residualBank && " Ordine confermato."}
+          {!needsResidual && " Ordine confermato."}
         </p>
       ) : (
         <ActionButton label="Carta del docente acquisita" saving={saving} onClick={acquire} />
       )}
-      {/* Pagamento misto: tranche 2. Il residuo bonifico si incassa dopo il buono. */}
-      {acquired && residualBank && (
+      {/* Pagamento misto: tranche 2. Saldo (di norma bonifico) incassato dopo il buono. */}
+      {needsResidual && (
         <ResidualBankTransferAction order={order} onResidualPaid={onResidualPaid} />
       )}
       <FeedbackNote note={note} />
