@@ -8,6 +8,21 @@ tags: [orders, ordini, commerciali, portali, saleor]
 
 # Feature 010 — Modulo Ordini
 
+> **Update 2026-07-21 (fix post-deploy)**: due bug trovati subito dopo il go-live
+> in prod, entrambi già corretti e ri-deployati. **(1) Nota/IVA "sparivano" alla
+> riapertura del drawer** — `NoteSection`/`VatOverrideSection` salvavano su Saleor
+> ma non propagavano il valore all'override ottimistico di `OrdersView`, quindi
+> riaprendo il drawer si rileggeva il valore vecchio (serviva un reload pagina).
+> Fix: `onNoteSaved`/`onVatSaved` risalgono a `OrdersView` e aggiornano l'override
+> subito. **(2) Pulsante "Residuo bonifico incassato" non compariva sugli ordini
+> misti reali** — era gatato su `residualMethod === "bank-transfer"`, un metadata
+> che molti ordini misti non hanno valorizzato; il saldo restava bloccato su "da
+> pagare" senza azione disponibile (segnalato dal cliente). Fix: il pulsante ora
+> compare ogni volta che, dopo "Carta del docente acquisita", l'ordine non è
+> saldato e il residuo non è su carta (quello va già su Stripe) — non dipende più
+> da quel metadata specifico. Stessa logica nel badge "Acconto"/"Residuo da
+> incassare" di `StatusBadges`.
+
 > **Update 2026-07-21**: tre estensioni richieste dal cliente (uso reale backoffice).
 > **(A) Pagamento misto Carta del Docente + bonifico** (punti "acquisizione parziale"
 > + "ricezione BB dopo carta docente"): il BFF ora legge i metadata residuo
