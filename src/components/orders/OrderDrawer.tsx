@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import { X, ExternalLink } from "lucide-react";
 import type { OrderRow } from "@/lib/gateway";
-import { OrderLines } from "./OrderLines";
 import { EditableLines } from "./EditableLines";
 import { StatusBadges, PortalLink } from "./StatusBadges";
 import { Section, InfoRow } from "./drawer-primitives";
@@ -174,14 +173,11 @@ export function OrderDrawer({
             />
           </Section>
 
-          {/* Prodotti: editabili (qty/colore) solo su ordini UNCONFIRMED (Parte C2),
-              altrimenti read-only — le modifiche si annotano per Danea. */}
+          {/* Prodotti (Parte C2 + decision-019): EditableLines sceglie la modalita'
+              — modifica reale (ordine bozza), cambio colore come annotazione (ordine
+              confermato non spedito) o sola lettura (spedito/chiuso). */}
           <Section title="Prodotti">
-            {current.status === "UNCONFIRMED" ? (
-              <EditableLines order={current} />
-            ) : (
-              <OrderLines order={current} />
-            )}
+            <EditableLines order={current} />
           </Section>
 
           {/* Parte C1: override IVA per l'export Danea (non tocca Saleor). */}

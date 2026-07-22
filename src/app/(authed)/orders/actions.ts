@@ -1,5 +1,5 @@
 "use server";
-import { gatewayFetch } from "@/lib/gateway";
+import { gatewayFetch, type LineColorChange } from "@/lib/gateway";
 
 // Cambia lo stato lavorazione di un ordine via BFF (PATCH /api/v1/orders/status).
 // Ritorna { ok, status, emailed }: emailed=true se e' partita la mail "spedito".
@@ -70,10 +70,14 @@ export async function updateOrderVatAction(
   });
 }
 
-// Parte C2: vista editing riga (opzioni colore + editabilita'). editable=true solo
-// per ordini UNCONFIRMED (GET /api/v1/orders/edit?id=).
+// Parte C2: vista editing riga (opzioni colore + modalita'). mode:
+// "edit" = modifica reale (ordine UNCONFIRMED), "annotate" = cambio colore come
+// annotazione (ordine confermato non spedito), "locked" = sola lettura.
+export type EditMode = "edit" | "annotate" | "locked";
+
 export interface OrderEditView {
-  editable: boolean;
+  mode: EditMode;
+  editable: boolean; // retro-compat: mode === "edit"
   status: string;
   total: number;
   lines: Array<{
@@ -84,7 +88,9 @@ export interface OrderEditView {
     quantity: number;
     variantId: string;
     colorSlug: string;
+    colorName: string; // colore acquistato (originale)
     colorOptions: Array<{ variantId: string; label: string }>;
+    requestedColor: string; // colore richiesto via annotazione, o ""
   }>;
 }
 
@@ -102,5 +108,18 @@ export async function editOrderLineAction(
   return gatewayFetch("/api/v1/orders/line", {
     method: "POST",
     body: JSON.stringify({ id, lineId, ...change }),
+  });
+}
+
+// Cambio colore come ANNOTAZIONE su ordini confermati (decision-019). Non tocca
+// Saleor: salva acquisto originale + colore richiesto (POST /orders/line-color).
+// to="" rimuove l'annotazione. Ritorna la lista aggiornata dei cambi colore.
+export async function setLineColorAction(
+  id: string,
+  change: { sku: string; product: string; from: string; to: string },
+): Promise<{ ok: boolean; changes: LineColorChange[] }> {
+  return gatewayFetch("/api/v1/orders/line-color", {
+    method: "POST",
+    body: JSON.stringify({ id, ...change }),
   });
 }

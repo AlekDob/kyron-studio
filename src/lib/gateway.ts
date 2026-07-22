@@ -367,6 +367,15 @@ export interface OrderLine {
   totalGross: number;
 }
 
+// Cambio colore annotato su ordini confermati (kyron_line_colors): acquisto
+// originale `from` -> colore richiesto `to`, per SKU. Non modifica la riga Saleor.
+export interface LineColorChange {
+  sku: string;
+  product: string;
+  from: string;
+  to: string;
+}
+
 export interface OrderRow {
   id: string; // global ID Saleor (per il cambio stato)
   number: string;
@@ -408,6 +417,8 @@ export interface OrderRow {
   // Nota operatore (kyron_note) + override IVA Danea (kyron_vat_override, es. "4").
   note: string;
   vatOverride: string;
+  // Cambi colore annotati su ordini confermati (kyron_line_colors).
+  colorChanges: LineColorChange[];
   lines: OrderLine[];
 }
 

@@ -41,6 +41,16 @@ tags: [orders, ordini, commerciali, portali, saleor]
 > refactor per file corti: blocchi in `OrderBlocks.tsx`, primitive in
 > `drawer-primitives.tsx`. Cross-cutting: `decision-019` + gotcha editing UNCONFIRMED.
 
+> **Update 2026-07-22 — cambio colore anche su ordini pagati (annotazione)**: su un
+> ordine confermato ma non spedito (es. #301 pagato/da evadere) la tendina colore
+> ricompare in modalità **annotazione**: la scelta NON riscrive la riga Saleor (bloccata
+> sui confermati) ma salva `kyron_line_colors` (metadata pubblico, `{sku,product,from,to}`)
+> via `POST /api/v1/orders/line-color`. `EditableLines` sceglie la modalità dal BFF:
+> `edit` (UNCONFIRMED, modifica reale) / `annotate` (confermato non spedito, **solo
+> colore**) / `locked` (spedito/consegnato/annullato). Il cambio (acquistato → richiesto)
+> è mostrato in Studio, nell'**area ordini del cliente** (storefront `OrderDetail`) e
+> nelle FootNotes Danea. Cross-repo: studio-server + studio + ecommerce/storefront.
+
 > **Update 2026-06-20**: fix link Stripe sbagliato nel drawer. Un checkout può
 > generare più PaymentIntent (re-init Stripe su remount) e il primo resta orfano
 > "Incomplete" su Stripe; il drawer mostrava quello invece del PI realmente
@@ -85,8 +95,9 @@ Danea e — su ordini `UNCONFIRMED` — editing righe (qty/colore).
 | `src/components/orders/OrderDrawer.tsx` | Drawer dettaglio (shell + composizione sezioni): **dx desktop / bottom sheet mobile** |
 | `src/components/orders/OrderBlocks.tsx` | Blocchi azione: stato, Carta del Docente (+residuo), Bonifico, Note, IVA |
 | `src/components/orders/drawer-primitives.tsx` | Primitive condivise: `Section`, `InfoRow`, `ActionButton`, `FeedbackNote` |
-| `src/components/orders/EditableLines.tsx` | Editing righe (qty/colore) per ordini `UNCONFIRMED` (Parte C2) |
-| `src/components/orders/OrderLines.tsx` | Righe prodotto read-only (cod + descr × qty + €) — condiviso |
+| `src/components/orders/EditableLines.tsx` | Editing righe: 3 modalità `edit`/`annotate`/`locked` (Parte C2 + cambio colore annotato su ordini confermati, decision-019) |
+| `src/components/orders/OrderLines.tsx` | Righe prodotto read-only (cod + descr × qty + €) + note cambio colore — condiviso |
+| `src/components/orders/ColorChangeNote.tsx` | Annotazione cambio colore (acquistato → richiesto), riusata read-only + annotate |
 | `src/components/orders/StatusBadges.tsx` | Pill stato pagamento+evasione (+ "Acconto"/"Residuo") + link portale |
 | `src/components/orders/OrdersEmptyState.tsx` | Stati errore / nessun ordine |
 | `src/components/orders/format.ts` | Formatter EUR/data/ora + grouping giorno (`dayKey`/`dayLabel`) + stato Saleor → label IT |
