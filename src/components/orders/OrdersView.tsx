@@ -29,6 +29,7 @@ interface OrderOverrides {
   residualPaid?: boolean; // residuo bonifico (pagamento misto) incassato
   note?: string; // nota salvata (persiste alla riapertura del drawer)
   vatOverride?: string; // override IVA salvato
+  paymentAmountOverride?: number | null; // importo totale annotato salvato
 }
 
 // L'acquisizione del buono salda l'ordine solo se non resta un residuo bonifico:
@@ -50,6 +51,8 @@ function applyOverrides(o: OrderRow, ov: OrderOverrides): OrderRow {
   if (ov.residualPaid) next = { ...next, residualPaid: true, paymentStatus: "FULLY_CHARGED" };
   if (ov.note !== undefined) next = { ...next, note: ov.note };
   if (ov.vatOverride !== undefined) next = { ...next, vatOverride: ov.vatOverride };
+  if (ov.paymentAmountOverride !== undefined)
+    next = { ...next, paymentAmountOverride: ov.paymentAmountOverride };
   return next;
 }
 
@@ -190,6 +193,9 @@ export function OrdersView({ data, from, to }: OrdersViewProps) {
         onResidualPaid={(id) => patch(id, { residualPaid: true })}
         onNoteSaved={(id, note) => patch(id, { note })}
         onVatSaved={(id, vatOverride) => patch(id, { vatOverride })}
+        onPaymentTotalSaved={(id, paymentAmountOverride) =>
+          patch(id, { paymentAmountOverride })
+        }
       />
     </div>
   );

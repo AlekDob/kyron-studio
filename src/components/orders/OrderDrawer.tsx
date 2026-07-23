@@ -11,6 +11,7 @@ import {
   BankTransferBlock,
   NoteSection,
   VatOverrideSection,
+  PaymentTotalSection,
 } from "./OrderBlocks";
 import { agentName, formatDate, formatEur, formatTime } from "./format";
 
@@ -23,6 +24,7 @@ interface OrderDrawerProps {
   onResidualPaid: (id: string) => void;
   onNoteSaved: (id: string, note: string) => void;
   onVatSaved: (id: string, vat: string) => void;
+  onPaymentTotalSaved: (id: string, override: number | null) => void;
 }
 
 // Drawer dettaglio ordine. Desktop: scivola da DESTRA. Mobile: bottom sheet.
@@ -37,6 +39,7 @@ export function OrderDrawer({
   onResidualPaid,
   onNoteSaved,
   onVatSaved,
+  onPaymentTotalSaved,
 }: OrderDrawerProps) {
   // render = presenza nel DOM; show = posizione "aperto". Lo sfasamento di un
   // frame tra i due fa partire l'animazione di entrata (Mac e iPhone).
@@ -137,10 +140,13 @@ export function OrderDrawer({
             <div className="flex items-center justify-between gap-3">
               <StatusBadges order={current} />
               <span className="font-medium tabular-nums">
-                {formatEur(current.totalGross)}
+                {/* Importo annotato prevale sul totale reale (allineamento Danea). */}
+                {formatEur(current.paymentAmountOverride ?? current.totalGross)}
               </span>
             </div>
             {current.pspReference && <StripeLink order={current} />}
+            {/* Allinea il totale (es. IVA 22% -> 4%): reale su bozza, annotazione su confermato. */}
+            <PaymentTotalSection order={current} onSaved={onPaymentTotalSaved} />
           </Section>
 
           {current.paymentMethod === "teacher-card" && (

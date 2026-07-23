@@ -70,6 +70,20 @@ export async function updateOrderVatAction(
   });
 }
 
+// Allinea il totale dell'ordine (PATCH /api/v1/orders/payment-total). Ibrido:
+// ordine UNCONFIRMED = cambio reale su Saleor, confermato = annotazione
+// (kyron_payment_amount_override). amount=0 rimuove l'annotazione. Ritorna la
+// modalita' applicata, il totale reale e l'eventuale override annotato.
+export async function updateOrderPaymentTotalAction(
+  id: string,
+  amount: number,
+): Promise<{ ok: boolean; mode: EditMode; total: number; override: number | null }> {
+  return gatewayFetch("/api/v1/orders/payment-total", {
+    method: "PATCH",
+    body: JSON.stringify({ id, amount }),
+  });
+}
+
 // Parte C2: vista editing riga (opzioni colore + modalita'). mode:
 // "edit" = modifica reale (ordine UNCONFIRMED), "annotate" = cambio colore come
 // annotazione (ordine confermato non spedito), "locked" = sola lettura.

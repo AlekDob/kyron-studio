@@ -417,6 +417,9 @@ export interface OrderRow {
   // Nota operatore (kyron_note) + override IVA Danea (kyron_vat_override, es. "4").
   note: string;
   vatOverride: string;
+  // Importo totale annotato su ordini confermati (kyron_payment_amount_override):
+  // allinea la vista Studio al totale rifatto a mano (es. IVA 4%). Null se assente.
+  paymentAmountOverride: number | null;
   // Cambi colore annotati su ordini confermati (kyron_line_colors).
   colorChanges: LineColorChange[];
   lines: OrderLine[];

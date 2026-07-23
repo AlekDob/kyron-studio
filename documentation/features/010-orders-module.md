@@ -8,6 +8,20 @@ tags: [orders, ordini, commerciali, portali, saleor]
 
 # Feature 010 — Modulo Ordini
 
+> **Update 2026-07-23 — allinea importo pagamento (ibrido reale/annotazione)**: nel
+> drawer, sezione **Pagamento**, campo **"Allinea importo"** per allineare il totale
+> dell'ordine a Danea (caso reale: cliente ordina a IVA 22% e l'ordine viene poi rifatto
+> a mano a IVA 4%, importo minore). Comportamento **ibrido** in base allo stato ordine
+> (riusa `editModeFor`): **UNCONFIRMED** → cambio **REALE** del totale via `readjustTotal`
+> (money-path, `order-edit.ts`); **confermato** → **annotazione** metadata pubblico
+> `kyron_payment_amount_override` (Saleor non lascia toccare il totale reale — stesso
+> vincolo del cambio colore), mostrata in Studio col totale reale sotto; **spedito/annullato**
+> → 409. Backend: `setOrderTotal` + `PATCH /api/v1/orders/payment-total` +
+> `paymentAmountOverride` in `OrderSummary`/`mapOrder`. Frontend: `PaymentTotalSection`
+> (pattern `VatOverrideSection`) + `OrderRow.paymentAmountOverride` + override ottimistico.
+> **NB**: l'export Danea NON legge ancora `kyron_payment_amount_override` (aggancio in un
+> secondo giro sull'ecommerce). Cross-cutting: `decision-019`.
+
 > **Update 2026-07-21 (fix post-deploy)**: due bug trovati subito dopo il go-live
 > in prod, entrambi già corretti e ri-deployati. **(1) Nota/IVA "sparivano" alla
 > riapertura del drawer** — `NoteSection`/`VatOverrideSection` salvavano su Saleor
@@ -93,7 +107,7 @@ Danea e — su ordini `UNCONFIRMED` — editing righe (qty/colore).
 | `src/components/orders/OrdersList.tsx` | Gruppi giorno (header data + conteggio) |
 | `src/components/orders/OrderListRow.tsx` | Riga ordine cliccabile responsive → apre drawer |
 | `src/components/orders/OrderDrawer.tsx` | Drawer dettaglio (shell + composizione sezioni): **dx desktop / bottom sheet mobile** |
-| `src/components/orders/OrderBlocks.tsx` | Blocchi azione: stato, Carta del Docente (+residuo), Bonifico, Note, IVA |
+| `src/components/orders/OrderBlocks.tsx` | Blocchi azione: stato, Carta del Docente (+residuo), Bonifico, Note, IVA, **allinea importo** (`PaymentTotalSection`, ibrido reale/annotazione) |
 | `src/components/orders/drawer-primitives.tsx` | Primitive condivise: `Section`, `InfoRow`, `ActionButton`, `FeedbackNote` |
 | `src/components/orders/EditableLines.tsx` | Editing righe: 3 modalità `edit`/`annotate`/`locked` (Parte C2 + cambio colore annotato su ordini confermati, decision-019) |
 | `src/components/orders/OrderLines.tsx` | Righe prodotto read-only (cod + descr × qty + €) + note cambio colore — condiviso |

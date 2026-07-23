@@ -9,6 +9,7 @@ import {
   markTeacherCardResidualPaidAction,
   updateOrderNoteAction,
   updateOrderVatAction,
+  updateOrderPaymentTotalAction,
 } from "@/app/(authed)/orders/actions";
 import { formatEur, WORKFLOW_STATUSES } from "./format";
 import { InfoRow, ActionButton, FeedbackNote } from "./drawer-primitives";
@@ -325,6 +326,69 @@ export function VatOverrideSection({
         </select>
         <ActionButton label="Salva IVA" saving={saving} onClick={save} />
       </div>
+      <FeedbackNote note={note} />
+    </div>
+  );
+}
+
+// Allinea il totale dell'ordine a Danea (es. cliente ordina a IVA 22% e poi
+// l'ordine viene rifatto a 4%, importo minore). Ibrido: su ordine bozza cambia il
+// totale REALE su Saleor, su ordine confermato salva un'annotazione (il totale
+// reale resta bloccato). onSaved propaga il valore annotato a OrdersView; il
+// totale reale cambiato si vedra' al prossimo caricamento della lista.
+export function PaymentTotalSection({
+  order,
+  onSaved,
+}: {
+  order: OrderRow;
+  onSaved: (id: string, override: number | null) => void;
+}) {
+  // Valore effettivo mostrato: annotazione se presente, altrimenti totale reale.
+  const effective = order.paymentAmountOverride ?? order.totalGross;
+  const [value, setValue] = useState(String(effective));
+  const [saving, setSaving] = useState(false);
+  const [note, setNote] = useState("");
+  const parsed = Number(value.replace(",", "."));
+  const valid = Number.isFinite(parsed) && parsed >= 0;
+  const dirty = valid && Math.abs(parsed - effective) >= 0.01;
+
+  async function save() {
+    if (!dirty || saving) return;
+    setSaving(true);
+    setNote("");
+    try {
+      const res = await updateOrderPaymentTotalAction(order.id, parsed);
+      onSaved(order.id, res.override);
+      setNote(
+        res.mode === "edit"
+          ? `Totale ordine aggiornato a ${formatEur(res.total)}.`
+          : `Importo allineato a ${formatEur(parsed)} (annotazione, totale ordine invariato).`,
+      );
+    } catch {
+      setNote("Errore nel salvataggio. Riprova.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-2">
+        <input
+          type="text"
+          inputMode="decimal"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          placeholder="Importo €"
+          className="w-32 rounded-[var(--radius-md)] border border-[var(--color-line)] bg-[var(--color-paper-soft)] px-3 py-2 text-sm tabular-nums outline-none focus:border-[var(--color-line-strong)]"
+        />
+        <ActionButton label="Allinea importo" saving={saving} onClick={save} />
+      </div>
+      {order.paymentAmountOverride != null && (
+        <p className="text-xs text-[var(--color-ink-muted)]">
+          Totale reale ordine: <span className="tabular-nums">{formatEur(order.totalGross)}</span> — importo annotato per allineamento.
+        </p>
+      )}
       <FeedbackNote note={note} />
     </div>
   );
