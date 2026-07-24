@@ -12,6 +12,7 @@ import {
   NoteSection,
   VatOverrideSection,
   PaymentTotalSection,
+  VatReliefSection,
 } from "./OrderBlocks";
 import { agentName, formatDate, formatEur, formatTime } from "./format";
 
@@ -25,6 +26,7 @@ interface OrderDrawerProps {
   onNoteSaved: (id: string, note: string) => void;
   onVatSaved: (id: string, vat: string) => void;
   onPaymentTotalSaved: (id: string, override: number | null) => void;
+  onVatReliefValidated: (id: string, status: string) => void;
 }
 
 // Drawer dettaglio ordine. Desktop: scivola da DESTRA. Mobile: bottom sheet.
@@ -40,6 +42,7 @@ export function OrderDrawer({
   onNoteSaved,
   onVatSaved,
   onPaymentTotalSaved,
+  onVatReliefValidated,
 }: OrderDrawerProps) {
   // render = presenza nel DOM; show = posizione "aperto". Lo sfasamento di un
   // frame tra i due fa partire l'animazione di entrata (Mac e iPhone).
@@ -148,6 +151,17 @@ export function OrderDrawer({
             {/* Allinea il totale (es. IVA 22% -> 4%): reale su bozza, annotazione su confermato. */}
             <PaymentTotalSection order={current} onSaved={onPaymentTotalSaved} />
           </Section>
+
+          {/* Feature 002: richiesta IVA agevolata 4% dal checkout, da validare. */}
+          {current.vatReliefStatus && (
+            <Section title="IVA agevolata 4%">
+              <VatReliefSection
+                order={current}
+                onValidated={onVatReliefValidated}
+                onAmountSaved={onPaymentTotalSaved}
+              />
+            </Section>
+          )}
 
           {current.paymentMethod === "teacher-card" && (
             <Section title="Carta del Docente">

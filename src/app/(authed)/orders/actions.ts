@@ -84,6 +84,19 @@ export async function updateOrderPaymentTotalAction(
   });
 }
 
+// Feature 002 — valida la richiesta di IVA agevolata 4% (PATCH /orders/vat-agevolata).
+// approve = IVA 4% effettiva per Danea; reject = torna a 22% (rimuove l'override).
+// Il riallineo importo lo fa a parte updateOrderPaymentTotalAction (proposta 4%).
+export async function validateVatReliefAction(
+  id: string,
+  action: "approve" | "reject",
+): Promise<{ ok: boolean; status: string }> {
+  return gatewayFetch("/api/v1/orders/vat-agevolata", {
+    method: "PATCH",
+    body: JSON.stringify({ id, action }),
+  });
+}
+
 // Parte C2: vista editing riga (opzioni colore + modalita'). mode:
 // "edit" = modifica reale (ordine UNCONFIRMED), "annotate" = cambio colore come
 // annotazione (ordine confermato non spedito), "locked" = sola lettura.

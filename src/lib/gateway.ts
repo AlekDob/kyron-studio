@@ -420,6 +420,9 @@ export interface OrderRow {
   // Importo totale annotato su ordini confermati (kyron_payment_amount_override):
   // allinea la vista Studio al totale rifatto a mano (es. IVA 4%). Null se assente.
   paymentAmountOverride: number | null;
+  // Feature 002 — stato richiesta IVA agevolata 4% dal checkout: "requested"
+  // (da validare) | "approved" | "rejected". Vuoto = nessuna richiesta.
+  vatReliefStatus: string;
   // Cambi colore annotati su ordini confermati (kyron_line_colors).
   colorChanges: LineColorChange[];
   lines: OrderLine[];

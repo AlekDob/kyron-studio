@@ -10,6 +10,7 @@ import {
   updateOrderNoteAction,
   updateOrderVatAction,
   updateOrderPaymentTotalAction,
+  validateVatReliefAction,
 } from "@/app/(authed)/orders/actions";
 import { formatEur, WORKFLOW_STATUSES } from "./format";
 import { InfoRow, ActionButton, FeedbackNote } from "./drawer-primitives";
@@ -391,5 +392,137 @@ export function PaymentTotalSection({
       )}
       <FeedbackNote note={note} />
     </div>
+  );
+}
+
+// Feature 002 — validazione richiesta IVA agevolata 4% (dal checkout). Se lo stato
+// e' "requested" mostra Approva/Rifiuta. All'approvazione propone l'importo a 4%
+// (totale/1,22*1,04, scorporo 22% e riapplica 4% sull'imponibile): l'operatore lo
+// CONFERMA o MODIFICA prima di allineare il totale (nessun ricalcolo silenzioso sul
+// money-path). onValidated propaga il nuovo stato; onAmountSaved l'importo allineato.
+export function VatReliefSection({
+  order,
+  onValidated,
+  onAmountSaved,
+}: {
+  order: OrderRow;
+  onValidated: (id: string, status: string) => void;
+  onAmountSaved: (id: string, override: number | null) => void;
+}) {
+  // Proposta 4% dal totale attuale (assunto a 22%, vero per gli ordini da checkout).
+  const proposed = Math.round((order.totalGross / 1.22) * 1.04 * 100) / 100;
+  const [amount, setAmount] = useState(String(proposed));
+  const [approving, setApproving] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [note, setNote] = useState("");
+  const status = order.vatReliefStatus;
+
+  async function approve() {
+    if (approving) return;
+    setApproving(true);
+    setNote("");
+    try {
+      await validateVatReliefAction(order.id, "approve");
+      onValidated(order.id, "approved");
+      setNote("Agevolazione approvata. Conferma o modifica l'importo a IVA 4%.");
+    } catch {
+      setNote("Errore nell'approvazione. Riprova.");
+    } finally {
+      setApproving(false);
+    }
+  }
+
+  async function reject() {
+    if (approving) return;
+    setApproving(true);
+    setNote("");
+    try {
+      await validateVatReliefAction(order.id, "reject");
+      onValidated(order.id, "rejected");
+      setNote("Agevolazione rifiutata. Ordine tornato a IVA 22%.");
+    } catch {
+      setNote("Errore nel rifiuto. Riprova.");
+    } finally {
+      setApproving(false);
+    }
+  }
+
+  // Conferma/modifica l'importo proposto a 4% -> allinea il totale (Fase 1).
+  async function confirmAmount() {
+    const parsed = Number(amount.replace(",", "."));
+    if (!Number.isFinite(parsed) || parsed < 0 || saving) return;
+    setSaving(true);
+    setNote("");
+    try {
+      const res = await updateOrderPaymentTotalAction(order.id, parsed);
+      onAmountSaved(order.id, res.override);
+      setNote(`Importo IVA 4% allineato a ${formatEur(parsed)}.`);
+    } catch {
+      setNote("Errore nel salvataggio importo. Riprova.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-[var(--color-ink-soft)]">Stato richiesta</span>
+        <VatReliefBadge status={status} />
+      </div>
+      <p className="text-xs text-[var(--color-ink-muted)]">
+        Documenti giustificativi inviati via email al team al checkout.
+      </p>
+
+      {status === "requested" && (
+        <div className="flex gap-2">
+          <ActionButton label="Approva agevolazione" saving={approving} onClick={approve} />
+          <button
+            type="button"
+            onClick={reject}
+            disabled={approving}
+            className="rounded-[var(--radius-pill)] border border-[var(--color-line)] bg-[var(--color-paper-soft)] px-3 py-1.5 text-sm font-medium text-[var(--color-ink-soft)] transition-colors hover:border-[var(--color-line-strong)] disabled:opacity-50"
+          >
+            Rifiuta
+          </button>
+        </div>
+      )}
+
+      {/* Dopo l'approvazione: importo 4% proposto, confermabile o modificabile. */}
+      {status === "approved" && (
+        <div className="flex flex-col gap-2">
+          <span className="text-xs text-[var(--color-ink-muted)]">
+            Importo proposto a IVA 4% (da 22%): modificalo se serve, poi conferma.
+          </span>
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              inputMode="decimal"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className="w-32 rounded-[var(--radius-md)] border border-[var(--color-line)] bg-[var(--color-paper-soft)] px-3 py-2 text-sm tabular-nums outline-none focus:border-[var(--color-line-strong)]"
+            />
+            <ActionButton label="Conferma importo" saving={saving} onClick={confirmAmount} />
+          </div>
+        </div>
+      )}
+
+      <FeedbackNote note={note} />
+    </div>
+  );
+}
+
+// Badge stato agevolazione IVA: da validare / approvata / rifiutata.
+function VatReliefBadge({ status }: { status: string }) {
+  const map: Record<string, { label: string; cls: string }> = {
+    requested: { label: "Da validare", cls: "border-[var(--color-line-strong)] text-[var(--color-ink)]" },
+    approved: { label: "Approvata", cls: "border-[var(--color-line)] text-[var(--color-ink-soft)]" },
+    rejected: { label: "Rifiutata", cls: "border-[var(--color-line)] text-[var(--color-ink-muted)]" },
+  };
+  const m = map[status] ?? map.requested;
+  return (
+    <span className={cn("rounded-[var(--radius-pill)] border px-2.5 py-0.5 text-xs font-medium", m.cls)}>
+      {m.label}
+    </span>
   );
 }

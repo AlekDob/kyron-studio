@@ -30,6 +30,7 @@ interface OrderOverrides {
   note?: string; // nota salvata (persiste alla riapertura del drawer)
   vatOverride?: string; // override IVA salvato
   paymentAmountOverride?: number | null; // importo totale annotato salvato
+  vatReliefStatus?: string; // stato validazione agevolazione IVA (feature 002)
 }
 
 // L'acquisizione del buono salda l'ordine solo se non resta un residuo bonifico:
@@ -53,6 +54,8 @@ function applyOverrides(o: OrderRow, ov: OrderOverrides): OrderRow {
   if (ov.vatOverride !== undefined) next = { ...next, vatOverride: ov.vatOverride };
   if (ov.paymentAmountOverride !== undefined)
     next = { ...next, paymentAmountOverride: ov.paymentAmountOverride };
+  if (ov.vatReliefStatus !== undefined)
+    next = { ...next, vatReliefStatus: ov.vatReliefStatus };
   return next;
 }
 
@@ -196,6 +199,7 @@ export function OrdersView({ data, from, to }: OrdersViewProps) {
         onPaymentTotalSaved={(id, paymentAmountOverride) =>
           patch(id, { paymentAmountOverride })
         }
+        onVatReliefValidated={(id, vatReliefStatus) => patch(id, { vatReliefStatus })}
       />
     </div>
   );
