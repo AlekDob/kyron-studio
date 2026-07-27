@@ -8,6 +8,12 @@ tags: [orders, ordini, commerciali, portali, saleor]
 
 # Feature 010 — Modulo Ordini
 
+> **Update 2026-07-27 — link al modulo Agevolazioni**: nel drawer, sezione
+> **IVA agevolata** (`VatReliefSection`), nuovo link "Valuta documenti con
+> l'agente" → `/vat-relief?case=<numero>`. Apre il nuovo modulo Agevolazioni
+> (feature 012) con l'ordine gia' in contesto, per caricare e far controllare
+> dall'agente i documenti 104 ricevuti via email prima di decidere qui.
+
 > **Update 2026-07-23 — allinea importo pagamento (ibrido reale/annotazione)**: nel
 > drawer, sezione **Pagamento**, campo **"Allinea importo"** per allineare il totale
 > dell'ordine a Danea (caso reale: cliente ordina a IVA 22% e l'ordine viene poi rifatto
