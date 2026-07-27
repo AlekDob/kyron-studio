@@ -8,6 +8,8 @@ import {
   Eye,
   ChartNoAxesColumn,
   ShoppingBag,
+  ShieldCheck,
+  FileCheck,
   type LucideIcon,
 } from "lucide-react";
 
@@ -65,6 +67,26 @@ export const MODULES: ModuleDefinition[] = [
     kind: "tool",
     status: "live",
     tone: { tile: "bg-[#B45309]", icon: "text-white" },
+  },
+  {
+    id: "checks",
+    label: "Controlli",
+    description: "Controlla prezzi e sconti dei portali: chiedi una verifica, ricevi le anomalie.",
+    href: "/checks",
+    icon: ShieldCheck,
+    kind: "agent",
+    status: "live",
+    tone: { tile: "bg-[#B42318]", icon: "text-white" },
+  },
+  {
+    id: "vat-relief",
+    label: "Agevolazioni",
+    description: "Controlla i documenti 104 e valida le richieste di IVA al 4%.",
+    href: "/vat-relief",
+    icon: FileCheck,
+    kind: "agent",
+    status: "live",
+    tone: { tile: "bg-[#0F766E]", icon: "text-white" },
   },
   {
     id: "analytics",

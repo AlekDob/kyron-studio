@@ -18,6 +18,22 @@ const BundleBuilder = lazy(() =>
 const LogoUploader = lazy(() =>
   import("./LogoUploader").then((m) => ({ default: m.LogoUploader })),
 );
+// Modulo Agevolazioni (IVA 4% L.104)
+const DocUploader = lazy(() =>
+  import("./DocUploader").then((m) => ({ default: m.DocUploader })),
+);
+const DocCheckReport = lazy(() =>
+  import("./DocCheckReport").then((m) => ({ default: m.DocCheckReport })),
+);
+const VatReliefDecision = lazy(() =>
+  import("./VatReliefDecision").then((m) => ({ default: m.VatReliefDecision })),
+);
+const VatReliefCase = lazy(() =>
+  import("@/components/vat-relief/VatReliefCase").then((m) => ({ default: m.VatReliefCase })),
+);
+const AnomalyReport = lazy(() =>
+  import("./AnomalyReport").then((m) => ({ default: m.AnomalyReport })),
+);
 
 const COMPONENT_REGISTRY: Record<
   string,
@@ -30,6 +46,21 @@ const COMPONENT_REGISTRY: Record<
     Record<string, unknown>
   >,
   LogoUploader: LogoUploader as unknown as React.ComponentType<
+    Record<string, unknown>
+  >,
+  AnomalyReport: AnomalyReport as unknown as React.ComponentType<
+    Record<string, unknown>
+  >,
+  DocUploader: DocUploader as unknown as React.ComponentType<
+    Record<string, unknown>
+  >,
+  DocCheckReport: DocCheckReport as unknown as React.ComponentType<
+    Record<string, unknown>
+  >,
+  VatReliefDecision: VatReliefDecision as unknown as React.ComponentType<
+    Record<string, unknown>
+  >,
+  VatReliefCase: VatReliefCase as unknown as React.ComponentType<
     Record<string, unknown>
   >,
 };

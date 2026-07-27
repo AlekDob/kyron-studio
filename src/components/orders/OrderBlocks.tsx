@@ -473,6 +473,14 @@ export function VatReliefSection({
       <p className="text-xs text-[var(--color-ink-muted)]">
         Documenti giustificativi inviati via email al team al checkout.
       </p>
+      {/* Modulo Agevolazioni: carica i documenti ricevuti e falli controllare
+          dall'agente prima di decidere qui. */}
+      <a
+        href={`/vat-relief?case=${order.number}`}
+        className="text-xs font-medium text-[var(--color-action)] underline-offset-2 hover:underline"
+      >
+        Valuta documenti con l&apos;agente
+      </a>
 
       {status === "requested" && (
         <div className="flex gap-2">

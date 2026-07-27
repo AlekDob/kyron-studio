@@ -37,6 +37,30 @@ export async function* streamDataEditor(input: {
   });
 }
 
+// Agente Controlli (Price Guard): check prezzi/sconti in sola lettura.
+export async function* streamPriceGuard(input: {
+  messages: ChatMessage[];
+  signal?: AbortSignal;
+}): AsyncGenerator<ChatStreamEvent, void, void> {
+  yield* streamAgent({
+    endpoint: "/api/agent/price-guard",
+    body: { messages: input.messages },
+    signal: input.signal,
+  });
+}
+
+// Agente Agevolazioni (IVA 4% L.104): controllo documenti, propone la decisione.
+export async function* streamVatRelief(input: {
+  messages: ChatMessage[];
+  signal?: AbortSignal;
+}): AsyncGenerator<ChatStreamEvent, void, void> {
+  yield* streamAgent({
+    endpoint: "/api/agent/vat-relief",
+    body: { messages: input.messages },
+    signal: input.signal,
+  });
+}
+
 export interface ReviewEditorPendingTarget {
   urn: string | null;
   nodeKind: "text" | "image" | "section" | "page" | "gap";
