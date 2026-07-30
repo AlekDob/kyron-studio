@@ -159,17 +159,27 @@ export function OrdersView({ data, from, to }: OrdersViewProps) {
   // da confermare = bozza Saleor (UNCONFIRMED/DRAFT); il resto e' confermato.
   const counts = useMemo(() => {
     let canceled = 0;
+    let canceledEur = 0;
     let toConfirm = 0;
+    let toConfirmEur = 0;
     for (const o of filtered) {
-      if (o.workflowStatus === "annullato" || o.status === "CANCELED") canceled++;
-      else if (o.status === "UNCONFIRMED" || o.status === "DRAFT") toConfirm++;
+      if (o.workflowStatus === "annullato" || o.status === "CANCELED") {
+        canceled++;
+        canceledEur += o.totalGross;
+      } else if (o.status === "UNCONFIRMED" || o.status === "DRAFT") {
+        toConfirm++;
+        toConfirmEur += o.totalGross;
+      }
     }
     return {
       canceled,
+      canceledEur,
       toConfirm,
+      toConfirmEur,
       confirmed: filtered.length - canceled - toConfirm,
+      confirmedEur: total - canceledEur - toConfirmEur,
     };
-  }, [filtered]);
+  }, [filtered, total]);
 
   return (
     <div className="flex flex-col gap-5">
@@ -178,9 +188,21 @@ export function OrdersView({ data, from, to }: OrdersViewProps) {
         <Kpi label="Totale" value={formatEur(total)} />
       </div>
       <div className="grid grid-cols-3 gap-3">
-        <Kpi label="Confermati" value={String(counts.confirmed)} />
-        <Kpi label="Da confermare" value={String(counts.toConfirm)} />
-        <Kpi label="Annullati" value={String(counts.canceled)} />
+        <Kpi
+          label="Confermati"
+          value={String(counts.confirmed)}
+          sub={formatEur(counts.confirmedEur)}
+        />
+        <Kpi
+          label="Da confermare"
+          value={String(counts.toConfirm)}
+          sub={formatEur(counts.toConfirmEur)}
+        />
+        <Kpi
+          label="Annullati"
+          value={String(counts.canceled)}
+          sub={formatEur(counts.canceledEur)}
+        />
       </div>
 
       <Input
@@ -226,13 +248,24 @@ export function OrdersView({ data, from, to }: OrdersViewProps) {
   );
 }
 
-function Kpi({ label, value }: { label: string; value: string }) {
+function Kpi({
+  label,
+  value,
+  sub,
+}: {
+  label: string;
+  value: string;
+  sub?: string; // valore economico sotto il conteggio
+}) {
   return (
     <Card padding="md">
       <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-ink-muted)]">
         {label}
       </p>
       <p className="mt-1 text-2xl font-medium tracking-tight">{value}</p>
+      {sub && (
+        <p className="mt-0.5 text-sm text-[var(--color-ink-muted)]">{sub}</p>
+      )}
     </Card>
   );
 }
