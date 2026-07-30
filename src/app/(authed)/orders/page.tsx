@@ -35,7 +35,9 @@ export default async function OrdersPage({ searchParams }: PageProps) {
   if (!user) redirect(loginUrl());
 
   const params = await searchParams;
-  const from = pickDate(params.from, isoDaysAgo(30));
+  // Default: tutto lo storico (primo ordine Kyron nel 2026). Il preset
+  // "Tutti" in OrdersFilters usa la stessa data di partenza.
+  const from = pickDate(params.from, "2026-01-01");
   const to = pickDate(params.to, isoDaysAgo(0));
 
   let data: OrdersResponse | null = null;

@@ -155,11 +155,32 @@ export function OrdersView({ data, from, to }: OrdersViewProps) {
   );
   const groups = useMemo(() => groupByDay(filtered), [filtered]);
 
+  // Conteggi per stato: annullato = workflow interno o evasione Saleor CANCELED;
+  // da confermare = bozza Saleor (UNCONFIRMED/DRAFT); il resto e' confermato.
+  const counts = useMemo(() => {
+    let canceled = 0;
+    let toConfirm = 0;
+    for (const o of filtered) {
+      if (o.workflowStatus === "annullato" || o.status === "CANCELED") canceled++;
+      else if (o.status === "UNCONFIRMED" || o.status === "DRAFT") toConfirm++;
+    }
+    return {
+      canceled,
+      toConfirm,
+      confirmed: filtered.length - canceled - toConfirm,
+    };
+  }, [filtered]);
+
   return (
     <div className="flex flex-col gap-5">
       <div className="grid grid-cols-2 gap-3">
         <Kpi label="Ordini" value={String(filtered.length)} />
         <Kpi label="Totale" value={formatEur(total)} />
+      </div>
+      <div className="grid grid-cols-3 gap-3">
+        <Kpi label="Confermati" value={String(counts.confirmed)} />
+        <Kpi label="Da confermare" value={String(counts.toConfirm)} />
+        <Kpi label="Annullati" value={String(counts.canceled)} />
       </div>
 
       <Input
