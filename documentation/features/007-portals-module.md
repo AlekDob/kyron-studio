@@ -78,7 +78,7 @@ l'identita'. Niente piu' ricostruzione a mano dell'onboarding conversazionale.
 | `slug`, `nome` | **nuovi** (dal popup; slug validato kebab-case + univoco) |
 | `branding.nome` | = nuovo nome; `branding.logo` → **reset** (re-upload) |
 | `codiceMeccanografico` → `"TBD"`, `sitoUfficiale` → `""` | **reset** |
-| `schoolAddress` | **svuotato** (solo `country="IT"`) → reinserimento obbligatorio, evita spedizioni al vecchio indirizzo |
+| `schoolAddress` | **placeholder** (`streetAddress1/city/countryArea="TBD"`, `postalCode="00000"`, `country="IT"`) → reinserimento obbligatorio, evita spedizioni al vecchio indirizzo |
 | `status` → `"draft"`, `collectedBy` → `"manual"`, `requestedBy` → utente loggato | **reset/nuovi** |
 | `channelId`, `saleorVoucherIds` | **non copiati** — rigenerati all'enable |
 
@@ -96,7 +96,35 @@ resta aperto col messaggio. `duplicatePortal(sourceSlug, {newSlug, newNome})` in
 Endpoint: `POST /api/portals/[slug]/duplicate` (proxy) → studio-server
 `POST /api/v1/portals/:slug/duplicate` (`requestedBy = c.get("studioUser").email`).
 
+**Gotcha campi indirizzo `required` (fix 2026-06-25)**: la collection
+`pending-schools` ha 5 campi `schoolAddress` obbligatori (`streetAddress1`,
+`postalCode`, `city`, `countryArea`, `country`) e **nessun draft versioning** →
+Payload valida i `required` anche per una Bozza. La prima versione di
+`buildClonedDoc` svuotava l'indirizzo (`{country:"IT"}`) → `gateway.create`
+falliva con `ValidationError` rigirato come **400** ("Duplicazione fallita.
+Riprova."), bloccando *ogni* duplicazione. Fix: `ADDRESS_PLACEHOLDER` con `"TBD"`
+(stessa convenzione di `codiceMeccanografico`). Test di regressione:
+`tests/features/portals-duplicate.test.ts`.
+
 **Go-live**: in produzione su `studio.kyronedu.it` dal 2026-06-22 (commit `feat(portals): duplica portale` su studio + studio-server, redeploy Coolify manuale via API — l'autodeploy webhook non e' attivo). Annuncio interno al team via mail "da Panzerottino" (`documentation/emails/2026-06-22-duplica-portale-panzerottino/`).
+
+## Go-live su Saleor (enable) — target best-effort (2026-06-29)
+
+`enablePortal(slug, ["staging","prod"])` (studio-server `enable/enable.ts`)
+applica gli step Saleor sui target **in ordine, staging per primo**. Dal
+2026-06-29 i target **non-prod sono best-effort**: un fallimento su staging
+finisce in `report.targetErrors` (riportato all'utente dall'agente) ma **non
+blocca** la pubblicazione su prod; **solo un errore su prod è fatale**. Coerente
+con "staging è solo smoke test" (cloni DB separati, channelId divergenti).
+
+**Perché**: staging e prod sono DB Saleor separati, un bump prezzi su prod non
+tocca staging. Prima del fix un listino vecchio su staging faceva `throw` in
+`resolveBundleSaving` (kit con `saving = sum(componenti) − prezzoKit <= 0`) e,
+girando staging per primo, uccideva l'intera pubblicazione prima di arrivare a
+prod. Il voucher del kit è FIXED: il prezzo MOSTRATO del kit deve sempre stare
+SOTTO la somma dei componenti, altrimenti il voucher sarebbe negativo (blocco
+legittimo). Vedi memory `portal-enable-staging-price-drift` + diary umbrella
+`2026-06-29`.
 
 ## Persistenza
 

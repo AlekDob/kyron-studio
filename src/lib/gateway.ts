@@ -129,6 +129,17 @@ export async function getRecord(
   return body.data;
 }
 
+export async function createRecord(
+  slug: string,
+  data: Record<string, unknown>,
+): Promise<PayloadDoc> {
+  const body = await gatewayFetch<{ data: PayloadDoc }>(
+    `/api/v1/collections/${slug}`,
+    { method: "POST", body: JSON.stringify(data) },
+  );
+  return body.data;
+}
+
 export async function updateRecord(
   slug: string,
   id: string,
@@ -280,6 +291,30 @@ export async function enablePortalOnSaleor(
     method: "POST",
     body: JSON.stringify(targets ? { targets } : {}),
   });
+}
+
+export interface UploadedMedia {
+  id: string;
+  filename: string;
+  url: string;
+}
+
+// Upload generico su Payload Media (PDF/copertine delle Risorse). Stesso motivo
+// del logo: multipart fuori da gatewayFetch.
+export async function uploadMedia(form: FormData): Promise<UploadedMedia> {
+  const headers = new Headers();
+  headers.set("X-Tenant", TENANT);
+  headers.set("Cookie", await buildCookieHeader());
+  const res = await fetch(`${GATEWAY_URL}/api/v1/media`, {
+    method: "POST",
+    headers,
+    body: form,
+  });
+  if (!res.ok) {
+    const txt = await res.text().catch(() => "");
+    throw new GatewayError(res.status, txt || "media upload failed");
+  }
+  return res.json();
 }
 
 // Upload logo: multipart server-side (NO Content-Type manuale → fetch imposta

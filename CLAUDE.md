@@ -94,6 +94,7 @@ Live su `https://studio.kyronedu.it` (Coolify + Hetzner CCX23).
 - `documentation/features/009-analytics-module.md` — Modulo Analytics: KPI con delta vs periodo precedente, periodi Oggi/Ieri/Settimana/Mese + rolling, chart (orario su Oggi/Ieri), mappa visitatori zoomabile con dot cliccabili, citta'/fonti/pagine/device, lead KPI (form/newsletter/registrazioni), ricerca fuzzy origini, nav sezioni mobile, report email giornaliero 09:00 (decision-017, BFF studio-server feature 005)
 - `documentation/features/011-price-guard-module.md` — Modulo Controlli: agente sola-lettura che verifica prezzi/sconti dei portali su Saleor prod e spiega le anomalie (motore deterministico `runPriceGuard`, l'AI non calcola nulla)
 - `documentation/features/012-vat-relief-module.md` — Modulo Agevolazioni: agente che controlla i documenti 104 (IVA agevolata 4%) caricati dal collega, li confronta con l'ordine e propone approva/rifiuta (decisione sempre umana). Nessun archivio documenti (dati sanitari, TTL 30 min in memoria)
+- `documentation/features/013-risorse-module.md` — Risorse dentro Dati (`/dati/risorse`): CRUD dedicato con upload PDF + copertina, bozza/pubblicata. Andrea non usa piu' `/admin` Payload
 - Cross-progetto: `Kyron/documentation/workstreams/03-studio-standalone.md` — login OTP, preview iframe, review system
 - `documentation/diary/` — changelog locale
 - Cross-progetto: `Kyron/documentation/workstreams/01-studio-shell-port.md`
