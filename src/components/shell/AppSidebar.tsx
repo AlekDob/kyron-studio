@@ -1,13 +1,13 @@
 "use client";
 // Source: Virgilio apps/client/src/shell/AppSidebar.tsx — adattato per Next.js App Router.
-import { LayoutGrid, Moon, Sun, Command, LogOut } from "lucide-react";
+import { LayoutGrid, Command, LogOut } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { Sidebar, Pill } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { MODULES, type ModuleDefinition } from "./modules";
-import { useTheme } from "./ThemeProvider";
 import { useCommandPalette } from "./CommandPaletteProvider";
 
+import { StudioMark } from "./StudioMark";
 interface Props {
   userEmail?: string;
   // Modalita' rail: solo icone (label/pill nascoste). Usata dal DesktopShell
@@ -18,7 +18,6 @@ interface Props {
 export function AppSidebar({ userEmail, collapsed = false }: Props) {
   const pathname = usePathname();
   const router = useRouter();
-  const { mode, toggle } = useTheme();
   const { open: openPalette } = useCommandPalette();
 
   const inbox = MODULES.find((m) => m.id === "inbox");
@@ -64,7 +63,7 @@ export function AppSidebar({ userEmail, collapsed = false }: Props) {
     );
 
   return (
-    <Sidebar width={248} className="bg-[var(--color-paper-muted)]" style={{ width: "100%" }}>
+    <Sidebar width={248} style={{ width: "100%" }}>
       <div
         className={cn(
           "flex items-center py-4",
@@ -72,9 +71,7 @@ export function AppSidebar({ userEmail, collapsed = false }: Props) {
         )}
       >
         <div className="flex items-center gap-2">
-          <span className="inline-flex h-6 w-6 items-center justify-center rounded-[var(--radius-card)] bg-[var(--color-accent)] text-xs font-semibold text-[var(--color-paper)]">
-            K
-          </span>
+          <StudioMark />
           {!collapsed && (
             <span className="text-base font-semibold tracking-tight text-[var(--color-ink)]">
               Studio
@@ -126,30 +123,28 @@ export function AppSidebar({ userEmail, collapsed = false }: Props) {
       </div>
 
       <Sidebar.Footer>
-        <button
-          type="button"
-          onClick={toggle}
-          title={collapsed ? "Tema" : undefined}
-          className="flex w-full items-center gap-3 rounded-[var(--radius-card)] px-3 py-2 text-left text-sm text-[var(--color-ink-soft)] transition-colors hover:bg-[var(--color-action-subtle)] hover:text-[var(--color-ink)]"
-          aria-label={mode === "dark" ? "Passa al tema chiaro" : "Passa al tema scuro"}
+        <div
+          className={
+            collapsed
+              ? "flex flex-col items-center gap-1"
+              : "rounded-[var(--radius-control)] bg-[var(--studio-hover-surface)] px-3 py-3"
+          }
         >
-          {mode === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          {!collapsed && <span>Tema {mode === "dark" ? "chiaro" : "scuro"}</span>}
-        </button>
-        {/* Brain: feature-008 — logout: re-login applica il ruolo aggiornato */}
-        <a
-          href="/api/logout"
-          title={collapsed ? "Esci" : undefined}
-          className="mt-1 flex w-full items-center gap-3 rounded-[var(--radius-card)] px-3 py-2 text-left text-sm text-[var(--color-ink-soft)] transition-colors hover:bg-[var(--color-action-subtle)] hover:text-[var(--color-ink)]"
-        >
-          <LogOut className="h-4 w-4" />
-          {!collapsed && <span>Esci</span>}
-        </a>
-        {userEmail && !collapsed && (
-          <div className="mt-2 px-3 pb-1 text-xs text-[var(--color-ink-muted)] truncate">
-            {userEmail}
-          </div>
-        )}
+          {userEmail && !collapsed && (
+            <div className="truncate pb-2 text-xs text-[var(--color-ink-muted)]">
+              {userEmail}
+            </div>
+          )}
+          {/* Brain: feature-008 — logout: re-login applica il ruolo aggiornato */}
+          <a
+            href="/api/logout"
+            title={collapsed ? "Esci" : undefined}
+            className="flex items-center gap-2.5 rounded-[var(--radius-control)] text-[13px] text-[var(--color-ink-soft)] transition-colors hover:text-[var(--color-ink)]"
+          >
+            <LogOut className="h-4 w-4" />
+            {!collapsed && <span>Esci</span>}
+          </a>
+        </div>
       </Sidebar.Footer>
     </Sidebar>
   );

@@ -17,6 +17,7 @@ import {
   StreamingBubble,
   processContent,
 } from "@/components/chat/chat-ui";
+import { ChatComposer } from "@/components/chat/ChatComposer";
 import type { Annotation } from "@/lib/review/types";
 import { buildUrn } from "@/lib/review/urn";
 import type { PendingTarget } from "./PreviewWorkspace";
@@ -271,7 +272,7 @@ export function PreviewChat(props: Props): ReactElement {
     <div className="flex flex-1 min-h-0 flex-col">
       <div
         ref={scrollRef}
-        className="flex-1 min-h-0 overflow-y-auto px-5 py-4 space-y-3"
+        className="flex-1 min-h-0 overflow-y-auto px-5 py-5 space-y-5"
       >
         {entries.map((entry, i) => {
           if (entry.kind === "proposal") {
@@ -297,9 +298,10 @@ export function PreviewChat(props: Props): ReactElement {
                   {entry.content}
                 </ChatBubble>
               ) : isLastAssistant ? (
-                <StreamingBubble raw={entry.content} isStreaming={streaming} />
+                <StreamingBubble
+                  agent="Review Editor" raw={entry.content} isStreaming={streaming} />
               ) : (
-                <ChatBubble role="assistant" state="complete">
+                <ChatBubble role="assistant" agent="Review Editor" state="complete">
                   <MarkdownContent
                     content={processContent(entry.content).text}
                   />
@@ -363,49 +365,19 @@ export function PreviewChat(props: Props): ReactElement {
         />
       )}
 
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          void send();
-        }}
-        className="border-t border-[var(--color-line)] px-4 py-3"
-      >
-        <div className="flex items-center gap-2 rounded-[var(--radius-pill)] border border-[var(--color-line)] bg-[var(--color-paper-muted)] py-2 pl-4 pr-2">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder={
-              props.pendingTarget
-                ? "Descrivi la modifica per l'elemento selezionato…"
-                : "Descrivi una modifica…"
-            }
-            disabled={streaming}
-            aria-label="Scrivi all'agente Review Editor"
-            className="flex-1 bg-transparent text-sm focus:outline-none disabled:opacity-50"
-          />
-          <button
-            type="submit"
-            disabled={!input.trim() || streaming}
-            aria-label="Invia"
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-action)] text-[var(--color-paper)] hover:bg-[var(--color-action-hover)] disabled:opacity-30"
-          >
-            <svg
-              className="h-4 w-4"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M12 19V5" />
-              <path d="m5 12 7-7 7 7" />
-            </svg>
-          </button>
-        </div>
-      </form>
+      <ChatComposer
+        value={input}
+        onChange={setInput}
+        onSubmit={() => void send()}
+        disabled={streaming}
+        placeholder={
+          props.pendingTarget
+            ? "Descrivi la modifica per l'elemento selezionato…"
+            : "Descrivi una modifica…"
+        }
+        ariaLabel="Scrivi all'agente Review Editor"
+      />
+
     </div>
   );
 }

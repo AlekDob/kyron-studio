@@ -12,7 +12,7 @@ export default async function QueuePage() {
   const items = await fetchPendingSchools();
 
   return (
-    <main className="min-h-screen px-8 py-12 max-w-5xl mx-auto">
+    <main className="min-h-full px-8 py-12 max-w-5xl mx-auto">
       <header className="mb-8">
         <p className="eyebrow mb-2">Studio · Coda</p>
         <h1 className="text-3xl font-medium tracking-tight">

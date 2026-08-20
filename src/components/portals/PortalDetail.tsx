@@ -402,7 +402,7 @@ function InlineText({
         <X className="h-3.5 w-3.5" />
       </button>
       {err ? (
-        <span className="text-[10px] text-[var(--color-danger,#c33)]">{err}</span>
+        <span className="text-[10px] text-[var(--color-critical)]">{err}</span>
       ) : null}
     </div>
   );
@@ -677,7 +677,7 @@ function BundleCard({
           type="button"
           onClick={removeBundle}
           disabled={busy}
-          className={`p-1 ${confirmDelete ? "text-[var(--color-danger,#c33)]" : "text-[var(--color-ink-muted)] hover:text-[var(--color-danger,#c33)]"}`}
+          className={`p-1 ${confirmDelete ? "text-[var(--color-critical)]" : "text-[var(--color-ink-muted)] hover:text-[var(--color-critical)]"}`}
           title={confirmDelete ? "Conferma" : "Rimuovi kit"}
         >
           <Trash2 className="h-3.5 w-3.5" />
@@ -753,7 +753,7 @@ function BundleCard({
         </div>
       ) : null}
       {confirmDelete ? (
-        <p className="text-[10px] text-[var(--color-danger,#c33)] mt-1">
+        <p className="text-[10px] text-[var(--color-critical)] mt-1">
           Premi di nuovo il cestino per confermare.
         </p>
       ) : null}

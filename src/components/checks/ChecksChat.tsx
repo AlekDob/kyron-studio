@@ -8,6 +8,7 @@ import {
   StreamingBubble,
   processContent,
 } from "@/components/chat/chat-ui";
+import { ChatComposer } from "@/components/chat/ChatComposer";
 import {
   extractGenerativeDescriptor,
   type GenerativeDescriptor,
@@ -100,7 +101,7 @@ export function ChecksChat({ onReport }: Props): ReactElement {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div ref={scrollRef} className="flex-1 min-h-0 space-y-3 overflow-y-auto px-5 py-4">
+      <div ref={scrollRef} className="flex-1 min-h-0 space-y-5 overflow-y-auto px-5 py-5">
         {turns.map((t, i) => {
           const isLastAssistant = t.role === "assistant" && i === turns.length - 1;
           return (
@@ -112,9 +113,10 @@ export function ChecksChat({ onReport }: Props): ReactElement {
                   </ChatBubble>
                 </div>
               ) : isLastAssistant ? (
-                <StreamingBubble raw={t.content} isStreaming={streaming} />
+                <StreamingBubble
+                  agent="Controlli" raw={t.content} isStreaming={streaming} />
               ) : (
-                <ChatBubble role="assistant" state="complete">
+                <ChatBubble role="assistant" agent="Controlli" state="complete">
                   <MarkdownContent content={processContent(t.content).text} />
                 </ChatBubble>
               )}
@@ -129,45 +131,15 @@ export function ChecksChat({ onReport }: Props): ReactElement {
         )}
       </div>
 
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          void send();
-        }}
-        className="border-t border-[var(--color-line)] px-4 py-3"
-      >
-        <div className="flex items-center gap-2 rounded-[var(--radius-pill)] border border-[var(--color-line)] bg-[var(--color-paper-muted)] py-2 pl-4 pr-2">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Chiedi un controllo..."
-            disabled={streaming}
-            aria-label="Scrivi all'agente Controlli"
-            className="flex-1 bg-transparent text-sm focus:outline-none disabled:opacity-50"
-          />
-          <button
-            type="submit"
-            disabled={!input.trim() || streaming}
-            aria-label="Invia"
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-action)] text-[var(--color-paper)] hover:bg-[var(--color-action-hover)] disabled:opacity-30"
-          >
-            <svg
-              className="h-4 w-4"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M12 19V5" />
-              <path d="m5 12 7-7 7 7" />
-            </svg>
-          </button>
-        </div>
-      </form>
+      <ChatComposer
+        value={input}
+        onChange={setInput}
+        onSubmit={() => void send()}
+        disabled={streaming}
+        placeholder="Chiedi un controllo..."
+        ariaLabel="Scrivi all'agente Controlli"
+      />
+
     </div>
   );
 }

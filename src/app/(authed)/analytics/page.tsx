@@ -81,7 +81,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
   const noData = view !== null && view.totals.pageviews === 0;
 
   return (
-    <main className="min-h-screen px-5 py-8 sm:px-8 lg:px-10 max-w-6xl mx-auto">
+    <main className="min-h-full px-5 py-8 sm:px-8 lg:px-10 max-w-6xl mx-auto">
       <header className="mb-6 rounded-2xl border border-[var(--color-line)] bg-[var(--color-paper-soft)] px-5 py-5">
         <p className="eyebrow mb-2">Studio · Analytics</p>
         <h1 className="text-3xl font-medium tracking-tight">

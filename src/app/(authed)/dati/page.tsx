@@ -19,7 +19,7 @@ export default async function DatiPage() {
   const collections = await listCollections();
 
   return (
-    <main className="min-h-screen px-5 py-8 sm:px-8 lg:px-10 max-w-5xl mx-auto">
+    <main className="min-h-full px-5 py-8 sm:px-8 lg:px-10 max-w-5xl mx-auto">
       <header className="mb-8 rounded-2xl border border-[var(--color-line)] bg-[var(--color-paper-soft)] px-5 py-5">
         <p className="eyebrow mb-2">Studio · Dati</p>
         <h1 className="text-3xl font-medium tracking-tight">

@@ -55,7 +55,7 @@ export function Dashboard({ orgName }: Props) {
         </div>
 
         {empty ? (
-          <div className="mt-16 rounded-[var(--radius-card)] border border-[var(--color-line)] border-dashed bg-[var(--color-paper)] px-6 py-12 text-center">
+          <div className="mt-16 rounded-[var(--radius-card)] border border-dashed border-[var(--color-line-strong)] px-6 py-12 text-center">
             <p className="text-sm text-[var(--color-ink-muted)]">
               Nessuna app trovata per{" "}
               <span className="mono-caps text-[var(--color-ink)]">{query}</span>.
@@ -123,11 +123,12 @@ function ModuleRow({ module: m }: { module: ModuleDefinition }) {
       className={`h-full ${disabled ? "cursor-not-allowed opacity-60" : ""}`}
     >
       <div className="flex items-start gap-3 p-1">
+        {/* Tile piatta: il colore lo mette solo l'icona. */}
         <div
-          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${m.tone.tile}`}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-control)] bg-[var(--color-accent-tint)]"
           aria-hidden="true"
         >
-          <Icon className={`h-5 w-5 ${m.tone.icon}`} />
+          <Icon className="h-5 w-5 text-[var(--color-accent)]" />
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">

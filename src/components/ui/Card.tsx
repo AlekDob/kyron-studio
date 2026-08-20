@@ -5,7 +5,8 @@ import { transitionBase } from "./_variants";
 
 const cardVariants = cva(
   cn(
-    "bg-[var(--color-paper)] rounded-[var(--radius-card)] border border-[var(--color-line)]",
+    // Bianca piena, niente bordo: sulla lastra grigia si stacca da sola.
+    "bg-[var(--color-paper)] rounded-[var(--radius-card)]",
     transitionBase,
   ),
   {
@@ -21,7 +22,7 @@ const cardVariants = cva(
         lg: "p-8",
       },
       interactive: {
-        true: "cursor-pointer hover:border-[var(--color-line-strong)] hover:-translate-y-0.5 hover:shadow-[var(--shadow-card)]",
+        true: "cursor-pointer hover:-translate-y-0.5 hover:shadow-[var(--shadow-card)]",
         false: "",
       },
     },

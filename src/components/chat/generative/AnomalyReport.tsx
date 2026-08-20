@@ -31,8 +31,8 @@ const LABELS: Record<string, string> = {
 };
 
 const SEVERITY_DOT: Record<Anomaly["severity"], string> = {
-  high: "bg-[#B42318]",
-  medium: "bg-[#B45309]",
+  high: "bg-[var(--color-critical)]",
+  medium: "bg-[var(--color-warning)]",
   low: "bg-[var(--color-ink-muted)]",
 };
 

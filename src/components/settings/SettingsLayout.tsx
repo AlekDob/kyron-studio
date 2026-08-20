@@ -6,7 +6,6 @@ import { useState } from "react";
 import { cn } from "@/lib/cn";
 import { ProviderConnectionsSection } from "./ProviderConnectionsSection";
 import { ModelRoutingSection } from "./ModelRoutingSection";
-import { ThemeSection } from "./ThemeSection";
 import { ComingSoonSection } from "./ComingSoonSection";
 import { OrganizationSection } from "./OrganizationSection";
 import { EcommerceSection } from "./EcommerceSection";
@@ -15,14 +14,13 @@ type Tab =
   | "profile"
   | "connections"
   | "models"
-  | "theme"
   | "org"
   | "ecommerce"
   | "mcp";
 
 // Brain: feature-008 — adminOnly: connessioni AI, modelli, MCP e organizzazione
-// (gestione utenti) sono riservate agli admin. Gli editor vedono solo Tema
-// (e Profilo, quando esistera').
+// (gestione utenti) sono riservate agli admin. Gli editor vedono solo Profilo
+// (la tab Tema e' sparita col dark mode: lo Studio e' light-only).
 const TABS: Array<{
   id: Tab;
   label: string;
@@ -32,7 +30,6 @@ const TABS: Array<{
   { id: "profile", label: "Profilo", disabled: true },
   { id: "connections", label: "Connessioni", adminOnly: true },
   { id: "models", label: "Modelli AI", adminOnly: true },
-  { id: "theme", label: "Tema" },
   { id: "org", label: "Organizzazione", adminOnly: true },
   { id: "ecommerce", label: "Ecommerce", adminOnly: true },
   { id: "mcp", label: "MCP Servers", disabled: true, adminOnly: true },
@@ -45,10 +42,10 @@ interface Props {
 
 export function SettingsLayout({ userEmail, isAdmin }: Props) {
   const tabs = TABS.filter((t) => isAdmin || !t.adminOnly);
-  const [active, setActive] = useState<Tab>(isAdmin ? "connections" : "theme");
+  const [active, setActive] = useState<Tab>(isAdmin ? "connections" : "profile");
 
   return (
-    <div className="flex flex-col lg:flex-row h-full min-h-screen">
+    <div className="flex h-full min-h-full flex-col lg:flex-row">
       {/* Tab rail — horizontal scroll on mobile, vertical on desktop */}
       <nav className="shrink-0 border-b lg:border-b-0 lg:border-r border-[var(--color-line)] bg-[var(--color-paper-muted)] lg:w-64">
         <div className="px-4 py-3 lg:px-6 lg:py-5">
@@ -87,7 +84,6 @@ export function SettingsLayout({ userEmail, isAdmin }: Props) {
         <div className="mx-auto max-w-3xl px-5 py-6 lg:px-12 lg:py-10">
           {active === "connections" && <ProviderConnectionsSection />}
           {active === "models" && <ModelRoutingSection />}
-          {active === "theme" && <ThemeSection />}
           {active === "profile" && (
             <ComingSoonSection
               title="Profilo"

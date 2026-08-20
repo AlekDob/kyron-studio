@@ -9,17 +9,17 @@ Hub admin Kyron a `studio.kyronedu.it`. Sotto-progetto di `/Kyron`, registrato i
 - Tailwind v4 CSS-first (token in `src/app/globals.css`, no `tailwind.config.ts`)
 - AI SDK + assistant-ui per la chat di onboarding (proxy SSE verso `studio-server`)
 - Auth Payload via cookie `.kyronedu.it`
-- UI: design system port da Virgilio (copy-paste, vedi feature 001)
+- UI: shell "scrivania grigia + lastra di vetro", accento indaco `#5b67f0`, light-only
+  (feature 014). Il kit di componenti resta il port da Virgilio (feature 001).
 
 ## Stato corrente
 
-**Shell completo Virgilio-style live** (2026-05-26):
+**Shell live** (2026-05-26, ridisegnata 2026-08-19 — feature 014):
 
 - Sidebar laterale 248px con 7 moduli (Inbox, **Portali**, **Dati**, Anteprima, Brain, Log, Impostazioni)
 - Dashboard `/` con ricerca live + griglia agenti/strumenti
 - Command palette `Cmd+K` (cmdk)
-- Theme toggle light/dark (persistenza localStorage)
-- Pagina `/settings` con tabs Virgilio-style (Connessioni, Modelli AI, Tema live)
+- Pagina `/settings` con tabs (Connessioni, Modelli AI, Organizzazione, Ecommerce)
 - Modulo **Portali** (`/portals`): dashboard griglia card con stato, citta', prodotti, kit
 - Pagina `/portals/new` con chat agentica onboarding (ex `/schools/onboarding`)
 
@@ -47,7 +47,7 @@ Hub admin Kyron a `studio.kyronedu.it`. Sotto-progetto di `/Kyron`, registrato i
 **Ruoli & gestione utenti live** (feature 008, 2026-06-08):
 - Allowlist + ruoli (admin/editor) su collection Payload `studio-users` (non piu' env var)
 - Impostazioni → Organizzazione (admin-only): invita/cambia ruolo/disattiva/rimuovi utenti
-- Sezioni admin-only: Connessioni, Modelli AI, MCP, Organizzazione (editor vedono solo Tema)
+- Sezioni admin-only: Connessioni, Modelli AI, MCP, Organizzazione (editor vedono solo Profilo)
 - Authz reale lato studio-server (`requireAdmin`), anti-lockout, fallback bootstrap `KYRON_ADMIN_EMAILS`
 
 **Da fare** (placeholder "presto"):
@@ -94,6 +94,8 @@ Live su `https://studio.kyronedu.it` (Coolify + Hetzner CCX23).
 - `documentation/features/009-analytics-module.md` — Modulo Analytics: KPI con delta vs periodo precedente, periodi Oggi/Ieri/Settimana/Mese + rolling, chart (orario su Oggi/Ieri), mappa visitatori zoomabile con dot cliccabili, citta'/fonti/pagine/device, lead KPI (form/newsletter/registrazioni), ricerca fuzzy origini, nav sezioni mobile, report email giornaliero 09:00 (decision-017, BFF studio-server feature 005)
 - `documentation/features/011-price-guard-module.md` — Modulo Controlli: agente sola-lettura che verifica prezzi/sconti dei portali su Saleor prod e spiega le anomalie (motore deterministico `runPriceGuard`, l'AI non calcola nulla)
 - `documentation/features/012-vat-relief-module.md` — Modulo Agevolazioni: agente che controlla i documenti 104 (IVA agevolata 4%) caricati dal collega, li confronta con l'ordine e propone approva/rifiuta (decisione sempre umana). Nessun archivio documenti (dati sanitari, TTL 30 min in memoria)
+- `documentation/features/014-studio-shell-design.md` — design della shell: token indaco, scrivania grigia, lastra di vetro, light-only. Gotcha: blur su `::before` (i `fixed` figli), mai scrivere `-webkit-backdrop-filter` a mano, `min-h-full` e non `min-h-screen` dentro la lastra
+- `documentation/features/015-chat-ui-kit.md` — kit chat condiviso: avatar blobatar per agente (hue libera, tone bloccato 0.45), `ChatBubble` con nome+avatar per l'assistente e loader "thinking" a sfere del brand, `ChatComposer` unico per tutte e 6 le chat. Il nome dell'agente e' il seed dell'avatar
 - `documentation/features/013-risorse-module.md` — Risorse dentro Dati (`/dati/risorse`): CRUD dedicato con upload PDF + copertina, bozza/pubblicata. Andrea non usa piu' `/admin` Payload
 - Cross-progetto: `Kyron/documentation/workstreams/03-studio-standalone.md` — login OTP, preview iframe, review system
 - `documentation/diary/` — changelog locale

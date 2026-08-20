@@ -2,7 +2,7 @@
 type: feature
 project: kyron-studio
 created: 2026-05-26
-last_verified: 2026-05-26
+last_verified: 2026-08-19
 tags: [settings, ui, tabs, virgilio-port]
 ---
 
@@ -26,7 +26,7 @@ Live 2026-05-26. Sostituisce il vecchio layout single-column con header
 | Profilo | presto | placeholder `ComingSoonSection` |
 | Connessioni | **live** | `ProviderConnectionsSection` (10 provider AI) |
 | Modelli AI | **live** | `ModelRoutingSection` (routing per agente) |
-| Tema | **live** | `ThemeSection` (light/dark, persistenza locale) |
+| ~~Tema~~ | **rimossa 2026-08-19** | lo Studio e' light-only (feature 014); gli editor aprono su Profilo |
 | Organizzazione | presto | placeholder |
 | MCP Servers | presto | placeholder |
 
@@ -38,14 +38,14 @@ Live 2026-05-26. Sostituisce il vecchio layout single-column con header
 | `src/components/settings/SettingsLayout.tsx` | client, tabs nav + content switch |
 | `src/components/settings/ProviderConnectionsSection.tsx` | (gia' esistente) |
 | `src/components/settings/ModelRoutingSection.tsx` | (gia' esistente) |
-| `src/components/settings/ThemeSection.tsx` | nuovo, port semplificato da Virgilio (solo light/dark, no accent presets) |
+| ~~`src/components/settings/ThemeSection.tsx`~~ | eliminato 2026-08-19 (light-only, feature 014) |
 | `src/components/settings/ComingSoonSection.tsx` | nuovo, placeholder generico |
 
 ## Differenze con Virgilio
 
 | Aspetto | Virgilio | Kyron Studio |
 |---|---|---|
-| ThemeProvider | light + dark + system + 6 accent presets + custom color | solo light + dark, accent fisso |
+| ~~ThemeProvider~~ | light + dark + system + 6 accent presets + custom color | eliminato: lo Studio e' light-only, accent indaco fisso |
 | ProfileSection | dipende da `useOrg` provider | placeholder |
 | OrgSection | dipende da `useOrg` + multi-tenant | placeholder |
 | McpServersSection | API `/mcp/*` reali | placeholder |

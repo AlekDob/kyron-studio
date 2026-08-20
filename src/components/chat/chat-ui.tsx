@@ -115,10 +115,12 @@ export function useTypewriter(
 export function StreamingBubble({
   raw,
   isStreaming,
+  agent,
   extraStrip = [],
 }: {
   raw: string;
   isStreaming: boolean;
+  agent?: string;
   extraStrip?: RegExp[];
 }): ReactElement {
   const { text, isThinking } = processContent(raw, extraStrip);
@@ -133,7 +135,7 @@ export function StreamingBubble({
         ? "streaming"
         : "complete";
   return (
-    <ChatBubble role="assistant" state={state}>
+    <ChatBubble role="assistant" state={state} agent={agent}>
       {displayed ? <MarkdownContent content={displayed} /> : null}
     </ChatBubble>
   );

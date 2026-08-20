@@ -2,7 +2,7 @@
 type: feature
 project: kyron-studio
 created: 2026-05-26
-last_verified: 2026-05-28
+last_verified: 2026-08-19
 tags: [shell, ui, sidebar, dashboard, settings, virgilio-port]
 ---
 
@@ -23,10 +23,10 @@ Phase 1 completata 2026-05-26. Responsive mobile aggiunto 2026-05-27. Pronta per
 | Layer | File | Ruolo |
 |---|---|---|
 | Layout root | `src/app/layout.tsx` | async, auth check, monta `DesktopShell` |
-| Shell | `src/components/shell/DesktopShell.tsx` | wrap `ThemeProvider` + `CommandPaletteProvider` + `AppSidebar` + main |
-| Sidebar | `src/components/shell/AppSidebar.tsx` | sezioni: Inbox/Dashboard/Comandi, Agenti AI, Strumenti, footer theme |
+| Shell | `src/components/shell/DesktopShell.tsx` | scrivania + `CommandPaletteProvider` + `AppSidebar` + lastra contenuto + `PageTransition` (feature 014) |
+| Sidebar | `src/components/shell/AppSidebar.tsx` | sezioni: Inbox/Dashboard/Comandi, Agenti AI, Strumenti, footer email + Esci |
 | Registry moduli | `src/components/shell/modules.ts` | 6 moduli Kyron + helper `findModuleByPath` |
-| Theme | `src/components/shell/ThemeProvider.tsx` | light/dark, localStorage `kyron-studio-theme` |
+| ~~Theme~~ | — | **rimosso 2026-08-19**: lo Studio e' light-only, vedi feature 014 |
 | Palette | `src/components/shell/CommandPaletteProvider.tsx` | ⌘K via cmdk, naviga con `useRouter` |
 | Dashboard | `src/components/Dashboard.tsx` | client, ricerca live su modules |
 
@@ -90,8 +90,8 @@ Tutte port-as-is da Virgilio `@virgilio/ui` (header `// Source: Virgilio ...`).
 
 - Aggiungere modulo: edita `modules.ts`, push nell'array `MODULES`. Sidebar e
   dashboard si aggiornano da sole.
-- Cambiare tema palette: edita `globals.css` `@theme` (light) e
-  `[data-theme="dark"]` (dark).
+- Cambiare palette: edita `globals.css`, blocco `@theme`. Il dark mode non
+  esiste piu' (feature 014): niente `[data-theme="dark"]`.
 - Bypass auth in dev: `STUDIO_DEV_USER=tua@email npm run dev`.
 
 ## Deps esterne aggiunte

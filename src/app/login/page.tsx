@@ -72,8 +72,10 @@ export default async function LoginPage({ searchParams }: Props) {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center px-6 py-12 bg-[var(--color-paper)]">
-      <div className="w-full max-w-md">
+    // Il login sta fuori dalla shell: si ridisegna qui la stessa scrivania
+    // grigia con le sfere indaco, e il form va sulla lastra.
+    <main className="studio-gradient-layer min-h-screen flex items-center justify-center px-6 py-12">
+      <div className="studio-content-inset w-full max-w-md px-6 py-8 sm:px-8">
         <p className="eyebrow mb-3">{t.eyebrow}</p>
         <h1 className="text-3xl font-medium tracking-tight mb-3">
           {isOtpStep ? t.otpTitle : t.title}
@@ -82,7 +84,7 @@ export default async function LoginPage({ searchParams }: Props) {
           {isOtpStep ? t.otpIntro(email) : t.intro}
         </p>
         {errorMsg && (
-          <p className="text-sm text-[var(--color-critical,#b00020)] mb-4">{errorMsg}</p>
+          <p className="text-sm text-[var(--color-critical)] mb-4">{errorMsg}</p>
         )}
         {sentNotice && (
           <p className="text-sm text-[var(--color-ink-muted)] mb-4 italic">{sentNotice}</p>

@@ -24,7 +24,6 @@ export interface ModuleDefinition {
   icon: LucideIcon;
   kind: ModuleKind;
   status: ModuleStatus;
-  tone: { tile: string; icon: string };
 }
 
 export const MODULES: ModuleDefinition[] = [
@@ -36,7 +35,6 @@ export const MODULES: ModuleDefinition[] = [
     icon: Inbox,
     kind: "tool",
     status: "coming-soon",
-    tone: { tile: "bg-[#1F2937]", icon: "text-white" },
   },
   {
     id: "portals",
@@ -46,7 +44,6 @@ export const MODULES: ModuleDefinition[] = [
     icon: Store,
     kind: "agent",
     status: "live",
-    tone: { tile: "bg-[#0E7490]", icon: "text-white" },
   },
   {
     id: "dati",
@@ -56,7 +53,6 @@ export const MODULES: ModuleDefinition[] = [
     icon: Database,
     kind: "tool",
     status: "live",
-    tone: { tile: "bg-[#0E4F4E]", icon: "text-white" },
   },
   {
     id: "orders",
@@ -66,7 +62,6 @@ export const MODULES: ModuleDefinition[] = [
     icon: ShoppingBag,
     kind: "tool",
     status: "live",
-    tone: { tile: "bg-[#B45309]", icon: "text-white" },
   },
   {
     id: "checks",
@@ -76,7 +71,6 @@ export const MODULES: ModuleDefinition[] = [
     icon: ShieldCheck,
     kind: "agent",
     status: "live",
-    tone: { tile: "bg-[#B42318]", icon: "text-white" },
   },
   {
     id: "vat-relief",
@@ -86,7 +80,6 @@ export const MODULES: ModuleDefinition[] = [
     icon: FileCheck,
     kind: "agent",
     status: "live",
-    tone: { tile: "bg-[#0F766E]", icon: "text-white" },
   },
   {
     id: "analytics",
@@ -96,7 +89,6 @@ export const MODULES: ModuleDefinition[] = [
     icon: ChartNoAxesColumn,
     kind: "tool",
     status: "live",
-    tone: { tile: "bg-[#1B4FE5]", icon: "text-white" },
   },
   {
     id: "preview",
@@ -106,7 +98,6 @@ export const MODULES: ModuleDefinition[] = [
     icon: Eye,
     kind: "agent",
     status: "live",
-    tone: { tile: "bg-[#9333EA]", icon: "text-white" },
   },
   {
     id: "brain",
@@ -116,7 +107,6 @@ export const MODULES: ModuleDefinition[] = [
     icon: Brain,
     kind: "tool",
     status: "coming-soon",
-    tone: { tile: "bg-[#7C3AED]", icon: "text-white" },
   },
   {
     id: "log",
@@ -126,7 +116,6 @@ export const MODULES: ModuleDefinition[] = [
     icon: ScrollText,
     kind: "tool",
     status: "coming-soon",
-    tone: { tile: "bg-[#475569]", icon: "text-white" },
   },
   {
     id: "settings",
@@ -136,10 +125,6 @@ export const MODULES: ModuleDefinition[] = [
     icon: Settings,
     kind: "tool",
     status: "live",
-    tone: {
-      tile: "bg-[var(--color-paper-soft)] border border-[var(--color-line)]",
-      icon: "text-[var(--color-ink)]",
-    },
   },
 ];
 

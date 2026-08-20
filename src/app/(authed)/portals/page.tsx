@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser, loginUrl } from "@/lib/auth";
-import { listPortals } from "@/lib/gateway";
+import { listPortals, type PortalSummary } from "@/lib/gateway";
 import { PortalsWorkspace } from "@/components/portals/PortalsWorkspace";
 
 interface Props {
@@ -13,7 +13,15 @@ export default async function PortalsPage({ searchParams }: Props) {
     redirect(loginUrl());
   }
 
-  const [portals, { detail }] = await Promise.all([listPortals(), searchParams]);
+  // Se studio-server o Payload non rispondono la pagina resta in piedi con la
+  // lista vuota, come fa /orders: prima l'eccezione buttava giu' tutto in 500.
+  let portals: PortalSummary[] = [];
+  try {
+    portals = await listPortals();
+  } catch {
+    portals = [];
+  }
+  const { detail } = await searchParams;
 
   return <PortalsWorkspace initialPortals={portals} initialDetailSlug={detail} />;
 }

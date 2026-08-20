@@ -10,7 +10,7 @@ function Block({ className }: { className: string }) {
 
 export default function AnalyticsLoading() {
   return (
-    <main className="min-h-screen px-5 py-8 sm:px-8 lg:px-10 max-w-6xl mx-auto">
+    <main className="min-h-full px-5 py-8 sm:px-8 lg:px-10 max-w-6xl mx-auto">
       <Block className="mb-6 h-32" />
       <div className="mb-6 flex gap-2">
         <Block className="h-9 w-24" />
