@@ -50,6 +50,12 @@ interface Props {
   aboveComposer?: ReactNode;
   /** Card che vivono nel pannello laterale e non vanno ripetute in chat. */
   hideCards?: string[];
+  /**
+   * Contesto della UI (es. prodotto selezionato nel pannello) appeso al
+   * messaggio in USCITA e non alla bolla: l'agente sa di cosa stiamo parlando
+   * senza che l'utente riscriva SKU e prezzi, e senza un tool in piu'.
+   */
+  selectionContext?: () => string | null;
 }
 
 export function AgentChannel({
@@ -65,6 +71,7 @@ export function AgentChannel({
   initialPrompt,
   aboveComposer,
   hideCards,
+  selectionContext,
 }: Props): ReactElement {
   const name = agentNameOf(agentId);
   const channel = name.toLowerCase();
@@ -86,7 +93,9 @@ export function AgentChannel({
     toApiContent: (text) => {
       const payload = payloadRef.current;
       payloadRef.current = null;
-      return payload ?? text;
+      if (payload) return payload;
+      const ctx = selectionContext?.();
+      return ctx ? `${text}\n\n[Contesto UI: ${ctx}]` : text;
     },
   });
 

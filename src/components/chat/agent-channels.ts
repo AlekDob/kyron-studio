@@ -86,6 +86,30 @@ export const CHANNELS: Record<string, ChannelConfig> = {
       apply_to_saleor: "Pubblicazione su Saleor",
     },
   },
+  commesso: {
+    endpoint: "/api/agent/commesso",
+    intro:
+      "Gestisco il catalogo: creo e modifico prodotti, giacenze e prezzi su Saleor. I prezzi passano sempre da un piano che ti mostro prima di applicarlo.",
+    suggestions: [
+      "Mostrami gli iPad",
+      "Cambia la descrizione di questo prodotto",
+      "Porta il prezzo a 810 sul main shop",
+      "Quanti pezzi abbiamo in magazzino",
+    ],
+    toolLabels: {
+      list_products: "Catalogo",
+      get_product: "Prodotto",
+      get_catalog_meta: "Canali e categorie",
+      create_product: "Nuovo prodotto",
+      update_product: "Modifica prodotto",
+      update_variant: "Variante",
+      set_stock: "Giacenza",
+      add_product_image: "Immagine",
+      publish_product: "Pubblicazione",
+      plan_prices: "Piano prezzi",
+      apply_price_plan: "Applicazione prezzi",
+    },
+  },
   // Vera ha il suo loop di messaggi (proposte di annotazione): del canale usa
   // solo header e nomi dei tool, intro e suggerimenti restano per simmetria.
   preview: {

@@ -10,6 +10,7 @@ import {
   FileCheck,
   LineChart,
   Bot,
+  Package,
 } from "lucide-react";
 import type { ModuleDefinition } from "@studiofuturo/studio-core";
 
@@ -82,6 +83,15 @@ export const AGENTS: KyronAgent[] = [
       "Numeri del sito e dello shop, campagne Meta e come si parlano tra loro.",
     href: "/stats",
     icon: LineChart,
+    kind: "agent",
+    status: "live",
+  },
+  {
+    id: "commesso",
+    ...agent("Kevin", "Commesso"),
+    description: "Catalogo, giacenze e prezzi dello shop. Scrive su Saleor.",
+    href: "/commesso",
+    icon: Package,
     kind: "agent",
     status: "live",
   },

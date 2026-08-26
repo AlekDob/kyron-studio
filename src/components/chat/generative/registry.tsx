@@ -39,6 +39,10 @@ const StatsResult = lazy(() =>
 const MetaCampaignsCard = lazy(() =>
   import("./MetaCampaignsCard").then((m) => ({ default: m.MetaCampaignsCard })),
 );
+// Modulo Commesso (Kevin): piano prezzi da confermare
+const PricePlanCard = lazy(() =>
+  import("./PricePlanCard").then((m) => ({ default: m.PricePlanCard })),
+);
 const AnomalyReport = lazy(() =>
   import("./AnomalyReport").then((m) => ({ default: m.AnomalyReport })),
 );
@@ -75,6 +79,9 @@ const COMPONENT_REGISTRY: Record<
     Record<string, unknown>
   >,
   VatReliefCase: VatReliefCase as unknown as React.ComponentType<
+    Record<string, unknown>
+  >,
+  PricePlanCard: PricePlanCard as unknown as React.ComponentType<
     Record<string, unknown>
   >,
 };
