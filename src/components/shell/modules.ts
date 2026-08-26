@@ -87,10 +87,10 @@ export const AGENTS: KyronAgent[] = [
     status: "live",
   },
   {
-    id: "commesso",
-    ...agent("Kevin", "Commesso"),
+    id: "catalogo",
+    ...agent("Nico", "Catalogo"),
     description: "Catalogo, giacenze e prezzi dello shop. Scrive su Saleor.",
-    href: "/commesso",
+    href: "/catalogo",
     icon: Package,
     kind: "agent",
     status: "live",

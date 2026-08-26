@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser, loginUrl } from "@/lib/auth";
 import { listProducts, type Product } from "@/lib/products";
-import { CommessoWorkspace } from "@/components/commesso/CommessoWorkspace";
+import { CatalogoWorkspace } from "@/components/catalogo/CatalogoWorkspace";
 
-export default async function CommessoPage() {
+export default async function CatalogoPage() {
   const user = await getCurrentUser();
   if (!user) redirect(loginUrl());
 
@@ -16,5 +16,5 @@ export default async function CommessoPage() {
     products = [];
   }
 
-  return <CommessoWorkspace initialProducts={products} />;
+  return <CatalogoWorkspace initialProducts={products} />;
 }

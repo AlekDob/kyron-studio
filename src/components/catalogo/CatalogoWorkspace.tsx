@@ -11,7 +11,7 @@ import type { Product } from "@/lib/products";
 import { ProductsPanel } from "./ProductsPanel";
 import { ProductDrawer } from "./ProductDrawer";
 
-const AGENT = agentNameOf("commesso");
+const AGENT = agentNameOf("catalogo");
 
 async function fetchProducts(): Promise<Product[]> {
   const res = await fetch("/api/products", { cache: "no-store" });
@@ -42,7 +42,7 @@ const WRITE_TOOLS = [
   "apply_danea_import",
 ];
 
-export function CommessoWorkspace({
+export function CatalogoWorkspace({
   initialProducts,
 }: {
   initialProducts: Product[];
@@ -110,8 +110,8 @@ export function CommessoWorkspace({
     <div className="flex flex-col lg:flex-row h-full overflow-hidden">
       <div className="flex-1 min-w-0 min-h-0 flex flex-col border-r border-[var(--color-line)] lg:h-full overflow-hidden">
         <AgentChannel
-          agentId="commesso"
-          {...CHANNELS.commesso}
+          agentId="catalogo"
+          {...CHANNELS.catalogo}
           interactive
           onEvent={onEvent}
           selectionContext={selectionContext}

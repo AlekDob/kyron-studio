@@ -4,7 +4,7 @@ import type { ReactElement } from "react";
 import { Card } from "@/components/ui";
 import { fmtEur } from "@/components/analytics/format";
 
-// Piano prezzi di Kevin: si legge PRIMA di applicarlo. Se `errors` non e' vuoto
+// Piano prezzi di Nico: si legge PRIMA di applicarlo. Se `errors` non e' vuoto
 // il piano non e' applicabile — di solito e' un kit scuola il cui voucher va
 // ricalcolato insieme al componente (money-path, decision-011).
 

@@ -1,4 +1,4 @@
-// Tipi e lettura del catalogo Saleor per il modulo Commesso. Rispecchiano
+// Tipi e lettura del catalogo Saleor per il modulo Catalogo. Rispecchiano
 // quello che studio-server espone su /api/v1/products: unica fonte, cosi' il
 // pannello e il drawer non ridefiniscono la forma dei dati.
 import { gatewayFetch } from "./gateway";

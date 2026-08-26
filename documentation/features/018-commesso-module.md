@@ -3,10 +3,10 @@ type: feature
 project: studio
 created: 2026-08-26
 last_verified: 2026-08-26
-tags: [agent, commesso, saleor, prodotti, prezzi, danea, money-path, generative-ui]
+tags: [agent, catalogo, saleor, prodotti, prezzi, danea, money-path, generative-ui]
 ---
 
-# Feature 018 — Kevin · Commesso (catalogo prodotti)
+# Feature 018 — Nico · Catalogo (prodotti, giacenze, prezzi)
 
 ## Perche'
 
@@ -15,8 +15,8 @@ chiedere ad Alek: il catalogo si caricava con uno script CLI da 1586 righe
 (`ecommerce/seed/import-danea.ts`) che gira solo sul suo Mac. Un cambio prezzo
 era un ticket.
 
-`/commesso` e' il modulo che gli da' autonomia: pannello catalogo a sinistra,
-drawer col dettaglio, chat con Kevin a destra. Kevin legge, crea, modifica,
+`/catalogo` e' il modulo che gli da' autonomia: pannello catalogo a sinistra,
+drawer col dettaglio, chat con Nico a destra. Nico legge, crea, modifica,
 aggiorna giacenze e prezzi su Saleor **produzione**.
 
 ## Il vincolo che guida tutto: il money-path
@@ -25,7 +25,7 @@ Scrivere in prod senza gate di approvazione umana e' una scelta esplicita di
 Alek. La protezione sta nel codice, non in un click:
 
 - **Due passaggi obbligatori.** `plan_prices` calcola e mostra
-  (`PricePlanCard`), `apply_price_plan` scrive e vuole `confirm: true`. Kevin
+  (`PricePlanCard`), `apply_price_plan` scrive e vuole `confirm: true`. Nico
   non puo' cambiare un prezzo in un turno solo.
 - **R1 — guardia kit.** Il voucher di un kit scuola e' un importo FISSO in euro
   (decision-011): prezzo pagato = somma componenti sul canale − voucher. Se
@@ -36,7 +36,7 @@ Alek. La protezione sta nel codice, non in un click:
 - **R2 — canale sempre esplicito.** Nessun tool scrive "il prezzo del prodotto".
   Sui canali con promo in percentuale scrivere la base la fa ricalcolare
   all'incontrario (804,82 invece di 799). Se l'utente non nomina il canale,
-  Kevin chiede.
+  Nico chiede.
 - **Drift detection al posto dell'approvazione.** `apply_price_plan` ricalcola
   il piano e rilegge ogni prezzo prima di scrivere: se qualcosa si e' mosso da
   quando il piano e' stato mostrato, non scrive **niente**.
@@ -87,41 +87,41 @@ crea prodotti e varianti nuove col loro prezzo, non pubblicate, e riporta i
 prezzi diversi senza toccarli.
 
 I gruppi senza mapping (nome, slug, categoria, tipo prodotto) vengono
-**saltati**: il nome commerciale lo propone Kevin e lo conferma l'utente, non si
+**saltati**: il nome commerciale lo propone Nico e lo conferma l'utente, non si
 inventa.
 
 ## Il collegamento agente ↔ UI
 
 Due direzioni, nessun port nuovo:
 
-1. **Tool result → UI**: `CommessoWorkspace.onEvent` fa switch su `ev.tool` —
+1. **Tool result → UI**: `CatalogoWorkspace.onEvent` fa switch su `ev.tool` —
    `list_products` ripopola il pannello e lo marca "selezione dell'agente",
    `get_product` apre il drawer, i tool di scrittura fanno un refetch.
 2. **UI → agente**: prop `selectionContext` su `AgentChannel`, appesa al
    messaggio in **uscita** e non alla bolla:
-   `[Contesto UI: prodotto selezionato — ...]`. Il prompt dice a Kevin di
+   `[Contesto UI: prodotto selezionato — ...]`. Il prompt dice a Nico di
    rispondere da li' senza rileggere. ~6 righe di diff su `AgentChannel`.
 
 ## File
 
 | File | Ruolo |
 |---|---|
-| `studio-server/src/features/commesso/reads.ts` | letture admin API (non pubblicati, giacenze, prezzi per canale) |
-| `studio-server/src/features/commesso/price-plan.ts` | **puro**: delta, guardia kit (R1), drift |
-| `studio-server/src/features/commesso/bundle-usage.ts` | chi usa questo prodotto dentro un kit |
-| `studio-server/src/features/commesso/price-writes.ts` | unico punto di scrittura prezzi + audit |
-| `studio-server/src/features/commesso/writes.ts` | scritture catalogo (nessuna tocca un prezzo) |
-| `studio-server/src/features/commesso/plan-service.ts` | glue letture + piano, usato da `plan_prices` e `apply_price_plan` |
-| `studio-server/src/features/commesso/danea-*.ts` | parse, plan, uploads (TTL 1h), apply, service |
-| `studio-server/src/features/commesso/{prompt,agent,route,rest}.ts` | prompt, 13 tool, SSE `/agents/commesso`, `/api/v1/products` |
-| `studio/src/app/(authed)/commesso/page.tsx` | pagina a due pannelli |
-| `studio/src/components/commesso/{CommessoWorkspace,ProductsPanel,ProductRow,ProductDrawer}.tsx` | pannello + drawer (cloni di Portali/Ordini) |
+| `studio-server/src/features/catalogo/reads.ts` | letture admin API (non pubblicati, giacenze, prezzi per canale) |
+| `studio-server/src/features/catalogo/price-plan.ts` | **puro**: delta, guardia kit (R1), drift |
+| `studio-server/src/features/catalogo/bundle-usage.ts` | chi usa questo prodotto dentro un kit |
+| `studio-server/src/features/catalogo/price-writes.ts` | unico punto di scrittura prezzi + audit |
+| `studio-server/src/features/catalogo/writes.ts` | scritture catalogo (nessuna tocca un prezzo) |
+| `studio-server/src/features/catalogo/plan-service.ts` | glue letture + piano, usato da `plan_prices` e `apply_price_plan` |
+| `studio-server/src/features/catalogo/danea-*.ts` | parse, plan, uploads (TTL 1h), apply, service |
+| `studio-server/src/features/catalogo/{prompt,agent,route,rest}.ts` | prompt, 13 tool, SSE `/agents/catalogo`, `/api/v1/products` |
+| `studio/src/app/(authed)/catalogo/page.tsx` | pagina a due pannelli |
+| `studio/src/components/catalogo/{CatalogoWorkspace,ProductsPanel,ProductRow,ProductDrawer}.tsx` | pannello + drawer (cloni di Portali/Ordini) |
 | `studio/src/components/chat/generative/{PricePlanCard,DaneaUploader,DaneaImportPlan}.tsx` | card generative |
-| `studio/src/app/api/{agent/commesso,products,products/import}/route.ts` | proxy SSE + lista + upload multipart |
+| `studio/src/app/api/{agent/catalogo,products,products/import}/route.ts` | proxy SSE + lista + upload multipart |
 
 ## Test
 
-`studio-server/tests/features/commesso-price-plan.test.ts` (7) e
+`studio-server/tests/features/catalogo-price-plan.test.ts` (7) e
 `commesso-danea.test.ts` (7). Coprono: delta, warning oltre il 30%, SKU
 sconosciuto, prezzo non valido, drift → zero scritture, no-op escluso,
 **componente di kit senza voucher → errore**; parsing prezzi con decimali,
@@ -135,7 +135,7 @@ diff, righe a prezzo zero saltate.
   `resolveChannelId`.
 - **`description` Saleor e' un JSONString EditorJS**: in lettura estraiamo i
   paragrafi, in scrittura si ricostruisce il documento.
-- **`requireAdmin` gatea tutta la chat `/commesso`**: da qui si scrivono prezzi
+- **`requireAdmin` gatea tutta la chat `/catalogo`**: da qui si scrivono prezzi
   di produzione. Se Kevin e Robbie non sono admin in Studio serve prima un ruolo
   intermedio — **da verificare al primo giro**.
 - **Da verificare una volta**: `GrossPrice1` di Danea e' lordo o netto?

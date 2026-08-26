@@ -39,11 +39,11 @@ const StatsResult = lazy(() =>
 const MetaCampaignsCard = lazy(() =>
   import("./MetaCampaignsCard").then((m) => ({ default: m.MetaCampaignsCard })),
 );
-// Modulo Commesso (Kevin): piano prezzi da confermare
+// Modulo Catalogo (Nico): piano prezzi da confermare
 const PricePlanCard = lazy(() =>
   import("./PricePlanCard").then((m) => ({ default: m.PricePlanCard })),
 );
-// Modulo Commesso: import listino Danea
+// Modulo Catalogo: import listino Danea
 const DaneaUploader = lazy(() =>
   import("./DaneaUploader").then((m) => ({ default: m.DaneaUploader })),
 );

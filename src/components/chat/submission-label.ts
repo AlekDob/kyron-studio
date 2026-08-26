@@ -13,7 +13,7 @@ interface SubmissionData {
   // Agevolazioni: documenti 104 caricati.
   names?: string[];
   orderNumber?: string | null;
-  // Commesso: file listino Danea caricato.
+  // Catalogo: file listino Danea caricato.
   filename?: string;
   recordCount?: number;
   groupCount?: number;

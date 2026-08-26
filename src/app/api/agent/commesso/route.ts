@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import { NextRequest } from "next/server";
 import { headers } from "next/headers";
 
-// Proxy SSE verso l'agente Commesso (Kevin) di studio-server.
+// Proxy SSE verso l'agente Catalogo (Nico) di studio-server.
 // Stesso pattern del proxy data-editor: inoltra il cookie kyron-rev e, in dev,
 // ne firma uno da STUDIO_DEV_USER per poter provare il modulo in locale.
 const STUDIO_SERVER_URL =

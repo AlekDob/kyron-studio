@@ -86,7 +86,7 @@ export const CHANNELS: Record<string, ChannelConfig> = {
       apply_to_saleor: "Pubblicazione su Saleor",
     },
   },
-  commesso: {
+  catalogo: {
     endpoint: "/api/agent/commesso",
     intro:
       "Gestisco il catalogo: creo e modifico prodotti, giacenze e prezzi su Saleor. I prezzi passano sempre da un piano che ti mostro prima di applicarlo.",
