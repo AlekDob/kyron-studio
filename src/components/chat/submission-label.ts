@@ -13,11 +13,18 @@ interface SubmissionData {
   // Agevolazioni: documenti 104 caricati.
   names?: string[];
   orderNumber?: string | null;
+  // Commesso: file listino Danea caricato.
+  filename?: string;
+  recordCount?: number;
+  groupCount?: number;
 }
 
 export function describeSubmission(sub: GenerativeSubmission): string {
   const d = (sub.data ?? {}) as SubmissionData;
 
+  if (typeof d.filename === "string") {
+    return `Ho caricato ${d.filename}: ${d.recordCount ?? 0} righe, ${d.groupCount ?? 0} gruppi`;
+  }
   if (Array.isArray(d.names) && d.names.length > 0) {
     const order = d.orderNumber ? ` per l'ordine ${d.orderNumber}` : "";
     return `Ho caricato ${d.names.length} documento/i${order}: ${d.names.join(", ")}`;

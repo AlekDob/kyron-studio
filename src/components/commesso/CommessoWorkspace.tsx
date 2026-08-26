@@ -31,6 +31,17 @@ function describe(product: Product): string {
   return `prodotto aperto — "${product.name}" (slug ${product.slug}); ${variants}`;
 }
 
+// Dopo una scrittura il pannello e' vecchio: si rilegge il catalogo.
+const WRITE_TOOLS = [
+  "update_product",
+  "update_variant",
+  "set_stock",
+  "apply_price_plan",
+  "publish_product",
+  "create_product",
+  "apply_danea_import",
+];
+
 export function CommessoWorkspace({
   initialProducts,
 }: {
@@ -69,7 +80,7 @@ export function CommessoWorkspace({
       return;
     }
     // Dopo una scrittura la lista in pagina e' vecchia: ricarichiamo.
-    if (["update_product", "update_variant", "set_stock", "apply_price_plan", "publish_product", "create_product"].includes(ev.tool)) {
+    if (WRITE_TOOLS.includes(ev.tool)) {
       void fetchProducts().then(setProducts);
     }
   }, []);

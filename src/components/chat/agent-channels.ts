@@ -108,6 +108,9 @@ export const CHANNELS: Record<string, ChannelConfig> = {
       publish_product: "Pubblicazione",
       plan_prices: "Piano prezzi",
       apply_price_plan: "Applicazione prezzi",
+      render_danea_uploader: "File Danea",
+      plan_danea_import: "Piano import",
+      apply_danea_import: "Import prodotti",
     },
   },
   // Vera ha il suo loop di messaggi (proposte di annotazione): del canale usa

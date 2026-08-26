@@ -43,6 +43,13 @@ const MetaCampaignsCard = lazy(() =>
 const PricePlanCard = lazy(() =>
   import("./PricePlanCard").then((m) => ({ default: m.PricePlanCard })),
 );
+// Modulo Commesso: import listino Danea
+const DaneaUploader = lazy(() =>
+  import("./DaneaUploader").then((m) => ({ default: m.DaneaUploader })),
+);
+const DaneaImportPlan = lazy(() =>
+  import("./DaneaImportPlan").then((m) => ({ default: m.DaneaImportPlan })),
+);
 const AnomalyReport = lazy(() =>
   import("./AnomalyReport").then((m) => ({ default: m.AnomalyReport })),
 );
@@ -82,6 +89,12 @@ const COMPONENT_REGISTRY: Record<
     Record<string, unknown>
   >,
   PricePlanCard: PricePlanCard as unknown as React.ComponentType<
+    Record<string, unknown>
+  >,
+  DaneaUploader: DaneaUploader as unknown as React.ComponentType<
+    Record<string, unknown>
+  >,
+  DaneaImportPlan: DaneaImportPlan as unknown as React.ComponentType<
     Record<string, unknown>
   >,
 };
