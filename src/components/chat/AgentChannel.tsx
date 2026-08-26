@@ -199,7 +199,9 @@ function ChannelIntro({
   return (
     <div className="flex flex-col items-start gap-5 px-3 py-10 sm:px-4">
       <div className="flex items-center gap-4">
-        <AgentFace seed={agentId} label={name} size={64} />
+        {/* Card di apertura: la faccia grande guarda il mouse. Le facce delle
+           bolle no: sono decine e muoverle tutte fa rumore. */}
+        <AgentFace seed={agentId} label={name} size={64} gaze />
         <div className="min-w-0">
           <p className="text-base font-semibold text-[var(--color-ink)]">#{channel}</p>
           <p className="mt-1.5 text-[15px] leading-snug text-[var(--color-ink-muted)]">
