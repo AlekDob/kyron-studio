@@ -78,7 +78,8 @@ export const AGENTS: KyronAgent[] = [
   {
     id: "stats",
     ...agent("Ada", "Statistiche"),
-    description: "Interroga PostHog e risponde con numeri, tabelle e grafici.",
+    description:
+      "Numeri del sito e dello shop, campagne Meta e come si parlano tra loro.",
     href: "/stats",
     icon: LineChart,
     kind: "agent",

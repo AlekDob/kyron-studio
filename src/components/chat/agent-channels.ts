@@ -12,17 +12,19 @@ export const CHANNELS: Record<string, ChannelConfig> = {
   stats: {
     endpoint: "/api/agent/stats",
     intro:
-      "Interrogo PostHog e ti do i numeri: visite, ordini, fatturato, per portale o per giorno. Solo lettura.",
+      "Ti do i numeri del sito e dello shop (PostHog) e l'andamento delle campagne Meta. Solo lettura.",
     suggestions: [
       "Come è andata questa settimana",
+      "Come vanno le campagne Meta",
+      "Quante visite ha portato la pubblicità",
       "Ordini per portale a luglio",
-      "Visite per giorno negli ultimi 14 giorni",
-      "Le pagine più viste del mese",
     ],
     toolLabels: {
       overview: "Cruscotto",
       run_hogql: "Query PostHog",
       list_portals: "Portali",
+      get_meta_campaigns: "Campagne Meta",
+      get_meta_campaign_detail: "Dettaglio campagna",
     },
   },
   checks: {

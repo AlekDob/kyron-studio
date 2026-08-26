@@ -35,6 +35,10 @@ const VatReliefCase = lazy(() =>
 const StatsResult = lazy(() =>
   import("./StatsResult").then((m) => ({ default: m.StatsResult })),
 );
+// Modulo Statistiche: campagne Meta (Ada marketing manager)
+const MetaCampaignsCard = lazy(() =>
+  import("./MetaCampaignsCard").then((m) => ({ default: m.MetaCampaignsCard })),
+);
 const AnomalyReport = lazy(() =>
   import("./AnomalyReport").then((m) => ({ default: m.AnomalyReport })),
 );
@@ -56,6 +60,9 @@ const COMPONENT_REGISTRY: Record<
     Record<string, unknown>
   >,
   StatsResult: StatsResult as unknown as React.ComponentType<
+    Record<string, unknown>
+  >,
+  MetaCampaignsCard: MetaCampaignsCard as unknown as React.ComponentType<
     Record<string, unknown>
   >,
   DocUploader: DocUploader as unknown as React.ComponentType<
