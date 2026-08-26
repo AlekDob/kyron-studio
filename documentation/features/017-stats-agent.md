@@ -2,11 +2,11 @@
 type: feature
 project: studio
 created: 2026-08-25
-last_verified: 2026-08-25
-tags: [agent, analytics, posthog, hogql, generative-ui]
+last_verified: 2026-08-26
+tags: [agent, analytics, posthog, hogql, meta-ads, generative-ui]
 ---
 
-# Feature 017 — Ada · Statistiche (agente PostHog)
+# Feature 017 — Ada · Statistiche e marketing (PostHog + Meta Ads)
 
 ## Perche'
 
@@ -27,16 +27,36 @@ La Query API PostHog sta a **~120 query/ora per key**. La stessa key serve
   (`getOverview(range)`) e non consuma query;
 - Ada ha un budget suo di **40 query/ora** (finestra scorrevole in memoria).
   Esaurito, il tool ritorna un messaggio leggibile, non un 500.
+  Alzato a **60/ora** il 2026-08-26: da quando Ada fa anche marketing, ogni
+  domanda sulle campagne costa una query in piu' per correlare le visite.
 
-## I tre tool (studio-server)
+## I tool (studio-server)
 
 | Tool | Cosa fa | Budget |
 |---|---|---|
 | `overview({ range })` | KPI, serie, citta', fonti, pagine, device, per portale sui 7 range predefiniti. Riusa `getOverview`. | no |
 | `run_hogql({ query, title, view })` | Sanifica, esegue, ritorna `{columns, rows}` + descriptor `_ui` `StatsResult`. | si |
 | `list_portals()` | slug + nome dei portali, per tradurre "Massari" nello `school_slug`. | no |
+| `get_meta_campaigns({ range })` | spesa, impression, click, CTR, CPC per campagna dalla Marketing API. Descriptor `_ui` `MetaCampaignsCard`. | no |
+| `get_meta_campaign_detail({ campaignId, range })` | serie giornaliera di una campagna. | no |
 
 `view` e' `"table" | "bars" | "line"`: la scelta la fa Ada nel prompt.
+
+## Marketing: la correlazione non e' codice
+
+Meta dice quanto spendiamo e quanti click compra; PostHog dice cosa succede sul
+sito. Il ponte e' `utm_campaign`, e sta **nel prompt**, non in un tool: Ada
+chiama `get_meta_campaigns`, poi scrive lei l'HogQL raggruppata per
+`properties.utm_campaign` sullo stesso periodo. Zero codice di join.
+
+Il limite e' vero e Ada lo deve dire: `utm_campaign` e' scritto a mano nel link
+dell'inserzione e puo' non coincidere col nome campagna Meta. Se non combacia,
+Ada risponde "non posso attribuire le visite" invece di abbinare per
+somiglianza.
+
+Env: `META_ACCESS_TOKEN` + `META_AD_ACCOUNT_ID` (in Coolify, non nel settings da
+UI: `data/settings.json` si azzera a ogni redeploy). Se mancano, i tool tornano
+un errore leggibile — i tool non lanciano mai eccezioni.
 
 ## Il guard
 
@@ -79,6 +99,8 @@ Convenzioni imposte: visitatori = `count(DISTINCT person_id)`, pageview =
 | `studio-server/src/features/stats-agent/route.ts` | SSE `/agents/stats` (tenant + studioAuth) |
 | `studio/src/app/(authed)/stats/page.tsx` | pagina, chat a larghezza piena (no pannello laterale) |
 | `studio/src/components/stats/StatsChat.tsx` | chat client |
+| `studio-server/src/features/stats-agent/meta-ads.ts` | client Marketing API v21 con `fetch` (niente SDK) |
+| `studio/src/components/chat/generative/MetaCampaignsCard.tsx` | tabella campagne + `BarList` sulla spesa |
 | `studio/src/components/chat/generative/StatsResult.tsx` | tabella sempre, + `BarList` o area chart |
 | `studio/src/app/api/agent/stats/route.ts` | proxy SSE Next → studio-server |
 | `studio/src/components/shell/modules.ts` | entry `stats` (`Ada · Statistiche`, `kind: "agent"`) |
