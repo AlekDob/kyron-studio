@@ -1,4 +1,4 @@
-import { Card } from "@/components/ui/Card";
+import { Card } from "@/components/ui";
 import type { SourceRow } from "@/lib/analytics";
 import { BarList } from "./BarList";
 

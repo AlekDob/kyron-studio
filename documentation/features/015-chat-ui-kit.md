@@ -73,3 +73,48 @@ seed.
 - Espressioni blobatar (`blobatar/expression`): l'agente potrebbe fare la
   faccia contenta a tool riuscito. Serve `animate` per il morph.
 - Timestamp accanto al nome: i turni in memoria non hanno un orario.
+
+## Rev 2026-08-25 — chat a canale
+
+Sopra questo kit c'e' ora una seconda faccia, stile Slack, per gli agenti:
+`src/components/chat/AgentChannel.tsx` + `ChannelMessage.tsx`, config in
+`agent-channels.ts`. Header `#nome` + "agent", stato vuoto con avatar 64 +
+presentazione + suggerimenti cliccabili, righe piatte (avatar e nome solo sulla
+prima riga di un blocco dello stesso autore), chip con i nomi leggibili dei tool,
+composer con placeholder `Messaggio #nome`.
+
+Non sostituisce `ChatBubble`: lo affianca. Il `ChatComposer` resta condiviso da
+tutte le chat — quello non e' stato duplicato.
+
+### Rev 2026-08-25b — tutti gli agenti + sguardo
+
+Il canale e' ora la chat di **tutti** gli agenti: `/stats` (Ada), `/checks`
+(Bruno), `/vat-relief` (Elsa), `/portals` (Livia). `/preview` (Vera) tiene il suo
+loop di messaggi (proposte di annotazione, chip di selezione, form manuale) ma
+riusa `ChannelHeader` e `ChannelMessage`, quindi da fuori ha lo stesso aspetto.
+`/dati` (Nico) resta a bolle: e' la chat dentro uno strumento, non un canale.
+
+Prop nuove di `AgentChannel`:
+
+| Prop | A cosa serve |
+|---|---|
+| `interactive` | le card generative accettano input e rimandano i dati all'agente (Livia, Elsa). Senza, sono di sola lettura |
+| `extraBody` | campi extra nel body a ogni turno (contesto di pagina) |
+| `initialPrompt` | primo messaggio mandato da solo all'apertura (deep link da Ordini a Agevolazioni) |
+| `hideCards` | card che vivono nel pannello destro e non vanno ripetute in chat (`VatReliefCase`) |
+| `onSubmission` | effetti collaterali di una card inviata (il draft del portale) |
+
+Due punti non ovvi:
+
+- **Frase all'utente, JSON all'agente.** Inviare una card manda al server
+  `{"kind":"generative_submission",...}`, che in chat non dice niente a nessuno.
+  Si fa con `toApiContent` di `useAgentStream` + un ref che tiene il payload fino
+  al `send`; la frase la scrive `describeSubmission` (`submission-label.ts`), uno
+  solo per tutti gli agenti.
+- **Gli occhi seguono il mouse.** `AgentAvatar` del core rende un `<img>` con SVG
+  in data-URI: il CSS della pagina non entra in un'immagine. `AgentFace` usa
+  blobatar con `animate="always"` (SVG inline) e sovrascrive `.mo-eyes` con
+  `--gaze-x/y`; un solo listener `pointermove` per pagina, rAF di coalescing,
+  scrittura diretta su `style` (niente re-render React per movimento del mouse).
+  In una tab in background `requestAnimationFrame` non gira: lo sguardo resta
+  fermo, non e' un bug.

@@ -20,7 +20,7 @@ export function ComingSoonSection({ title, italicSuffix, description }: Props) {
           {italicSuffix && (
             <>
               {" "}
-              <span className="font-serif italic">{italicSuffix}</span>
+              <span className="text-[var(--color-ink-muted)]">{italicSuffix}</span>
             </>
           )}
         </h2>

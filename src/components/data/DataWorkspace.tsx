@@ -1,6 +1,10 @@
 import type { ReactNode } from "react";
 import { DataChat } from "./DataChat";
 import { MobileChatOverlay } from "@/components/shell/MobileChatOverlay";
+import { agentNameOf } from "@/components/shell/modules";
+
+// Nome proprio dell'agente: unica fonte il registry dei moduli.
+const AGENT = agentNameOf("dati");
 
 interface Props {
   slug: string;
@@ -26,7 +30,7 @@ export function DataWorkspace({ slug, id, children }: Props) {
         {chatHeader}
         <DataChat slug={slug} id={id} />
       </aside>
-      <MobileChatOverlay label="Editor Dati">
+      <MobileChatOverlay label={AGENT}>
         {chatHeader}
         <DataChat slug={slug} id={id} />
       </MobileChatOverlay>

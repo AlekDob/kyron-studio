@@ -31,6 +31,10 @@ const VatReliefDecision = lazy(() =>
 const VatReliefCase = lazy(() =>
   import("@/components/vat-relief/VatReliefCase").then((m) => ({ default: m.VatReliefCase })),
 );
+// Modulo Statistiche (Ada): risultato di una query HogQL
+const StatsResult = lazy(() =>
+  import("./StatsResult").then((m) => ({ default: m.StatsResult })),
+);
 const AnomalyReport = lazy(() =>
   import("./AnomalyReport").then((m) => ({ default: m.AnomalyReport })),
 );
@@ -49,6 +53,9 @@ const COMPONENT_REGISTRY: Record<
     Record<string, unknown>
   >,
   AnomalyReport: AnomalyReport as unknown as React.ComponentType<
+    Record<string, unknown>
+  >,
+  StatsResult: StatsResult as unknown as React.ComponentType<
     Record<string, unknown>
   >,
   DocUploader: DocUploader as unknown as React.ComponentType<

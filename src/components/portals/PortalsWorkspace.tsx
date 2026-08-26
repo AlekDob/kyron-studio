@@ -7,13 +7,19 @@ import {
   useState,
   type ReactElement,
 } from "react";
-import { PortalsChat } from "./PortalsChat";
+import { AgentChannel } from "@/components/chat/AgentChannel";
+import { CHANNELS } from "@/components/chat/agent-channels";
+import { usePortalDraftSync } from "./use-portal-draft-sync";
 import { LivePortalCard } from "./LivePortalCard";
 import { PortalsList } from "./PortalsList";
 import { PortalDetail as PortalDetailView } from "./PortalDetail";
 import { LayoutList } from "lucide-react";
 import { MobileChatOverlay } from "@/components/shell/MobileChatOverlay";
 import type { PortalSummary, PortalDetail } from "@/lib/gateway";
+import { agentNameOf } from "@/components/shell/modules";
+
+// Nome proprio dell'agente: unica fonte il registry dei moduli.
+const AGENT = agentNameOf("portals");
 
 export interface PortalDraft {
   nome?: string;
@@ -151,24 +157,21 @@ export function PortalsWorkspace({ initialPortals, initialDetailSlug }: Props): 
     [],
   );
 
+  // Il pannello destro segue lo stream dell'agente.
+  const draftSync = usePortalDraftSync(setDraft, handleStartCreating, handleViewPortal);
+
   const isDetail = panel.kind === "detail";
 
   return (
     <div className="flex flex-col lg:flex-row h-full overflow-hidden">
       <div className="flex-1 min-w-0 min-h-0 flex flex-col border-r border-[var(--color-line)] lg:h-full overflow-hidden">
-        <header className="px-5 py-3 border-b border-[var(--color-line)] shrink-0">
-          <p className="eyebrow">Agente · Portali</p>
-          <p className="text-xs text-[var(--color-ink-muted)] mt-1">
-            Onboarding + gestione portali
-          </p>
-        </header>
-        <div className="flex-1 min-h-0 overflow-y-auto">
-          <PortalsChat
-            onDraftUpdate={setDraft}
-            onStartCreating={handleStartCreating}
-            onViewPortal={handleViewPortal}
-          />
-        </div>
+        <AgentChannel
+          agentId="portals"
+          {...CHANNELS.portals}
+          interactive
+          onEvent={draftSync.onEvent}
+          onSubmission={draftSync.onSubmission}
+        />
       </div>
       <aside
         className={`hidden lg:flex flex-col bg-[var(--color-paper-soft)] sticky top-0 h-full overflow-hidden transition-[width] duration-500 ease-out ${
@@ -188,7 +191,7 @@ export function PortalsWorkspace({ initialPortals, initialDetailSlug }: Props): 
         />
       </aside>
       <MobileChatOverlay
-        label="Portali"
+        label={AGENT}
         icon={<LayoutList className="h-5 w-5" />}
         position="top-right"
       >

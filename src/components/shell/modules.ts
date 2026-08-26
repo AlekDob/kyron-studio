@@ -1,8 +1,6 @@
+// Navigazione dello Studio Kyron: e' la config del cliente, il tipo sta nel core.
 import {
-  Inbox,
   Store,
-  Brain,
-  ScrollText,
   Settings,
   Database,
   Eye,
@@ -10,45 +8,112 @@ import {
   ShoppingBag,
   ShieldCheck,
   FileCheck,
-  type LucideIcon,
+  LineChart,
+  Bot,
 } from "lucide-react";
+import type { ModuleDefinition } from "@studiofuturo/studio-core";
 
-export type ModuleStatus = "live" | "coming-soon";
-export type ModuleKind = "agent" | "tool";
+export type {
+  ModuleDefinition,
+  ModuleKind,
+  ModuleStatus,
+} from "@studiofuturo/studio-core";
 
-export interface ModuleDefinition {
-  id: string;
-  label: string;
-  description: string;
-  href: string;
-  icon: LucideIcon;
-  kind: ModuleKind;
-  status: ModuleStatus;
-}
+/**
+ * Un modulo Kyron. Gli agenti hanno un nome proprio: il core non lo conosce,
+ * quindi il tipo si allarga qui e nessuna release del pacchetto serve.
+ */
+export type KyronModule = ModuleDefinition & {
+  /** Nome proprio dell'agente ("Livia"). Seed dell'avatar blobatar. */
+  agentName?: string;
+  /** Sezione che presidia ("Portali"). Riga secondaria della AgentCard. */
+  agentRole?: string;
+};
 
-export const MODULES: ModuleDefinition[] = [
-  {
-    id: "inbox",
-    label: "Inbox",
-    description: "Tutte le conversazioni con i tuoi agenti in un posto.",
-    href: "/inbox",
-    icon: Inbox,
-    kind: "tool",
-    status: "coming-soon",
-  },
+export type KyronAgent = KyronModule & { agentName: string; agentRole: string };
+
+// Label doppio "Livia · Portali": lo costruiamo qui una volta sola, cosi'
+// palette e AgentCard (che leggono solo `label`) lo prendono gratis.
+const agent = (
+  name: string,
+  role: string,
+): Pick<KyronAgent, "label" | "agentName" | "agentRole"> => ({
+  label: `${name} · ${role}`,
+  agentName: name,
+  agentRole: role,
+});
+
+/**
+ * Gli agenti. NON stanno in `MODULES`: nella sidebar sono i canali `#` sotto
+ * la voce "Agenti" (come in Studio GGS), non righe di primo livello.
+ */
+export const AGENTS: KyronAgent[] = [
   {
     id: "portals",
-    label: "Portali",
-    description: "Gestisci i portali scuola: onboarding, stato, catalogo prodotti.",
+    ...agent("Livia", "Portali"),
+    description: "Gestisce i portali scuola: onboarding, stato, catalogo prodotti.",
     href: "/portals",
     icon: Store,
     kind: "agent",
     status: "live",
   },
   {
+    id: "checks",
+    ...agent("Bruno", "Controlli"),
+    description: "Controlla prezzi e sconti dei portali e ti spiega le anomalie.",
+    href: "/checks",
+    icon: ShieldCheck,
+    kind: "agent",
+    status: "live",
+  },
+  {
+    id: "vat-relief",
+    ...agent("Elsa", "Agevolazioni"),
+    description: "Legge i documenti 104 e valida le richieste di IVA al 4%.",
+    href: "/vat-relief",
+    icon: FileCheck,
+    kind: "agent",
+    status: "live",
+  },
+  {
+    id: "stats",
+    ...agent("Ada", "Statistiche"),
+    description: "Interroga PostHog e risponde con numeri, tabelle e grafici.",
+    href: "/stats",
+    icon: LineChart,
+    kind: "agent",
+    status: "live",
+  },
+  {
+    id: "preview",
+    ...agent("Vera", "Anteprima"),
+    description: "Naviga kyronedu.it con te e propone le modifiche al sito.",
+    href: "/preview",
+    icon: Eye,
+    kind: "agent",
+    status: "live",
+  },
+];
+
+export const MODULES: KyronModule[] = [
+  {
+    id: "agents",
+    label: "Agenti",
+    description: "Chi lavora con te nello Studio e di cosa si occupa.",
+    href: "/agenti",
+    icon: Bot,
+    kind: "agent",
+    status: "live",
+    // Attivo solo su /agenti: i canali figli hanno il loro highlight.
+    exact: true,
+  },
+  {
     id: "dati",
     label: "Dati",
-    description: "Modifica diretta delle collection: bandi, eventi, prodotti, brand.",
+    // Nico non e' un agente autonomo: e' la chat dentro uno strumento, quindi
+    // sta in Strumenti. Il nome resta per la chat e l'avatar.
+    agentName: "Nico",
+    description: "Modifica le collection al posto tuo: bandi, eventi, prodotti, brand.",
     href: "/dati",
     icon: Database,
     kind: "tool",
@@ -64,24 +129,6 @@ export const MODULES: ModuleDefinition[] = [
     status: "live",
   },
   {
-    id: "checks",
-    label: "Controlli",
-    description: "Controlla prezzi e sconti dei portali: chiedi una verifica, ricevi le anomalie.",
-    href: "/checks",
-    icon: ShieldCheck,
-    kind: "agent",
-    status: "live",
-  },
-  {
-    id: "vat-relief",
-    label: "Agevolazioni",
-    description: "Controlla i documenti 104 e valida le richieste di IVA al 4%.",
-    href: "/vat-relief",
-    icon: FileCheck,
-    kind: "agent",
-    status: "live",
-  },
-  {
     id: "analytics",
     label: "Analytics",
     description: "Visite, funnel e ricavi: sito, shop principale e portali scuola.",
@@ -89,33 +136,6 @@ export const MODULES: ModuleDefinition[] = [
     icon: ChartNoAxesColumn,
     kind: "tool",
     status: "live",
-  },
-  {
-    id: "preview",
-    label: "Anteprima",
-    description: "Naviga il sito kyronedu.it e proponi modifiche con l'agente Review Editor.",
-    href: "/preview",
-    icon: Eye,
-    kind: "agent",
-    status: "live",
-  },
-  {
-    id: "brain",
-    label: "Brain",
-    description: "Knowledge base persistente del RAG: carica una volta, riusa sempre.",
-    href: "/brain",
-    icon: Brain,
-    kind: "tool",
-    status: "coming-soon",
-  },
-  {
-    id: "log",
-    label: "Log",
-    description: "Audit append-only: chi ha fatto cosa, quando e su quale conversazione.",
-    href: "/log",
-    icon: ScrollText,
-    kind: "tool",
-    status: "coming-soon",
   },
   {
     id: "settings",
@@ -128,11 +148,12 @@ export const MODULES: ModuleDefinition[] = [
   },
 ];
 
-export function findModuleByPath(pathname: string): ModuleDefinition | null {
-  if (pathname === "/" || pathname === "") return null;
-  return (
-    MODULES.find(
-      (m) => pathname === m.href || pathname.startsWith(m.href + "/"),
-    ) ?? null
-  );
+/**
+ * Nome proprio dell'agente di un modulo. Unico punto da cui chat, avatar e
+ * overlay mobile leggono il nome: prima era una stringa ripetuta a mano.
+ */
+export function agentNameOf(moduleId: string): string {
+  const found =
+    AGENTS.find((a) => a.id === moduleId) ?? MODULES.find((m) => m.id === moduleId);
+  return found?.agentName ?? "Agente Studio";
 }

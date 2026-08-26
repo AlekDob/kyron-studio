@@ -1,19 +1,20 @@
 import "./globals.css";
 import type { Metadata, Viewport } from "next";
-import { Doto, Plus_Jakarta_Sans } from "next/font/google";
+import { Doto, Geist } from "next/font/google";
 
-const jakarta = Plus_Jakarta_Sans({
+const geist = Geist({
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-jakarta",
+  variable: "--font-body",
 });
+
 
 // Font a puntini per le cifre grandi dei KPI.
 const doto = Doto({
   subsets: ["latin"],
   weight: "600",
   display: "swap",
-  variable: "--font-doto",
+  variable: "--font-numeric",
 });
 
 export const viewport: Viewport = {
@@ -37,7 +38,7 @@ export default function RootLayout({
   // Le variabili font stanno su <html>: --font-sans e --font-dots le risolvono
   // da :root, non da body.
   return (
-    <html lang="it" className={`${jakarta.variable} ${doto.variable}`}>
+    <html lang="it" className={`${geist.variable} ${doto.variable}`}>
       <body>{children}</body>
     </html>
   );

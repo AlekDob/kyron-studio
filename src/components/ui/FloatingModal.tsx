@@ -9,7 +9,7 @@ import {
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/cn";
-import { IconButton } from "./IconButton";
+import { IconButton } from "@studiofuturo/studio-core";
 
 const contentVariants = cva(
   cn(

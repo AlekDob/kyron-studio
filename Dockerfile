@@ -7,7 +7,12 @@ RUN apk add --no-cache libc6-compat
 FROM base AS deps
 WORKDIR /app
 COPY package.json package-lock.json* ./
-RUN npm ci --include=dev
+# @studiofuturo/studio-core e' privato su GitHub Packages: serve un token
+# read:packages. Su Coolify e' una Build Variable chiamata NPM_TOKEN.
+ARG NPM_TOKEN
+RUN printf '@studiofuturo:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=%s\n' "$NPM_TOKEN" > .npmrc \
+  && npm ci --include=dev \
+  && rm -f .npmrc
 
 FROM base AS builder
 WORKDIR /app

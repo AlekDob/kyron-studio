@@ -43,7 +43,7 @@ export function OrganizationSection({ currentEmail }: Props) {
       <header>
         <p className="eyebrow mb-3">Organizzazione</p>
         <h2 className="text-3xl font-semibold tracking-tight">
-          Utenti <span className="font-serif italic">&amp; ruoli</span>
+          Utenti <span className="text-[var(--color-ink-muted)]">&amp; ruoli</span>
         </h2>
         <p className="mt-3 max-w-xl text-sm text-[var(--color-ink-muted)]">
           Chi puo' accedere allo Studio. Gli admin gestiscono utenti, connessioni

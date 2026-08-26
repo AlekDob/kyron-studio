@@ -111,6 +111,16 @@ La lastra e' alta `100dvh - 32px`. Le pagine con `min-h-screen` sforavano di
 32px creando uno scroll fantasma: sostituito con `min-h-full` (7 file). Resta
 `min-h-screen` solo su `/login`, che sta fuori dalla shell.
 
+### Gotcha: la rail in hover e' un overlay, serve un fondo (studio-core 0.2.4)
+
+La sidebar del core e' `bg-transparent` per scelta: si appoggia alla scrivania
+grigia. Ma su `/preview` la rail compatta espansa e' `absolute` sopra il
+contenuto — e sotto c'e' un iframe col sito, che si leggeva attraverso le voci
+di menu. Da 0.2.4 lo stato espanso porta `bg-[var(--color-paper)]` +
+`shadow-[var(--shadow-modal)]`; chiusa resta trasparente. Le utility arrivano
+in build perche' `globals.css` ha `@source` sul dist del core: Tailwind v4 non
+scansiona node_modules.
+
 ## File
 
 **Riscritti**: `src/app/globals.css`, `src/app/layout.tsx`,

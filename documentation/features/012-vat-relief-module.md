@@ -74,7 +74,7 @@ studio (chat)                 studio-server (agente)            Saleor
 **studio:**
 - `src/app/(authed)/vat-relief/page.tsx` — pagina, legge `?case=<numero>` per il deep link da Ordini
 - `src/components/vat-relief/VatReliefWorkspace.tsx` — split-pane, pannello destro vuoto finche' non c'e' una pratica
-- `src/components/vat-relief/VatReliefChat.tsx` — chat con componenti generativi interattivi (submission → messaggio strutturato all'agente, pattern onboarding portali)
+- `src/components/chat/AgentChannel.tsx` con `interactive` + `hideCards={["VatReliefCase"]}` — dal 2026-08-25 la chat e' il canale condiviso (feature 015). Le card generative rimandano i dati all'agente come prima; la scheda ordine sta solo nel pannello destro (ex `VatReliefChat.tsx`)
 - `src/components/vat-relief/VatReliefCase.tsx` — scheda ordine nel pannello destro (cliente, prodotti, importi, stato IVA agevolata)
 - `src/components/chat/generative/DocUploader.tsx` — upload multi-file, non archivia nulla lato client, manda solo gli id
 - `src/components/chat/generative/DocCheckReport.tsx` — esito: pill ok/incompleto/errato + problemi + documenti letti + confronto ordine

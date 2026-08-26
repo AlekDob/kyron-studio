@@ -49,7 +49,7 @@ export function EcommerceSection(): ReactElement {
       <header>
         <p className="eyebrow mb-3">Ecommerce</p>
         <h2 className="text-3xl font-semibold tracking-tight">
-          Sconto <span className="font-serif italic">bonifico bancario</span>
+          Sconto <span className="text-[var(--color-ink-muted)]">bonifico bancario</span>
         </h2>
         <p className="mt-3 max-w-xl text-sm text-[var(--color-ink-muted)]">
           Percentuale di sconto applicata quando il cliente paga con bonifico.

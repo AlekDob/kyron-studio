@@ -1,24 +1,44 @@
 "use client";
 
 import { useState, type ReactElement } from "react";
-import { VatReliefChat } from "./VatReliefChat";
+import { AgentChannel } from "@/components/chat/AgentChannel";
+import { CHANNELS } from "@/components/chat/agent-channels";
 import { VatReliefCase } from "./VatReliefCase";
 import type { OrderRow } from "@/lib/gateway";
 
-interface Props {
+// Modulo Agevolazioni (IVA 4% L.104): canale a sinistra, pratica in
+// lavorazione a destra. Nessuna coda: si entra caricando i documenti, o dal
+// link "Valuta documenti" del modulo Ordini.
+export function VatReliefWorkspace({
+  initialOrderNumber,
+}: {
   initialOrderNumber?: string;
-}
-
-// Modulo Agevolazioni (IVA 4% L.104): split-pane come Portali — chat a
-// sinistra, pratica in lavorazione a destra. Nessuna coda: si entra caricando
-// i documenti, o dal link "Valuta documenti" del modulo Ordini.
-export function VatReliefWorkspace({ initialOrderNumber }: Props): ReactElement {
+}): ReactElement {
   const [order, setOrder] = useState<OrderRow | null>(null);
 
   return (
     <div className="flex h-full flex-col overflow-hidden lg:flex-row">
       <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden border-r border-[var(--color-line)] lg:h-full">
-        <VatReliefChat onCase={setOrder} initialOrderNumber={initialOrderNumber} />
+        <AgentChannel
+          agentId="vat-relief"
+          {...CHANNELS["vat-relief"]}
+          interactive
+          initialPrompt={
+            initialOrderNumber
+              ? `Controlliamo la richiesta IVA agevolata dell'ordine ${initialOrderNumber}.`
+              : undefined
+          }
+          onEvent={(ev) => {
+            // La scheda ordine vive nel pannello destro, non in chat.
+            if (ev.type !== "tool-result") return;
+            const r = ev.result as {
+              _ui?: { component?: string; props?: { order?: OrderRow } };
+            };
+            if (r?._ui?.component === "VatReliefCase" && r._ui.props?.order) {
+              setOrder(r._ui.props.order);
+            }
+          }}
+        />
       </div>
 
       <aside className="sticky top-0 hidden h-full w-[420px] flex-col overflow-hidden bg-[var(--color-paper-soft)] lg:flex">

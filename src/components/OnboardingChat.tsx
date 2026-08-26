@@ -12,6 +12,10 @@ import {
 } from "./chat/generative/types";
 
 import { ChatComposer } from "@/components/chat/ChatComposer";
+import { agentNameOf } from "@/components/shell/modules";
+
+// Nome proprio dell'agente: unica fonte il registry dei moduli.
+const AGENT = agentNameOf("portals");
 const INITIAL_GREETING =
   "Ciao. Iniziamo l'onboarding di una nuova scuola. Come si chiama la scuola?";
 
@@ -140,12 +144,12 @@ export function OnboardingChat(): ReactElement {
           const textPart = showText
             ? (isLastAssistant ? (
                 <StreamingBubble
-                  agent="Onboarding Scuole"
+                  agent={AGENT}
                   raw={m.content}
                   isStreaming={streaming}
                 />
               ) : (
-                <ChatBubble role="assistant" agent="Onboarding Scuole" state="complete">
+                <ChatBubble role="assistant" agent={AGENT} state="complete">
                   <MarkdownContent content={processContent(m.content).text} />
                 </ChatBubble>
               ))

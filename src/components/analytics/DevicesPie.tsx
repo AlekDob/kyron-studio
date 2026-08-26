@@ -1,7 +1,7 @@
 "use client";
 
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
-import { Card } from "@/components/ui/Card";
+import { Card } from "@/components/ui";
 import type { DeviceRow } from "@/lib/analytics";
 import { fmtInt, fmtPct } from "./format";
 

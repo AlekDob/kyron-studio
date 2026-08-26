@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser, loginUrl } from "@/lib/auth";
-import { DesktopShell } from "@/components/shell/DesktopShell";
+import { StudioShell } from "@/components/shell/StudioShell";
 
 export default async function AuthedLayout({
   children,
@@ -11,5 +11,5 @@ export default async function AuthedLayout({
   if (!user) {
     redirect(loginUrl());
   }
-  return <DesktopShell userEmail={user.email}>{children}</DesktopShell>;
+  return <StudioShell userEmail={user.email}>{children}</StudioShell>;
 }

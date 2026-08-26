@@ -85,7 +85,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
       <header className="mb-6 rounded-2xl border border-[var(--color-line)] bg-[var(--color-paper-soft)] px-5 py-5">
         <p className="eyebrow mb-2">Studio · Analytics</p>
         <h1 className="text-3xl font-medium tracking-tight">
-          Analytics <span className="font-serif italic">Kyron</span>
+          Analytics <span className="text-[var(--color-ink-muted)]">Kyron</span>
         </h1>
         <p className="text-[var(--color-ink-muted)] mt-2 text-sm max-w-xl">
           Visite, funnel e ricavi da PostHog: sito kyronedu.it, shop principale

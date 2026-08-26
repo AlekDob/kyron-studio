@@ -264,7 +264,7 @@ link diretto, e redirect da route obsolete senza perdere il contesto workspace.
 - `src/components/portals/PortalsWorkspace.tsx` — split-pane + 3-mode panel + memo + `handleRefreshDetail` on mutation + `handleDuplicatePortal`
 - `src/components/portals/DuplicatePortalModal.tsx` — popup duplica (nome + slug, slugify live) (2026-06-22)
 - `src/components/portals/PortalDetail.tsx` — **editor inline** (InlineText, InlinePrice, CatalogEditor, BundleCard)
-- `src/components/portals/PortalsChat.tsx` — chat con rAF throttle + draft extraction
+- `src/components/chat/AgentChannel.tsx` (config in `agent-channels.ts`) — la chat, dal 2026-08-25 e' il canale condiviso; `src/components/portals/use-portal-draft-sync.ts` riempie il pannello destro guardando passare lo stream (ex `PortalsChat.tsx`)
 - `src/components/portals/LivePortalCard.tsx` — skeleton→data card
 - `src/components/portals/PortalsList.tsx` — lista compatta con search (button, no anchor)
 - `src/components/chat/generative/LogoUploader.tsx` — upload file generativo

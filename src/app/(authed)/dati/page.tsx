@@ -23,7 +23,7 @@ export default async function DatiPage() {
       <header className="mb-8 rounded-2xl border border-[var(--color-line)] bg-[var(--color-paper-soft)] px-5 py-5">
         <p className="eyebrow mb-2">Studio · Dati</p>
         <h1 className="text-3xl font-medium tracking-tight">
-          Dati <span className="font-serif italic">Kyron</span>
+          Dati <span className="text-[var(--color-ink-muted)]">Kyron</span>
         </h1>
         <p className="text-[var(--color-ink-muted)] mt-2 text-sm max-w-xl">
           Consulta e modifica le collection principali. L'agente Editor Dati
@@ -52,7 +52,7 @@ export default async function DatiPage() {
               </div>
               <div className="flex shrink-0 items-center gap-4 text-right">
                 <div>
-                  <div className="text-2xl font-serif italic leading-none">
+                  <div className="text-2xl leading-none tabular-nums">
                     {c.count}
                   </div>
                   <div className="text-[11px] uppercase tracking-wider text-[var(--color-ink-muted)]">

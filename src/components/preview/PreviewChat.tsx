@@ -7,17 +7,13 @@ import {
   useState,
   type ReactElement,
 } from "react";
-import { ChatBubble } from "@/components/ui";
 import {
   streamReviewEditor,
   type ChatMessage,
 } from "@/lib/chat-runtime";
-import {
-  MarkdownContent,
-  StreamingBubble,
-  processContent,
-} from "@/components/chat/chat-ui";
+import { ChannelMessage } from "@/components/chat/ChannelMessage";
 import { ChatComposer } from "@/components/chat/ChatComposer";
+import { CHANNELS } from "@/components/chat/agent-channels";
 import type { Annotation } from "@/lib/review/types";
 import { buildUrn } from "@/lib/review/urn";
 import type { PendingTarget } from "./PreviewWorkspace";
@@ -28,6 +24,10 @@ import {
   type ProposalEntry,
   type ProposeArgs,
 } from "./ProposalCard";
+import { agentNameOf } from "@/components/shell/modules";
+
+// Nome proprio dell'agente: unica fonte il registry dei moduli.
+const AGENT = agentNameOf("preview");
 
 interface Props {
   currentUrl: string;
@@ -45,8 +45,18 @@ type ChatEntry =
       kind: "msg";
       role: "user" | "assistant" | "system";
       content: string;
+      /** Ora mostrata nella riga del canale. */
+      at: number;
     }
   | (ProposalEntry & { kind: "proposal" });
+
+/** Le righe del canale vogliono un'ora: un solo punto dove metterla. */
+function msg(
+  role: "user" | "assistant" | "system",
+  content: string,
+): Extract<ChatEntry, { kind: "msg" }> {
+  return { kind: "msg", role, content, at: Date.now() };
+}
 
 function makeId(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -104,11 +114,11 @@ function truncate(s: string, max = 120): string {
 }
 
 const INTRO_MESSAGE =
-  "Sono l'agente Review Editor. Clicca un elemento nell'anteprima a sinistra per selezionarlo, poi descrivimi la modifica. Io strutturo la proposta, tu confermi qui in chat, e poi inviamo tutto via email.";
+  `Sono ${AGENT}. Clicca un elemento nell'anteprima a sinistra per selezionarlo, poi descrivimi la modifica. Io strutturo la proposta, tu confermi qui in chat, e poi inviamo tutto via email.`;
 
 export function PreviewChat(props: Props): ReactElement {
   const [entries, setEntries] = useState<ChatEntry[]>([
-    { kind: "msg", role: "assistant", content: INTRO_MESSAGE },
+    msg("assistant", INTRO_MESSAGE),
   ]);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
@@ -125,7 +135,7 @@ export function PreviewChat(props: Props): ReactElement {
   const runStream = useCallback(
     async (seed: ChatEntry[]) => {
       setStreaming(true);
-      setEntries([...seed, { kind: "msg", role: "assistant", content: "" }]);
+      setEntries([...seed, msg("assistant", "")]);
 
       let working = seed;
       let buf = "";
@@ -144,7 +154,7 @@ export function PreviewChat(props: Props): ReactElement {
             buf += ev.delta;
             setEntries([
               ...working,
-              { kind: "msg", role: "assistant", content: buf },
+              msg("assistant", buf),
             ]);
           } else if (ev.type === "tool") {
             setToolStatus(`Sto chiamando \`${ev.tool}\`…`);
@@ -160,7 +170,7 @@ export function PreviewChat(props: Props): ReactElement {
               if (!alreadyHandled) {
                 const id = makeId("prop");
                 const flushed: ChatEntry[] = buf
-                  ? [...working, { kind: "msg", role: "assistant", content: buf }]
+                  ? [...working, msg("assistant", buf)]
                   : working;
                 working = [
                   ...flushed,
@@ -181,7 +191,7 @@ export function PreviewChat(props: Props): ReactElement {
                   ? { ...e, state: "confirmed" }
                   : e,
               );
-              setEntries([...working, { kind: "msg", role: "assistant", content: buf }]);
+              setEntries([...working, msg("assistant", buf)]);
             } else if (ev.tool === "request_send_bundle") {
               props.onSendRequest();
             }
@@ -191,7 +201,7 @@ export function PreviewChat(props: Props): ReactElement {
             buf += `\n\n_[errore: ${ev.error}]_`;
             setEntries([
               ...working,
-              { kind: "msg", role: "assistant", content: buf },
+              msg("assistant", buf),
             ]);
           }
         }
@@ -208,7 +218,7 @@ export function PreviewChat(props: Props): ReactElement {
     if (!trimmed || streaming) return;
     const next: ChatEntry[] = [
       ...entries,
-      { kind: "msg", role: "user", content: trimmed },
+      msg("user", trimmed),
     ];
     setInput("");
     await runStream(next);
@@ -237,13 +247,12 @@ export function PreviewChat(props: Props): ReactElement {
         );
         return [
           ...updated,
-          {
-            kind: "msg",
-            role: "assistant",
-            content: editedText
+          msg(
+            "assistant",
+            editedText
               ? `Aggiunta al bundle con la tua modifica: "${truncate(editedText)}".`
               : "Aggiunta al bundle.",
-          },
+          ),
         ];
       });
     },
@@ -259,11 +268,7 @@ export function PreviewChat(props: Props): ReactElement {
       );
       return [
         ...updated,
-        {
-          kind: "msg",
-          role: "assistant",
-          content: "Proposta annullata.",
-        },
+        msg("assistant", "Proposta annullata."),
       ];
     });
   }, []);
@@ -272,42 +277,38 @@ export function PreviewChat(props: Props): ReactElement {
     <div className="flex flex-1 min-h-0 flex-col">
       <div
         ref={scrollRef}
-        className="flex-1 min-h-0 overflow-y-auto px-5 py-5 space-y-5"
+        className="min-h-0 flex-1 overflow-y-auto px-2 py-3 sm:px-3"
       >
         {entries.map((entry, i) => {
           if (entry.kind === "proposal") {
             return (
-              <ProposalCard
-                key={entry.id}
-                proposal={entry}
-                disabled={streaming}
-                onConfirm={(text) => void confirmProposal(entry.id, text)}
-                onCancel={() => void cancelProposal(entry.id)}
-              />
+              <div key={entry.id} className="px-2 py-2">
+                <ProposalCard
+                  proposal={entry}
+                  disabled={streaming}
+                  onConfirm={(text) => void confirmProposal(entry.id, text)}
+                  onCancel={() => void cancelProposal(entry.id)}
+                />
+              </div>
             );
           }
-          const isLastAssistant =
-            entry.role === "assistant" &&
-            i === entries.length - 1 &&
-            streaming;
-          const align = entry.role === "user" ? "justify-end" : "justify-start";
+          const prev = entries[i - 1];
           return (
-            <div key={i} className={`flex ${align}`}>
-              {entry.role === "user" ? (
-                <ChatBubble role="user" state="complete">
-                  {entry.content}
-                </ChatBubble>
-              ) : isLastAssistant ? (
-                <StreamingBubble
-                  agent="Review Editor" raw={entry.content} isStreaming={streaming} />
-              ) : (
-                <ChatBubble role="assistant" agent="Review Editor" state="complete">
-                  <MarkdownContent
-                    content={processContent(entry.content).text}
-                  />
-                </ChatBubble>
-              )}
-            </div>
+            <ChannelMessage
+              key={i}
+              message={{
+                id: String(i),
+                role: entry.role === "user" ? "user" : "assistant",
+                content: entry.content,
+                at: entry.at,
+              }}
+              agentId="preview"
+              agentName={AGENT}
+              userLabel="Tu"
+              showAuthor={prev?.kind !== "msg" || prev.role !== entry.role}
+              toolLabels={CHANNELS.preview.toolLabels}
+              busy={streaming && i === entries.length - 1}
+            />
           );
         })}
         {toolStatus && (
@@ -355,11 +356,7 @@ export function PreviewChat(props: Props): ReactElement {
             props.onDismissPending();
             setEntries((prev) => [
               ...prev,
-              {
-                kind: "msg",
-                role: "assistant",
-                content: "Annotazione manuale aggiunta al bundle.",
-              },
+              msg("assistant", "Annotazione manuale aggiunta al bundle."),
             ]);
           }}
         />
@@ -373,7 +370,7 @@ export function PreviewChat(props: Props): ReactElement {
         placeholder={
           props.pendingTarget
             ? "Descrivi la modifica per l'elemento selezionato…"
-            : "Descrivi una modifica…"
+            : `Messaggio #${AGENT.toLowerCase()}`
         }
         ariaLabel="Scrivi all'agente Review Editor"
       />

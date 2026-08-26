@@ -3,8 +3,8 @@ import { forwardRef, type HTMLAttributes, type ReactNode } from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/cn";
 import { ChatAvatar } from "@/components/chat/ChatAvatar";
-import { SPHERE_GRADIENT } from "@/components/shell/StudioMark";
-import { Pill } from "./Pill";
+import { SPHERE_GRADIENT } from "@studiofuturo/studio-core";
+import { Pill } from "@studiofuturo/studio-core";
 
 const bubbleVariants = cva("flex w-fit max-w-[78%]", {
   variants: {

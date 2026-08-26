@@ -86,7 +86,7 @@ export function ModelRoutingSection(): ReactElement {
       <header>
         <p className="eyebrow mb-3">Modelli AI</p>
         <h2 className="text-3xl font-semibold tracking-tight">
-          Agente <span className="font-serif italic">onboarding scuola</span>
+          Agente <span className="text-[var(--color-ink-muted)]">onboarding scuola</span>
         </h2>
         <p className="mt-3 max-w-xl text-sm text-[var(--color-ink-muted)]">
           Scegli quale modello LLM viene usato per la chat di raccolta dati

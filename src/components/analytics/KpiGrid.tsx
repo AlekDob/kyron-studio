@@ -1,4 +1,4 @@
-import { Card } from "@/components/ui/Card";
+import { Card } from "@/components/ui";
 import type { KpiTotals, LeadTotals, PrevTotals } from "@/lib/analytics";
 import { fmtEur, fmtInt } from "./format";
 

@@ -13,7 +13,7 @@ export default async function OnboardingPage() {
       <header className="mb-8">
         <p className="eyebrow mb-2">Studio · Onboarding</p>
         <h1 className="text-3xl font-medium tracking-tight">
-          Nuova <span className="font-serif italic">scuola</span>
+          Nuova <span className="text-[var(--color-ink-muted)]">scuola</span>
         </h1>
         <p className="text-[var(--color-ink-muted)] mt-2 text-sm max-w-xl">
           Rispondi alle domande dell&apos;assistente. A fine raccolta la scuola

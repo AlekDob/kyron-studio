@@ -9,11 +9,16 @@ import {
   type ReactElement,
 } from "react";
 import { PreviewChat } from "./PreviewChat";
+import { ChannelHeader } from "@/components/chat/ChannelHeader";
 import { AnnotationsList } from "./AnnotationsList";
 import { ModeToggle } from "./ModeToggle";
 import { MobileChatOverlay } from "@/components/shell/MobileChatOverlay";
 import type { Annotation } from "@/lib/review/types";
 import { PARENT_ORIGINS, PREVIEW_BASE_URL } from "@/lib/preview-config";
+import { agentNameOf } from "@/components/shell/modules";
+
+// Nome proprio dell'agente: unica fonte il registry dei moduli.
+const AGENT = agentNameOf("preview");
 
 interface Props {
   initialUrl: string;
@@ -289,7 +294,7 @@ export function PreviewWorkspace({
       </aside>
 
       {/* Mobile FAB + fullscreen overlay */}
-      <MobileChatOverlay label="Review Editor">
+      <MobileChatOverlay label={AGENT}>
         <ReviewPanel
           currentUrl={url}
           currentPath={currentPath}
@@ -329,12 +334,10 @@ function ReviewPanel({
 }) {
   return (
     <div className="flex flex-col h-full min-h-0">
-      <header className="border-b border-[var(--color-line)] px-5 py-3 shrink-0">
-        <p className="eyebrow">Agente · Review Editor</p>
-        <p className="text-xs text-[var(--color-ink-muted)] mt-1 font-mono truncate">
-          {currentPath}
-        </p>
-      </header>
+      <ChannelHeader agentId="preview" name={AGENT} />
+      <p className="shrink-0 truncate border-b border-[var(--color-line)] px-5 py-1.5 font-mono text-[11px] text-[var(--color-ink-muted)]">
+        {currentPath}
+      </p>
       <div className="flex-1 min-h-0 flex flex-col">
         <PreviewChat
           currentUrl={currentUrl}

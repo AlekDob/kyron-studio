@@ -1,0 +1,79 @@
+"use client";
+// Configurazione Kyron della shell condivisa: moduli, copy italiana, pill
+// "anteprima" accanto al marchio. La shell vera sta in @studiofuturo/studio-core.
+import {
+  DesktopShell,
+  Pill,
+  SubChannels,
+  type ModuleDefinition,
+} from "@studiofuturo/studio-core";
+import type { ReactNode } from "react";
+import { AGENTS, MODULES } from "./modules";
+
+const COPY = {
+  studio: "Studio",
+  dashboard: "Dashboard",
+  modules: "Moduli",
+  agentsSection: "Agenti AI",
+  toolsSection: "Strumenti",
+  comingSoon: "presto",
+  logout: "Esci",
+  openMenu: "Apri menu",
+  closeMenu: "Chiudi menu",
+  commands: "Comandi",
+  paletteLabel: "Comandi",
+  palettePlaceholder: "Scrivi un comando o cerca un'app...",
+  paletteEmpty: "Nessun risultato",
+  paletteGroup: "App",
+  paletteSelectHint: "↵ seleziona",
+  paletteCloseHint: "esc chiudi",
+};
+
+/** Su /preview la sidebar e' una rail di sole icone: spazio all'iframe. */
+function isPreviewPath(pathname: string): boolean {
+  return pathname.startsWith("/preview");
+}
+
+/** Gli agenti sono i canali della voce "Agenti": nome + ruolo, come su Slack. */
+function agentChannels(m: ModuleDefinition): ReactNode {
+  if (m.id !== "agents") return null;
+  return (
+    <SubChannels
+      channels={AGENTS.map((a) => ({
+        href: a.href,
+        label: a.agentName,
+        meta: a.agentRole,
+      }))}
+    />
+  );
+}
+
+export function StudioShell({
+  children,
+  userEmail,
+}: {
+  children: ReactNode;
+  userEmail?: string;
+}) {
+  return (
+    <DesktopShell
+      modules={MODULES}
+      userEmail={userEmail}
+      copy={COPY}
+      compactRail={isPreviewPath}
+      subChannels={agentChannels}
+      brandBadge={
+        <Pill variant="neutral" size="sm">
+          anteprima
+        </Pill>
+      }
+      comingSoonBadge={
+        <Pill variant="neutral" size="sm">
+          presto
+        </Pill>
+      }
+    >
+      {children}
+    </DesktopShell>
+  );
+}

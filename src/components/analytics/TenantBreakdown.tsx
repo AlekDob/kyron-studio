@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { Search } from "lucide-react";
-import { Card } from "@/components/ui/Card";
-import { Pill } from "@/components/ui/Pill";
+import { Card, Pill } from "@/components/ui";
 import type { TenantRow } from "@/lib/analytics";
 import { fuzzyFilter } from "@/lib/fuzzy";
 import { fmtEur, fmtInt, fmtPct } from "./format";

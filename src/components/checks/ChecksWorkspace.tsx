@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, type ReactElement } from "react";
-import { ChecksChat } from "./ChecksChat";
+import { AgentChannel } from "@/components/chat/AgentChannel";
+import { CHANNELS } from "@/components/chat/agent-channels";
 import {
   AnomalyReport,
   type Anomaly,
@@ -15,7 +16,16 @@ export function ChecksWorkspace(): ReactElement {
   return (
     <div className="flex h-full flex-col overflow-hidden lg:flex-row">
       <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden border-r border-[var(--color-line)] lg:h-full">
-        <ChecksChat onReport={setReport} />
+        <AgentChannel
+          agentId="checks"
+          {...CHANNELS.checks}
+          onEvent={(ev) => {
+            // Il pannello destro mostra le anomalie dell'ultimo controllo.
+            if (ev.type !== "tool-result") return;
+            const r = ev.result as { anomalies?: Anomaly[] } | undefined;
+            if (Array.isArray(r?.anomalies)) setReport(r.anomalies);
+          }}
+        />
       </div>
 
       <aside className="sticky top-0 hidden h-full w-[420px] flex-col overflow-hidden bg-[var(--color-paper-soft)] lg:flex">

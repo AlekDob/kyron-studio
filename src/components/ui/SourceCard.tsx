@@ -2,7 +2,7 @@
 // Source: Virgilio @virgilio/ui (packages/ui/src/primitives/SourceCard.tsx)
 import { forwardRef, type HTMLAttributes } from "react";
 import { cn } from "@/lib/cn";
-import { Pill } from "./Pill";
+import { Pill } from "@studiofuturo/studio-core";
 import { focusRing, transitionBase } from "./_variants";
 
 export type SourceType = "doc" | "law" | "web";

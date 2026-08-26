@@ -6,7 +6,7 @@ import { geoMercator, geoPath, type GeoProjection } from "d3-geo";
 import { feature } from "topojson-client";
 import type { Topology, GeometryCollection } from "topojson-specification";
 import worldTopo from "world-atlas/countries-110m.json";
-import { Card } from "@/components/ui/Card";
+import { Card } from "@/components/ui";
 import type { GeoCity } from "@/lib/analytics";
 import { BarList } from "./BarList";
 import { fmtInt } from "./format";

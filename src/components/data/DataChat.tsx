@@ -13,6 +13,10 @@ import {
   processContent,
 } from "@/components/chat/chat-ui";
 import { ChatComposer } from "@/components/chat/ChatComposer";
+import { agentNameOf } from "@/components/shell/modules";
+
+// Nome proprio dell'agente: unica fonte il registry dei moduli.
+const AGENT = agentNameOf("dati");
 
 interface Props {
   slug: string;
@@ -119,9 +123,9 @@ export function DataChat({ slug, id }: Props): ReactElement {
                 </ChatBubble>
               ) : isLastAssistant ? (
                 <StreamingBubble
-                  agent="Editor Dati" raw={m.content} isStreaming={streaming} />
+                  agent={AGENT} raw={m.content} isStreaming={streaming} />
               ) : (
-                <ChatBubble role="assistant" agent="Editor Dati" state="complete">
+                <ChatBubble role="assistant" agent={AGENT} state="complete">
                   <MarkdownContent content={processContent(m.content).text} />
                 </ChatBubble>
               )}

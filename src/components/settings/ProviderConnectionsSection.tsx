@@ -58,7 +58,7 @@ export function ProviderConnectionsSection(): ReactElement {
       <header>
         <p className="eyebrow mb-3">Connessioni</p>
         <h2 className="text-3xl font-semibold tracking-tight">
-          Provider <span className="font-serif italic">AI</span>
+          Provider <span className="text-[var(--color-ink-muted)]">AI</span>
         </h2>
         <p className="mt-3 max-w-xl text-sm text-[var(--color-ink-muted)]">
           Configura la API key di ogni provider una sola volta. Poi nella sezione

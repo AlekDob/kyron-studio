@@ -53,7 +53,7 @@ export default async function OrdersPage({ searchParams }: PageProps) {
       <header className="mb-6 rounded-2xl border border-[var(--color-line)] bg-[var(--color-paper-soft)] px-5 py-5">
         <p className="eyebrow mb-2">Studio · Ordini</p>
         <h1 className="text-3xl font-medium tracking-tight">
-          Ordini <span className="font-serif italic">portali</span>
+          Ordini <span className="text-[var(--color-ink-muted)]">portali</span>
         </h1>
         <p className="text-[var(--color-ink-muted)] mt-2 text-sm max-w-xl">
           Tutti gli ordini dei portali scuola. Filtra per data, portale o agente

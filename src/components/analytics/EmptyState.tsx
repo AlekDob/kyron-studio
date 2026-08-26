@@ -1,5 +1,5 @@
 import { ChartNoAxesColumn } from "lucide-react";
-import { Card } from "@/components/ui/Card";
+import { Card } from "@/components/ui";
 import type { AnalyticsErrorKind } from "@/lib/analytics";
 
 // Stati vuoti/errore del modulo Analytics. Tre varianti:
