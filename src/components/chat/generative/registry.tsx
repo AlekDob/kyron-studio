@@ -35,6 +35,21 @@ const VatReliefCase = lazy(() =>
 const StatsResult = lazy(() =>
   import("./StatsResult").then((m) => ({ default: m.StatsResult })),
 );
+// Modulo Statistiche: campagne Meta (Ada marketing manager)
+const MetaCampaignsCard = lazy(() =>
+  import("./MetaCampaignsCard").then((m) => ({ default: m.MetaCampaignsCard })),
+);
+// Modulo Catalogo (Nico): piano prezzi da confermare
+const PricePlanCard = lazy(() =>
+  import("./PricePlanCard").then((m) => ({ default: m.PricePlanCard })),
+);
+// Modulo Catalogo: import listino Danea
+const DaneaUploader = lazy(() =>
+  import("./DaneaUploader").then((m) => ({ default: m.DaneaUploader })),
+);
+const DaneaImportPlan = lazy(() =>
+  import("./DaneaImportPlan").then((m) => ({ default: m.DaneaImportPlan })),
+);
 const AnomalyReport = lazy(() =>
   import("./AnomalyReport").then((m) => ({ default: m.AnomalyReport })),
 );
@@ -58,6 +73,9 @@ const COMPONENT_REGISTRY: Record<
   StatsResult: StatsResult as unknown as React.ComponentType<
     Record<string, unknown>
   >,
+  MetaCampaignsCard: MetaCampaignsCard as unknown as React.ComponentType<
+    Record<string, unknown>
+  >,
   DocUploader: DocUploader as unknown as React.ComponentType<
     Record<string, unknown>
   >,
@@ -68,6 +86,15 @@ const COMPONENT_REGISTRY: Record<
     Record<string, unknown>
   >,
   VatReliefCase: VatReliefCase as unknown as React.ComponentType<
+    Record<string, unknown>
+  >,
+  PricePlanCard: PricePlanCard as unknown as React.ComponentType<
+    Record<string, unknown>
+  >,
+  DaneaUploader: DaneaUploader as unknown as React.ComponentType<
+    Record<string, unknown>
+  >,
+  DaneaImportPlan: DaneaImportPlan as unknown as React.ComponentType<
     Record<string, unknown>
   >,
 };

@@ -16,7 +16,7 @@ Hub admin Kyron a `studio.kyronedu.it`. Sotto-progetto di `/Kyron`, registrato i
 
 **Shell live** (2026-05-26, ridisegnata 2026-08-19 — feature 014):
 
-- Sidebar laterale 248px: gruppo Agenti AI (Livia Portali, Bruno Controlli, Elsa Agevolazioni, Ada Statistiche, Vera Anteprima) + Strumenti (Dati, Ordini, Analytics, Impostazioni)
+- Sidebar laterale 248px: gruppo Agenti AI (Livia Portali, Bruno Controlli, Elsa Agevolazioni, Ada Statistiche, Nico Catalogo, Vera Anteprima) + Strumenti (Dati, Ordini, Analytics, Impostazioni)
 - Dashboard `/` = cruscotto: 4 tile 30gg (ordini, fatturato, portali, visite) + grafico + agenti (feature 016)
 - Command palette `Cmd+K` (cmdk)
 - Pagina `/settings` con tabs (Connessioni, Modelli AI, Organizzazione, Ecommerce)
@@ -92,12 +92,13 @@ Live su `https://studio.kyronedu.it` (Coolify + Hetzner CCX23).
 - `documentation/features/010-orders-module.md` — Modulo Ordini: lista per giorno (desc) filtrabile per data/portale/agente + ricerca (n°/cliente/Stripe), drawer dettaglio (cliente + dati fiscali + Stripe), cambio stato lavorazione (Nuovo→Spedito→Consegnato, mail "spedito" gata), responsive mobile (BFF studio-server feature 008). **Esteso 2026-07-21**: pagamento misto a tranche (Carta del Docente + residuo bonifico), campo Note, override IVA Danea, editing reale righe (qty/colore) su ordini UNCONFIRMED — vedi decision-019
 - Gotcha iOS frontend: `documentation/gotchas/gotcha-ios-bottom-sheet-dvh-not-vh.md` (drawer/notch/animazione) + `gotcha-ios-date-input-too-wide.md` (date input appearance-none)
 - `documentation/features/009-analytics-module.md` — Modulo Analytics: KPI con delta vs periodo precedente, periodi Oggi/Ieri/Settimana/Mese + rolling, chart (orario su Oggi/Ieri), mappa visitatori zoomabile con dot cliccabili, citta'/fonti/pagine/device, lead KPI (form/newsletter/registrazioni), ricerca fuzzy origini, nav sezioni mobile, report email giornaliero 09:00 (decision-017, BFF studio-server feature 005)
-- `documentation/features/017-stats-agent.md` — Modulo Statistiche (Ada): agente che scrive HogQL da solo su PostHog in sola lettura e risponde con tabella/barre/grafico in chat. Guard `assertReadOnly` + budget 40 query/ora (la Query API sta a ~120/ora per key, condivisa con `/analytics`)
+- `documentation/features/017-stats-agent.md` — Modulo Statistiche (Ada): agente che scrive HogQL da solo su PostHog in sola lettura e risponde con tabella/barre/grafico in chat. Guard `assertReadOnly` + budget 60 query/ora (la Query API sta a ~120/ora per key, condivisa con `/analytics`)
 - `documentation/features/011-price-guard-module.md` — Modulo Controlli: agente sola-lettura che verifica prezzi/sconti dei portali su Saleor prod e spiega le anomalie (motore deterministico `runPriceGuard`, l'AI non calcola nulla)
 - `documentation/features/012-vat-relief-module.md` — Modulo Agevolazioni: agente che controlla i documenti 104 (IVA agevolata 4%) caricati dal collega, li confronta con l'ordine e propone approva/rifiuta (decisione sempre umana). Nessun archivio documenti (dati sanitari, TTL 30 min in memoria)
 - `documentation/features/014-studio-shell-design.md` — design della shell: token indaco, scrivania grigia, lastra di vetro, light-only. Gotcha: blur su `::before` (i `fixed` figli), mai scrivere `-webkit-backdrop-filter` a mano, `min-h-full` e non `min-h-screen` dentro la lastra
 - `documentation/features/015-chat-ui-kit.md` — kit chat condiviso: avatar blobatar per agente (hue libera, tone bloccato 0.45), `ChatBubble` con nome+avatar per l'assistente e loader "thinking" a sfere del brand, `ChatComposer` unico per tutte e 6 le chat. Il nome dell'agente e' il seed dell'avatar
 - `documentation/features/016-studio-dashboard-cruscotto.md` — cruscotto home (tile 30gg in streaming Suspense, PostHog in `cache()`) + i 5 agenti con nome proprio (Livia, Bruno, Elsa, Ada, Vera) da `modules.ts`, pagina `/agenti`
+- `documentation/features/018-commesso-module.md` — Modulo Catalogo (Nico): pannello prodotti + drawer + chat che scrive su Saleor prod. Prezzi solo in due passaggi (piano → applica) con guardia kit e drift detection; import listino Danea
 - `documentation/features/013-risorse-module.md` — Risorse dentro Dati (`/dati/risorse`): CRUD dedicato con upload PDF + copertina, bozza/pubblicata. Andrea non usa piu' `/admin` Payload
 - Cross-progetto: `Kyron/documentation/workstreams/03-studio-standalone.md` — login OTP, preview iframe, review system
 - `documentation/diary/` — changelog locale

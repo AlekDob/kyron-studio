@@ -50,6 +50,12 @@ interface Props {
   aboveComposer?: ReactNode;
   /** Card che vivono nel pannello laterale e non vanno ripetute in chat. */
   hideCards?: string[];
+  /**
+   * Contesto della UI (es. prodotto selezionato nel pannello) appeso al
+   * messaggio in USCITA e non alla bolla: l'agente sa di cosa stiamo parlando
+   * senza che l'utente riscriva SKU e prezzi, e senza un tool in piu'.
+   */
+  selectionContext?: () => string | null;
 }
 
 export function AgentChannel({
@@ -65,6 +71,7 @@ export function AgentChannel({
   initialPrompt,
   aboveComposer,
   hideCards,
+  selectionContext,
 }: Props): ReactElement {
   const name = agentNameOf(agentId);
   const channel = name.toLowerCase();
@@ -86,7 +93,9 @@ export function AgentChannel({
     toApiContent: (text) => {
       const payload = payloadRef.current;
       payloadRef.current = null;
-      return payload ?? text;
+      if (payload) return payload;
+      const ctx = selectionContext?.();
+      return ctx ? `${text}\n\n[Contesto UI: ${ctx}]` : text;
     },
   });
 
@@ -190,7 +199,9 @@ function ChannelIntro({
   return (
     <div className="flex flex-col items-start gap-5 px-3 py-10 sm:px-4">
       <div className="flex items-center gap-4">
-        <AgentFace seed={agentId} label={name} size={64} />
+        {/* Card di apertura: la faccia grande guarda il mouse. Le facce delle
+           bolle no: sono decine e muoverle tutte fa rumore. */}
+        <AgentFace seed={agentId} label={name} size={64} gaze />
         <div className="min-w-0">
           <p className="text-base font-semibold text-[var(--color-ink)]">#{channel}</p>
           <p className="mt-1.5 text-[15px] leading-snug text-[var(--color-ink-muted)]">
