@@ -1,52 +1,82 @@
 "use client";
 
 // Riga di agenti che scorre in loop, senza fine visibile: la lista e' stampata
-// DUE volte e l'animazione trasla di meta' larghezza, cosi' quando riparte da
-// zero il primo agente e' esattamente dove stava il primo della copia. Nessun
-// salto, nessun timer JS.
+// DUE volte e quando lo scroll arriva a meta' pista torna a zero. Le due meta'
+// sono identiche, quindi il salto non si vede.
 //
-// Lo spazio tra le card e' padding DENTRO la card, non `gap`: col gap la meta'
-// esatta della pista non e' -50% (manca mezzo gap) e il loop scatta di 6px.
-//
-// Keyframes in un <style> qui e non in globals.css: le regole nuove in fondo a
-// globals.css a volte non arrivano nel chunk servito da Turbopack (gotcha
-// turbopack-stale-globals-css) e non vale un rm -rf .next per 6 righe.
-import { useRef, type ReactElement, type ReactNode } from "react";
+// Perche' scrollLeft e non un'animazione CSS con translateX: il contenitore
+// deve restare scorrevole a mano (trackpad e dito). Con translateX servirebbe
+// overflow-hidden e lo scroll dell'utente non esisterebbe.
+import { useEffect, useRef, type ReactElement, type ReactNode } from "react";
 
+/** Velocita' del giro: una card ogni ~7 secondi. */
+const SPEED_PX_S = 33;
+/** Quanto sta ferma dopo che hai smesso di scorrere. */
+const IDLE_MS = 1500;
+
+// Barra di scorrimento nascosta: la riga si muove da sola, una scrollbar che
+// va e viene fa sfarfallare il layout.
 const CSS = `
-@keyframes studio-agents-marquee {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
-}
-[data-agents-marquee] > div {
-  animation: studio-agents-marquee var(--marquee-duration) linear infinite;
-}
-[data-agents-marquee]:hover > div,
-[data-agents-marquee]:focus-within > div {
-  animation-play-state: paused;
-}
-@media (prefers-reduced-motion: reduce) {
-  [data-agents-marquee] > div { animation: none; }
-  [data-agents-marquee] { overflow-x: auto; }
-}
+[data-agents-marquee] { scrollbar-width: none; -ms-overflow-style: none; }
+[data-agents-marquee]::-webkit-scrollbar { display: none; }
 `;
 
 export function AgentsMarquee({ children }: { children: ReactNode }): ReactElement {
-  const count = useRef(0);
-  // ~7s per agente: abbastanza lento da leggere la card mentre passa.
-  count.current = Array.isArray(children) ? children.length : 1;
-  const duration = `${Math.max(count.current, 1) * 7}s`;
+  const box = useRef<HTMLDivElement>(null);
+  const hovering = useRef(false);
+  const lastPoke = useRef(0);
+
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    let raf = 0;
+    let prev = 0;
+    let pos = el.scrollLeft;
+
+    const step = (now: number): void => {
+      const dt = prev ? (now - prev) / 1000 : 0;
+      prev = now;
+      const half = el.scrollWidth / 2;
+      const mine = !hovering.current && now - lastPoke.current > IDLE_MS;
+      // Quando guida l'utente teniamo il conto ma non tocchiamo scrollLeft:
+      // scriverlo durante l'inerzia del dito la spezzerebbe.
+      pos = mine ? pos + dt * SPEED_PX_S : el.scrollLeft;
+      if (half > 0 && pos >= half) pos -= half;
+      if (mine || pos !== el.scrollLeft) el.scrollLeft = pos;
+      raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  const poke = (): void => {
+    lastPoke.current = performance.now();
+  };
 
   return (
     <>
       <style>{CSS}</style>
       <div
+        ref={box}
         data-agents-marquee
-        className="overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_40px,black_calc(100%-40px),transparent)]"
+        onPointerEnter={(e) => {
+          // Solo il mouse "sta sopra": col dito il pointerenter resta appiccicato
+          // dopo il tap e la riga non ripartirebbe piu'.
+          if (e.pointerType === "mouse") hovering.current = true;
+        }}
+        onPointerLeave={() => {
+          hovering.current = false;
+        }}
+        onWheel={poke}
+        onTouchStart={poke}
+        onTouchMove={poke}
+        className="overflow-x-auto overscroll-x-contain [mask-image:linear-gradient(to_right,transparent,black_40px,black_calc(100%-40px),transparent)]"
       >
-        <div className="flex w-max" style={{ "--marquee-duration": duration } as React.CSSProperties}>
+        <div className="flex w-max">
           {children}
-          {/* copia: serve solo a coprire il vuoto durante il ritorno a zero */}
+          {/* copia: copre il vuoto quando lo scroll torna a zero */}
           <div aria-hidden="true" className="flex">
             {children}
           </div>
