@@ -54,6 +54,16 @@ Il verificatore post-scrittura c'e' gia': Bruno (`price-guard`, feature 011) e'
 sola lettura e deterministico. Dopo un cambio prezzo su un portale si gira
 `run_all_checks`.
 
+## Gotcha: la ricerca di Saleor non funziona su questa installazione
+
+Il `filter: { search }` di Saleor si appoggia a una colonna di ricerca del database
+che su questa installazione e' vuota: `search: "iPad"` tornava zero risultati con
+`Apple iPad A16` in catalogo, mentre `where: { name: { eq } }` lo trovava.
+Per questo `listProducts` scarica la pagina di catalogo e filtra in memoria
+(`matchesSearch`: nome, slug, categoria, SKU delle varianti).
+Ceiling: vale finche' il catalogo sta sotto le 200 righe. Oltre, va ripopolato
+il search vector di Saleor.
+
 ## I tool
 
 | Tool | Cosa fa | `_ui` |
