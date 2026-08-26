@@ -13,10 +13,12 @@
 
 /* Occhi degli agenti che seguono il mouse. Sostituisce il saccade casuale di
    blobatar (`@keyframes mo-saccade` su `.mo-eyes`): le due variabili le scrive
-   AgentFace a ogni pointermove. 2.4 unita' di viewBox e' il massimo prima che
-   le pupille tocchino il bordo della faccia. */
+   AgentFace a ogni pointermove. L'ampiezza e' in unita' di viewBox (non pixel
+   di schermo): sotto le 4 unita' il movimento non si vede, sopra le 5 le
+   pupille toccano il bordo. Stessi valori di global-games. */
 @media (prefers-reduced-motion: no-preference) {
-  /* Solo la faccia in testata e' viva: le altre non reagiscono nemmeno al hover. */
+  /* Vive: la faccia in testata del canale e le card della directory agenti.
+     Le altre (bolle dei messaggi, card intro) restano ferme anche al hover. */
   .agent-still:hover {
     --mo-amp: 0;
     transform: none;
@@ -24,7 +26,7 @@
 
   .agent-gaze .mo-eyes {
     animation: none;
-    translate: calc(var(--gaze-x, 0) * 2.4px) calc(var(--gaze-y, 0) * 2.4px);
+    translate: calc(var(--gaze-x, 0) * 4.4px) calc(var(--gaze-y, 0) * 3.6px);
     transition: translate 180ms ease-out;
   }
 }

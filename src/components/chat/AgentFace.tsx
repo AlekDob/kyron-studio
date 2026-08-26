@@ -69,7 +69,7 @@ export function AgentFace({
   label?: string;
   size?: number;
   className?: string;
-  /** Solo la faccia in testata segue il mouse: le altre restano ferme. */
+  /** Testata del canale e card agente: seguono il mouse. Le altre no. */
   gaze?: boolean;
 }): ReactElement {
   const ref = useGaze(gaze);
