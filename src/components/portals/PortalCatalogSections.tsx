@@ -1,6 +1,6 @@
 "use client";
-import { useCallback, useState } from "react";
-import { Plus, X } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
+import { Plus, Search, X } from "lucide-react";
 import { Section, InfoRow } from "@/components/orders/drawer-primitives";
 import { Badge, Popover } from "@/components/ui";
 import { formatDiscount } from "@/components/chat/generative/ProductPickerRow";
@@ -8,6 +8,7 @@ import { ProductThumbnail } from "@/components/catalogo/ProductThumbnail";
 import { VariantPricesPopover } from "@/components/catalogo/VariantPricesPopover";
 import { eur, portalRows, variantPricesOn, type SalesIndex } from "@/components/catalogo/catalog-view";
 import { useCatalogIndex } from "@/components/catalogo/use-catalog-index";
+import { fuzzyFilter } from "@/lib/fuzzy";
 import type { Product } from "@/lib/products";
 import type { PortalDetail, SaleorProduct } from "@/lib/gateway";
 import { componentLabel, componentProductSlug } from "./bundle-components";
@@ -240,6 +241,7 @@ function AddProduct({
   const [open, setOpen] = useState(false);
   const [available, setAvailable] = useState<SaleorProduct[] | null>(null);
   const [busy, setBusy] = useState(false);
+  const [q, setQ] = useState("");
 
   const loadAvailable = useCallback(async () => {
     if (available) return;
@@ -258,7 +260,12 @@ function AddProduct({
     }
   };
 
-  const candidates = (available ?? []).filter((p) => !slugs.includes(p.slug));
+  // Il picker mostra i prodotti come le righe sopra: thumbnail, nome, prezzo.
+  // Prima era una lista di tutto il catalogo con lo slug in mono a destra.
+  const candidates = useMemo(() => {
+    const free = (available ?? []).filter((p) => !slugs.includes(p.slug));
+    return fuzzyFilter(free, q, (p) => p.name);
+  }, [available, slugs, q]);
 
   return (
     <div className="mt-1 flex flex-col gap-2">
@@ -270,32 +277,50 @@ function AddProduct({
         }}
         className="inline-flex w-fit items-center gap-1 rounded-full border border-dashed border-[var(--color-line)] px-2.5 py-1 text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
       >
-        <Plus className="h-3 w-3" /> Aggiungi
+        <Plus className="h-3 w-3" /> Aggiungi prodotto
       </button>
       {open && (
-        <div className="max-h-48 overflow-y-auto rounded-[var(--radius-control)] border border-[var(--color-line)] bg-[var(--color-paper-soft)]">
-          {available === null ? (
-            <p className="p-2 text-xs text-[var(--color-ink-muted)]">Caricamento...</p>
-          ) : candidates.length === 0 ? (
-            <p className="p-2 text-xs text-[var(--color-ink-muted)]">
-              Tutti i prodotti sono gia&apos; nel catalogo.
-            </p>
-          ) : (
-            candidates.map((p) => (
-              <button
-                key={p.id ?? p.slug}
-                type="button"
-                onClick={() => add(p.slug)}
-                disabled={busy}
-                className="flex w-full items-center justify-between px-2 py-1.5 text-left text-xs hover:bg-[var(--color-paper-muted)]"
-              >
-                <span className="truncate text-[var(--color-ink)]">{p.name}</span>
-                <span className="ml-2 shrink-0 font-mono text-[10px] text-[var(--color-ink-muted)]">
-                  {p.slug}
-                </span>
-              </button>
-            ))
-          )}
+        <div className="flex flex-col gap-2">
+          <div className="relative">
+            <Search
+              aria-hidden
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-ink-muted)]"
+            />
+            <input
+              autoFocus
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Cerca un prodotto"
+              className="w-full rounded-lg border border-[var(--color-line-strong)] bg-[var(--color-paper-muted)] pl-9 pr-3 py-2 text-sm text-[var(--color-ink)] outline-none transition-colors placeholder:text-[var(--color-ink-muted)] focus:border-[var(--color-ink)] focus:bg-[var(--color-paper)]"
+            />
+          </div>
+          <div className="max-h-56 overflow-y-auto overscroll-contain rounded-[var(--radius-control)] border border-[var(--color-line)] bg-[var(--color-paper-soft)]">
+            {available === null ? (
+              <p className="p-2 text-xs text-[var(--color-ink-muted)]">Caricamento...</p>
+            ) : candidates.length === 0 ? (
+              <p className="p-2 text-xs text-[var(--color-ink-muted)]">
+                {q ? `Nessun prodotto per \u201c${q}\u201d.` : "Tutti i prodotti sono gia' nel catalogo."}
+              </p>
+            ) : (
+              candidates.map((p) => (
+                <button
+                  key={p.id ?? p.slug}
+                  type="button"
+                  onClick={() => add(p.slug)}
+                  disabled={busy}
+                  className="flex w-full items-center gap-3 px-2 py-1.5 text-left hover:bg-[var(--color-paper-muted)]"
+                >
+                  <ProductThumbnail src={p.imageUrl ?? null} className="h-8 w-8 rounded-lg" />
+                  <span className="min-w-0 flex-1 truncate text-sm text-[var(--color-ink)]">
+                    {p.name}
+                  </span>
+                  <span className="shrink-0 text-sm tabular-nums text-[var(--color-ink-muted)]">
+                    {eur(p.priceEur)}
+                  </span>
+                </button>
+              ))
+            )}
+          </div>
         </div>
       )}
     </div>
