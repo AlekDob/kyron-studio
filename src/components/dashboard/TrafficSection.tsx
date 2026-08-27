@@ -6,7 +6,7 @@ import {
   type OrdersPoint,
 } from "@/components/analytics/TrafficChart";
 import { Card } from "@/components/ui";
-import { orders30d, overview30d } from "./tiles";
+import { ordersAll, overview30d } from "./tiles";
 
 // Una riga per giorno dalle righe ordine: `listOrders` le restituisce gia',
 // non serve un endpoint nuovo. I giorni senza ordini li zero-fila il chart.
@@ -23,7 +23,7 @@ function byDay(orders: Array<{ created: string; totalGross: number }>): OrdersPo
 }
 
 export async function TrafficSection() {
-  const [data, ordersRes] = await Promise.all([overview30d(), orders30d()]);
+  const [data, ordersRes] = await Promise.all([overview30d(), ordersAll()]);
 
   if (!data) {
     return (

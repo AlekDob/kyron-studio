@@ -2,7 +2,7 @@
 type: feature
 project: kyron-studio
 created: 2026-08-25
-last_verified: 2026-08-25
+last_verified: 2026-08-27
 tags: [ui, dashboard, agenti, suspense, streaming]
 ---
 
@@ -59,16 +59,40 @@ ora la sua faccia stabile legata a Livia/Bruno/Elsa/Vera (e a Nico nella chat Da
 | `tiles.tsx` | i 4 fetch, async server components |
 | `TrafficSection.tsx` | visite + ordini nello stesso `TrafficChart` |
 
-Le 4 tile, ultimi 30 giorni:
+Le 4 tile:
 
-| Tile | Fonte | Fallback |
-|---|---|---|
-| Ordini | `listOrders()` → `count` | `—` |
-| Fatturato | stessa chiamata → `totalGross` | `—` |
-| Portali attivi | `listPortals()` → `status` | `—` |
-| Visite | `getAnalyticsOverview("30d")` → `totals.visitors` | `—` |
+| Tile | Periodo | Fonte | Fallback |
+|---|---|---|---|
+| Ordini | 30 giorni | `ordersAll()` filtrato a 30gg | `—` |
+| Fatturato | **scegliibile** | stessa lettura, aggregata per periodo | `—` |
+| Portali attivi | — | `listPortals()` → `status` | `—` |
+| Visite | 30 giorni | `getAnalyticsOverview("30d")` → `totals.visitors` | `—` |
 
 Nessun endpoint nuovo, ne' lato studio ne' lato studio-server.
+
+### Fatturato con periodo scegliibile (2026-08-27)
+
+`RevenueTile.tsx` (client). Quattro pillole dentro la tile: **Sempre** (di base),
+7 giorni, 3 giorni, Oggi. La scelta si ricorda in `localStorage`, chiave
+`studio.dashboard.revenue-range`.
+
+Lo switch non fa rete: i quattro totali arrivano **gia' calcolati dal server**
+in un'unica prop, quindi cambiare periodo e' istantaneo e non ricarica nulla.
+
+- `ordersAll()` legge tutto lo storico (`from: 2020-01-01`) invece dei soli 30
+  giorni: la voce "Sempre" lo richiede comunque, e ordini-30gg + grafico si
+  ricavano filtrando in memoria. Resta **una sola** chiamata per tutta la pagina.
+- `aggregate(orders, days)` somma `totalGross` esattamente come fa il gateway
+  (`studio-server/src/features/orders/route.ts`, reduce su `totalGross`): i
+  numeri combaciano con la lista ordini. `days = null` significa tutto lo storico,
+  `0` significa oggi.
+- La chiave `localStorage` si legge in `useEffect`, non nell'initializer di
+  `useState`: il server non vede la localStorage e leggerla prima romperebbe
+  l'hydration. Costo: un frame su "Sempre" prima di passare al periodo salvato.
+- Debito segnato in codice (`ponytail:` in `tiles.tsx`): il gateway pagina a 100
+  ordini per volta, quindi lo storico che cresce allunga il primo render. Quando
+  dara' fastidio, serve un endpoint di aggregati per periodo su studio-server
+  invece di scaricare tutte le righe.
 
 ### Due scelte che contano
 
@@ -89,7 +113,7 @@ opzionale che passa solo il cruscotto. Se manca, il grafico e' identico a prima
 giorno lo fa `TrafficSection` dalle righe che `listOrders` restituisce gia'.
 
 **Ordini chiamati una volta sola.** Servono tre volte (2 tile + grafico):
-`orders30d` e' avvolto in `cache()` come l'overview.
+`ordersAll` e' avvolto in `cache()` come l'overview.
 
 **Ogni fetch in try/catch.** Se Saleor o PostHog non rispondono la tile mostra
 `—` e il resto del cruscotto resta in piedi. Verificato in locale: senza
@@ -127,6 +151,17 @@ veda in prod.
 
 - La striscia agenti e' a larghezza piena, non 8/4 come in global-games: 5 card
   agente in un terzo di colonna non ci stanno.
+- **La cella della striscia agenti vuole `min-w-0`** (fix 2026-08-27). La marquee
+  ha contenuto `w-max` largo ~2300px; senza `min-w-0` il grid prende quella
+  misura come larghezza minima della colonna e da mobile TUTTA la dashboard
+  sfora in larghezza (le tile diventano larghe 2200px e vengono tagliate). Non si
+  vede da desktop perche' la colonna e' 1/12. Misurato a 402px: colonna 2320px
+  prima, 354px dopo.
+- **In locale la dashboard non si idrata** se studio-server non raggiunge Saleor e
+  Payload: i `Suspense` restano nel fallback e i componenti client non ricevono
+  gli handler (i bottoni non rispondono). Condizione preesistente, non un bug
+  della tile: si riproduce identica su `main`. Per provare interazioni sul
+  cruscotto serve un gateway con le fonti vive.
 - Screenshot da browser headless/in background: le tile e le aree dei grafici
   risultano invisibili. Non e' un bug — con `document.hidden` l'animazione di
   mount (framer-motion e recharts) non parte e resta a opacita' zero. Nel DOM la
