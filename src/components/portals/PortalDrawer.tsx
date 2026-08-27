@@ -7,6 +7,7 @@ import { Section, InfoRow } from "@/components/orders/drawer-primitives";
 import type { PortalDetail } from "@/lib/gateway";
 import { PortalCatalogSections } from "./PortalCatalogSections";
 import { STATUS_LABEL, STATUS_VARIANT } from "./portal-status";
+import { portalShopUrl } from "./portal-links";
 
 const EURO = new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" });
 
@@ -68,6 +69,19 @@ export function PortalDrawer({
             <div className="py-5">
               <Section title="Informazioni">
                 <InfoRow label="Codice interno" value={shown.slug} />
+                <InfoRow
+                  label="Link"
+                  value={
+                    <a
+                      href={portalShopUrl(shown.slug)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="underline underline-offset-2 hover:text-[var(--color-accent)]"
+                    >
+                      kyronedu.it/shop/{shown.slug}
+                    </a>
+                  }
+                />
                 <InfoRow label="Citta'" value={addr.city || shown.city || "—"} />
                 <InfoRow
                   label="Sito"

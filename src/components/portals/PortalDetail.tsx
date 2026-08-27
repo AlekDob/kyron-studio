@@ -17,12 +17,14 @@ import {
   Plus,
   Trash2,
   User,
+  ExternalLink,
 } from "lucide-react";
 import { Pill } from "@/components/ui";
 import { Section as BaseSection } from "@/components/orders/drawer-primitives";
 import { EnablePortalButton } from "./EnablePortalButton";
 import { PortalCatalogSections } from "./PortalCatalogSections";
 import { STATUS_LABEL, STATUS_VARIANT } from "./portal-status";
+import { portalShopUrl } from "./portal-links";
 import { buildComponent, componentProductSlug, componentLabel } from "./bundle-components";
 import type { PortalDetail as PortalDetailType, SaleorProduct } from "@/lib/gateway";
 
@@ -94,6 +96,16 @@ export function PortalDetail({ portal, onChanged }: Props) {
           <code className="text-xs text-[var(--color-ink-muted)]">
             {portal.slug}
           </code>
+        </Row>
+        <Row icon={<ExternalLink className="h-4 w-4" />} label="Link">
+          <a
+            href={portalShopUrl(portal.slug)}
+            target="_blank"
+            rel="noreferrer"
+            className="truncate text-sm text-[var(--color-ink)] underline underline-offset-2 hover:text-[var(--color-accent)]"
+          >
+            kyronedu.it/shop/{portal.slug}
+          </a>
         </Row>
         <Row icon={<Globe className="h-4 w-4" />} label="Nome">
           <InlineText value={portal.nome} onSave={(v) => patchPortal({ nome: v })} />
