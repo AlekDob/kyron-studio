@@ -31,9 +31,10 @@ const VatReliefDecision = lazy(() =>
 const VatReliefCase = lazy(() =>
   import("@/components/vat-relief/VatReliefCase").then((m) => ({ default: m.VatReliefCase })),
 );
-// Modulo Statistiche (Ada): risultato di una query HogQL
-const StatsResult = lazy(() =>
-  import("./StatsResult").then((m) => ({ default: m.StatsResult })),
+// Card grafico condivisa dal core: qualunque agente le passa colonne + righe
+// e il tipo di disegno (timeline, columns, bars, pie, table).
+const Chart = lazy(() =>
+  import("@studiofuturo/studio-core").then((m) => ({ default: m.ChartCard })),
 );
 // Modulo Statistiche: campagne Meta (Ada marketing manager)
 const MetaCampaignsCard = lazy(() =>
@@ -70,9 +71,7 @@ const COMPONENT_REGISTRY: Record<
   AnomalyReport: AnomalyReport as unknown as React.ComponentType<
     Record<string, unknown>
   >,
-  StatsResult: StatsResult as unknown as React.ComponentType<
-    Record<string, unknown>
-  >,
+  Chart: Chart as unknown as React.ComponentType<Record<string, unknown>>,
   MetaCampaignsCard: MetaCampaignsCard as unknown as React.ComponentType<
     Record<string, unknown>
   >,

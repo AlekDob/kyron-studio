@@ -35,12 +35,26 @@ La Query API PostHog sta a **~120 query/ora per key**. La stessa key serve
 | Tool | Cosa fa | Budget |
 |---|---|---|
 | `overview({ range })` | KPI, serie, citta', fonti, pagine, device, per portale sui 7 range predefiniti. Riusa `getOverview`. | no |
-| `run_hogql({ query, title, view })` | Sanifica, esegue, ritorna `{columns, rows}` + descriptor `_ui` `StatsResult`. | si |
+| `run_hogql({ query, title, view })` | Sanifica, esegue, ritorna `{columns, rows}` + descriptor `_ui` `Chart`. | si |
+| `render_chart({ title, kind, columns, rows })` | Disegna dati che Ada ha gia' in mano (da `overview` o dai tool Meta) senza rifare una query. Stesso descriptor `Chart`. | no |
 | `list_portals()` | slug + nome dei portali, per tradurre "Massari" nello `school_slug`. | no |
 | `get_meta_campaigns({ range })` | spesa, impression, click, CTR, CPC per campagna dalla Marketing API. Descriptor `_ui` `MetaCampaignsCard`. | no |
 | `get_meta_campaign_detail({ campaignId, range })` | serie giornaliera di una campagna. | no |
 
-`view` e' `"table" | "bars" | "line"`: la scelta la fa Ada nel prompt.
+`view` e' uno dei cinque tipi della `ChartCard` — la scelta la fa Ada nel prompt:
+
+| kind | Quando |
+|---|---|
+| `timeline` | una serie nel tempo (una riga per giorno/ora), area chart |
+| `columns` | pochi valori da confrontare a occhio, istogramma verticale |
+| `bars` | classifica con etichette lunghe (pagine, nomi scuola), barre orizzontali |
+| `pie` | solo parti di un totale, massimo 6 fette (oltre: `bars`) |
+| `table` | quando il grafico non aggiunge niente |
+
+**Il multi-serie non ha parametri**: la card legge la prima colonna come
+etichetta e ogni colonna numerica successiva come una serie. Una query con due
+colonne di misura (`giorno | luglio | giugno`) esce come due serie sullo stesso
+grafico.
 
 ## Marketing: la correlazione non e' codice
 
@@ -101,7 +115,7 @@ Convenzioni imposte: visitatori = `count(DISTINCT person_id)`, pageview =
 | `studio/src/components/stats/StatsChat.tsx` | chat client |
 | `studio-server/src/features/stats-agent/meta-ads.ts` | client Marketing API v21 con `fetch` (niente SDK) |
 | `studio/src/components/chat/generative/MetaCampaignsCard.tsx` | tabella campagne + `BarList` sulla spesa |
-| `studio/src/components/chat/generative/StatsResult.tsx` | tabella sempre, + `BarList` o area chart |
+| `@studiofuturo/studio-core` `ChartCard` | la card grafico, condivisa con gli altri Studio (`>=0.3.0`) |
 | `studio/src/app/api/agent/stats/route.ts` | proxy SSE Next → studio-server |
 | `studio/src/components/shell/modules.ts` | entry `stats` (`Ada · Statistiche`, `kind: "agent"`) |
 
@@ -112,13 +126,31 @@ Convenzioni imposte: visitatori = `count(DISTINCT person_id)`, pageview =
 - **Colonne solo con `runHogqlWithColumns`**: `runHogql` ritorna solo `results`
   (array di array). Senza i nomi, tabella e grafico non hanno etichette.
   `runHogql` e' rimasto intatto: lo usano 8 query di `/analytics`.
-- **`StatsResult` indovina la colonna valore**: prende l'ultima colonna numerica
-  della prima riga (le query aggregate mettono la dimensione a sinistra). Le
-  colonne con nome tipo `fatturato/revenue/total/eur` sono formattate in EUR.
+- **La card decide dal nome colonna, non dai dati**: le colonne che si chiamano
+  `fatturato/revenue/total/eur/importo/...` sono formattate in EUR, le altre
+  come interi. Rinominare una colonna nella query cambia la formattazione.
+- **`ResponsiveContainer` senza `initialDimension` resta vuoto** (recharts 3 +
+  Next): il primo measure post-hydration torna -1. Gia' gestito nel core.
+- **`chartTool` esiste anche nel core** (`@studiofuturo/studio-core/server`), ma
+  studio-server lo ridichiara in locale: il descriptor e' 4 righe e la
+  dipendenza dal core costerebbe l'auth GitHub Packages nella sua build Docker
+  (il `Dockerfile` di `studio` ha `ARG NPM_TOKEN`, quello di `studio-server` no).
 - **`POSTHOG_API_KEY` resta lato server**: mai esposta al frontend (decision-017).
+
+## Perche' Coro resta col suo `render_plot`
+
+Coro (`Personal/wacebot`) ha gia' i grafici, con un tool `render_plot` su
+Observable Plot. Non condivide niente con questo codice: gli agenti sono righe
+di database (`model Bot`), il runtime e' il `pi` agent, i tool stanno in un
+array globale JSON Schema e i grafici non passano dal tool result ma da un
+blocco messaggio `{kind:"chart"}`. Portare Ada su Coro e' un progetto a se':
+il punto d'innesto e' il seam `AgentRuntime`/`ConnectorTool` in
+`packages/adapter-kit`, e i tool di Ada leggono PostHog e Meta di Kyron.
 
 ## Cosa resta fuori
 
 - cache dei risultati HogQL di Ada (il budget orario basta)
 - report email di Ada (c'e' gia' quello analytics delle 09:00)
 - query preferite salvate: si vede dopo qualche settimana d'uso quali sono
+- `render_chart` sugli altri agenti (Nico, Bruno, Elsa, Ordini): il tool e'
+  pronto, e' una riga per agente quando serve davvero
