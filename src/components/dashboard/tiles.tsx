@@ -5,14 +5,14 @@ import { cache } from "react";
 import { listOrders, listPortals, type OrdersResponse } from "@/lib/gateway";
 import { getAnalyticsOverview, type AnalyticsOverview } from "@/lib/analytics";
 import { fmtInt } from "@/components/analytics/format";
-import { StatTile, TilePill } from "./StatTile";
+import { StatTile, TilePill, TILE_CLASS } from "./StatTile";
 import {
-  RevenueTile,
+  BucketTile,
+  type BucketRange,
   type RevenueBucket,
-  type RevenueRange,
-} from "./RevenueTile";
+} from "./BucketTile";
+import { VisitsTileClient } from "./VisitsTileClient";
 
-const DAYS = 30;
 /** Prima data possibile: nessun ordine Kyron e' anteriore. */
 const FROM_ALL = "2020-01-01";
 
@@ -42,7 +42,7 @@ export const ordersAll = cache(
 );
 
 /** Giorni indietro per periodo; 0 = oggi, null = tutto lo storico. */
-const RANGE_DAYS: Record<RevenueRange, number | null> = {
+const RANGE_DAYS: Record<BucketRange, number | null> = {
   all: null,
   "30d": 30,
   "7d": 7,
@@ -73,27 +73,19 @@ function aggregate(
 /** Ordini + fatturato vengono dalla stessa lettura: una sola, due tile. */
 export async function OrdersTiles() {
   const res = await ordersAll();
-  const last30 = res ? aggregate(res.orders, DAYS) : null;
   const buckets = res
     ? (Object.fromEntries(
-        (Object.keys(RANGE_DAYS) as RevenueRange[]).map((k) => [
+        (Object.keys(RANGE_DAYS) as BucketRange[]).map((k) => [
           k,
           aggregate(res.orders, RANGE_DAYS[k]),
         ]),
-      ) as Record<RevenueRange, RevenueBucket>)
+      ) as Record<BucketRange, RevenueBucket>)
     : null;
 
   return (
     <>
-      <StatTile
-        index={0}
-        className="min-w-0 lg:col-span-3"
-        tone="indaco"
-        label="Ordini 30 giorni"
-        value={last30 === null ? "—" : fmtInt(last30.count)}
-        caption="tutti i portali scuola"
-      />
-      <RevenueTile buckets={buckets} />
+      <BucketTile metric="count" buckets={buckets} />
+      <BucketTile metric="gross" buckets={buckets} />
     </>
   );
 }
@@ -113,7 +105,7 @@ export async function PortalsTile() {
   return (
     <StatTile
       index={2}
-      className="min-w-0 lg:col-span-3"
+      className={TILE_CLASS}
       tone="ambra"
       label="Portali attivi"
       value={live === null ? "—" : fmtInt(live)}
@@ -141,15 +133,11 @@ export async function VisitsTile() {
   const data = await overview30d();
 
   return (
-    <StatTile
-      index={3}
-      className="min-w-0 lg:col-span-3"
-      tone="rosa"
-      label="Visite 30 giorni"
-      value={data ? fmtInt(data.totals.visitors) : "—"}
-      caption="sito e shop, visitatori unici"
-      footer={
-        data ? <TilePill>{fmtInt(data.totals.pageviews)} pagine viste</TilePill> : null
+    <VisitsTileClient
+      initial={
+        data
+          ? { visitors: data.totals.visitors, pageviews: data.totals.pageviews }
+          : null
       }
     />
   );

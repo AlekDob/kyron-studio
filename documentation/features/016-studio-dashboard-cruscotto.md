@@ -57,26 +57,45 @@ ora la sua faccia stabile legata a Livia/Bruno/Elsa/Vera (e a Nico nella chat Da
 | `DashboardMosaic.tsx` | griglia 12 colonne, i `Suspense` |
 | `StatTile.tsx` | tile client con tilt 3D (port di `GradientTile` di global-games) |
 | `tiles.tsx` | i 4 fetch, async server components |
+| `RangePicker.tsx` | selettore di periodo (popover) + `useStoredRange` |
+| `BucketTile.tsx` | tile Ordini e Fatturato: stessa lettura, due metriche |
+| `VisitsTileClient.tsx` | tile Visite: periodi PostHog on demand |
 | `TrafficSection.tsx` | visite + ordini nello stesso `TrafficChart` |
 
 Le 4 tile:
 
 | Tile | Periodo | Fonte | Fallback |
 |---|---|---|---|
-| Ordini | 30 giorni | `ordersAll()` filtrato a 30gg | `—` |
-| Fatturato | **scegliibile** | stessa lettura, aggregata per periodo | `—` |
-| Portali attivi | — | `listPortals()` → `status` | `—` |
-| Visite | 30 giorni | `getAnalyticsOverview("30d")` → `totals.visitors` | `—` |
+| Ordini | **scegliibile** (30gg di base) | `ordersAll()` aggregato per periodo | `—` |
+| Fatturato | **scegliibile** (Sempre di base) | stessa lettura, aggregata per periodo | `—` |
+| Portali attivi | — (conteggio di adesso) | `listPortals()` → `status` | `—` |
+| Visite | **scegliibile** (30gg di base) | `getAnalyticsOverview(range)` → `totals.visitors` | `—` |
 
 Nessun endpoint nuovo, ne' lato studio ne' lato studio-server.
 
-### Fatturato con periodo scegliibile (2026-08-27)
+### Periodo scegliibile su tre tile (2026-08-27)
 
-`RevenueTile.tsx` (client). Quattro pillole dentro la tile: **Sempre** (di base),
-7 giorni, 3 giorni, Oggi. La scelta si ricorda in `localStorage`, chiave
-`studio.dashboard.revenue-range`.
+Il periodo si scegle da un **popover** (`RangePicker`) e non da una fila di
+pastiglie: la fila andava a capo e faceva la tile piu' alta delle altre tre.
+Fuori dal giro c'e' solo **Portali attivi**: e' un conteggio di adesso, un
+periodo non vuol dire niente.
 
-Lo switch non fa rete: i quattro totali arrivano **gia' calcolati dal server**
+- **Ordini** e **Fatturato** (`BucketTile`, una sola componente per due
+  metriche): Sempre / 30 / 7 / 3 giorni / Oggi. Scelta ricordata in
+  `localStorage` (`studio.dashboard.orders-range`, `...revenue-range`).
+- **Visite** (`VisitsTileClient`): Oggi / 7 / 30 / 90 giorni — i periodi che
+  PostHog sa fare (non c'e' un "sempre", il tetto e' 90 giorni). Ogni periodo e'
+  una query, quindi si chiede al volo con la server action `visitsTotalsAction`
+  (`src/app/(authed)/actions.ts`, ritorna solo visitatori + pagine viste) e il
+  client tiene in cache i periodi gia' chiesti. Il periodo delle visite **non**
+  si ricorda tra un caricamento e l'altro di proposito: ricordarlo costerebbe una
+  query PostHog in piu' a ogni apertura della dashboard, e la Query API sta a
+  ~120 query/ora condivise con `/analytics`.
+
+Gotcha collegato: i bottoni dentro le tile si attivano su `pointerdown`, non su
+`click` — vedi `gotchas/gotcha-click-perso-su-card-con-tilt.md`.
+
+Su ordini e fatturato lo switch non fa rete: i totali di tutti i periodi arrivano **gia' calcolati dal server**
 in un'unica prop, quindi cambiare periodo e' istantaneo e non ricarica nulla.
 
 - `ordersAll()` legge tutto lo storico (`from: 2020-01-01`) invece dei soli 30

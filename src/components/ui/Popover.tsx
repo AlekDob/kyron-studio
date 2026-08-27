@@ -52,7 +52,18 @@ export function Popover({
         type="button"
         aria-label={label}
         aria-expanded={Boolean(box)}
-        onClick={toggle}
+        // Apre su pointerdown e non su click: dentro le tile del cruscotto il
+        // trigger vive in un pannello con tilt 3D + `whileHover` (y/scale), che
+        // lo sposta sotto il cursore tra la pressione e il rilascio. mousedown e
+        // mouseup cadono su due nodi diversi e il `click` va all'antenato
+        // comune — al bottone non arriva mai. Da mobile (nessun hover, bersaglio
+        // fermo) funzionava. Un solo evento = immune al bersaglio in movimento.
+        onPointerDown={toggle}
+        // Tastiera: Enter/Spazio non emettono pointerdown, e un click vero da
+        // puntatore qui arriverebbe doppio (detail > 0).
+        onClick={(e) => {
+          if (e.detail === 0) toggle();
+        }}
         className="cursor-pointer"
       >
         {trigger}
@@ -62,7 +73,10 @@ export function Popover({
           <>
             <div
               aria-hidden
-              onClick={() => setBox(null)}
+              // pointerdown come il trigger: se chiudesse sul `click`, il click
+              // di coda della pressione che ha aperto il popover (l'overlay e'
+              // gia' montato quando arriva) lo richiuderebbe subito.
+              onPointerDown={() => setBox(null)}
               className="fixed inset-0 z-[60]"
             />
             <div

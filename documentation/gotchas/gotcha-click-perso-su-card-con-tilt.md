@@ -1,0 +1,34 @@
+---
+type: gotcha
+project: kyron-studio
+created: 2026-08-27
+last_verified: 2026-08-27
+tags: [frontend, framer-motion, click, popover, dashboard]
+---
+# Il click si perde sui bottoni dentro una card con tilt/hover
+
+**Sintomo**: un bottone dentro una tile del cruscotto (`StatTile`, ex
+`GradientTile` di global-games) non risponde al click da desktop. Da mobile lo
+stesso bottone funziona. Nessun errore in console, l'handler non parte.
+
+**Causa**: la tile ha `whileHover={{ y: -8, scale: 1.02 }}` (transizione 500ms) e
+un tilt 3D a molla su `rotateX/rotateY` guidato da `pointermove`. Su desktop il
+pannello e' quindi **in movimento** mentre premi: `mousedown` cade sul bottone,
+`mouseup` 100ms dopo cade su un altro nodo, e per specifica il browser manda il
+`click` all'**antenato comune** dei due — non al bottone. Piu' il bottone e'
+piccolo e in basso (dove la rotazione sposta di piu'), piu' e' facile perderlo.
+Su mobile non c'e' hover e non c'e' pointermove prima del tap: bersaglio fermo,
+tap ok. Da qui il "da mobile funzionava", che sembra un problema di hydration e
+non lo e'.
+
+**Fix** (`src/components/ui/Popover.tsx`): aprire su `onPointerDown` invece di
+`onClick`. Un solo evento = immune al bersaglio in movimento. Due accortezze:
+
+- l'overlay di chiusura deve chiudere anch'esso su `pointerdown`, altrimenti il
+  `click` di coda della stessa pressione (l'overlay e' gia' montato quando
+  arriva) richiude subito il popover;
+- tenere `onClick` filtrato con `e.detail === 0` per la tastiera: Enter/Spazio
+  non emettono `pointerdown`.
+
+**Regola**: dentro un contenitore che si muove al hover, i controlli si attivano
+su `pointerdown`. Vale per qualunque bottone dentro `StatTile`/`GlassCard`.

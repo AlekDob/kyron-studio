@@ -27,6 +27,9 @@ const GRADIENTS = {
 
 export type TileTone = keyof typeof GRADIENTS;
 
+/** Posto della tile nel mosaico: min-w-0 o la marquee sotto allarga la colonna. */
+export const TILE_CLASS = "min-w-0 lg:col-span-3";
+
 export function StatTile({
   tone,
   label,
