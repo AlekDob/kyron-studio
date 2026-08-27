@@ -34,3 +34,9 @@ non lo e'.
 
 **Regola**: dentro un contenitore che si muove al hover, i controlli si attivano
 su `pointerdown`. Vale per qualunque bottone dentro `StatTile`/`GlassCard`.
+
+Il popover si chiude anche su `scroll` in capture. Su Chrome quello include lo
+`scrollLeft` del marquee agenti (60 fps). Da desktop il menu flickera: apre e
+chiude al frame dopo. Safari iOS non propaga quello scroll a `window`, quindi
+da iPhone "funzionava". Il close ignora gli scroll il cui target non contiene
+il trigger.

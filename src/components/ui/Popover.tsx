@@ -27,10 +27,20 @@ export function Popover({
   useEffect(() => {
     if (!box) return;
     const close = () => setBox(null);
-    window.addEventListener("scroll", close, true);
+    const onScroll = (e: Event) => {
+      const t = e.target;
+      if (!(t instanceof Node) || !ref.current) return;
+      // Il marquee agenti scrive scrollLeft a ogni frame. Chrome notifica
+      // quello in capture su window; Safari iOS no. Non sposta il trigger.
+      if (t !== document && t !== document.documentElement && !t.contains(ref.current)) {
+        return;
+      }
+      close();
+    };
+    window.addEventListener("scroll", onScroll, true);
     window.addEventListener("resize", close);
     return () => {
-      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("scroll", onScroll, true);
       window.removeEventListener("resize", close);
     };
   }, [box]);
