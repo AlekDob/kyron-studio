@@ -20,7 +20,7 @@ export function KitThumbnail({
 
   return (
     <div
-      className={`relative shrink-0 overflow-hidden rounded-lg ring-1 ring-[var(--color-line)] ${
+      className={`relative shrink-0 overflow-hidden rounded-lg p-1 ring-1 ring-[var(--color-line)] ${
         hero ? "bg-white" : "border border-dashed border-[var(--color-line)] bg-white/50"
       } ${className}`}
     >
@@ -30,8 +30,8 @@ export function KitThumbnail({
           src={hero}
           alt=""
           loading="lazy"
-          className={`absolute left-0 top-0 h-full object-contain p-px ${
-            heroFull ? "w-full" : "w-[58%]"
+          className={`absolute inset-1 right-auto h-[calc(100%-0.5rem)] object-contain ${
+            heroFull ? "w-[calc(100%-0.5rem)]" : "w-[56%]"
           }`}
         />
       ) : (
@@ -47,8 +47,12 @@ export function KitThumbnail({
           src={url}
           alt=""
           loading="lazy"
-          className={`absolute right-0 w-[42%] object-contain p-px ${
-            side.length === 1 ? "top-0 h-full" : i === 0 ? "top-0 h-1/2" : "bottom-0 h-1/2"
+          className={`absolute right-1 w-[40%] object-contain ${
+            side.length === 1
+              ? "top-1 h-[calc(100%-0.5rem)]"
+              : i === 0
+                ? "top-1 h-[calc(50%-0.25rem)]"
+                : "bottom-1 h-[calc(50%-0.25rem)]"
           }`}
         />
       ))}
