@@ -5,11 +5,13 @@
    dentro il pacchetto vengono eliminate e la UI arriva senza stile. */
 @source "../../node_modules/@studiofuturo/studio-core/dist";
 
-/* #region debug: isolate full-screen animated filter */
+/* Aurora dello sfondo (studio-core: `hue-rotate` animato su .studio-gradient-layer)
+   spenta di proposito: e' un filtro su un layer a schermo pieno, ricalcolato a
+   ogni frame per sempre, e sopra c'e' la lastra di vetro col blur che lo ripaga
+   tutto. Costo continuo per un cambio di tinta che non si nota. */
 .studio-gradient-layer {
   animation: none !important;
 }
-/* #endregion */
 
 /* Occhi degli agenti che seguono il mouse. Sostituisce il saccade casuale di
    blobatar (`@keyframes mo-saccade` su `.mo-eyes`): le due variabili le scrive
@@ -28,5 +30,27 @@
     animation: none;
     translate: calc(var(--gaze-x, 0) * 4.4px) calc(var(--gaze-y, 0) * 3.6px);
     transition: translate 180ms ease-out;
+  }
+
+  /* Il resto delle animazioni di blobatar (`motion.css`) resta spento.
+     Sono 5 cicli `infinite` per faccia che girano sempre: `mo-shake` ogni
+     112ms, `mo-rock` che anima una custom property ereditata (invalida lo
+     stile di tutto il sottoalbero a ogni frame), `mo-wrap`, `mo-breathe`,
+     `mo-bob`. Su un SVG girano sul main thread, e qui non si vedono: lo
+     sguardo lo muove AgentFace scrivendo --gaze-x/--gaze-y.
+     Il blink lo riaccendiamo: e' l'unico che fa sembrare viva la faccia.
+     !important perche' l'ordine tra questo file e `motion.css` (importato da
+     un modulo JS) non e' garantito e le specificita' pareggiano. */
+  .agent-gaze,
+  .agent-gaze *,
+  .agent-still,
+  .agent-still * {
+    animation: none !important;
+  }
+
+  /* Scritta per intero, non solo animation-name: il reset qui sopra azzera
+     anche durata e iterazioni. */
+  .agent-gaze .mo-eye > * {
+    animation: mo-blink 4.8s linear infinite !important;
   }
 }

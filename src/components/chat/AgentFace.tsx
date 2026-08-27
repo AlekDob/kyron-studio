@@ -23,6 +23,11 @@ let py = 0;
 /** -1..1 quanto il mouse sta a destra/sotto rispetto al centro della faccia. */
 function aim(): void {
   frame = 0;
+  // Prima TUTTE le letture, poi TUTTE le scritture. Alternandole, ogni
+  // getBoundingClientRect dopo una setProperty costringe il browser a
+  // ricalcolare il layout subito: con N facce sono N layout per movimento del
+  // mouse, e sotto c'e' la lastra col blur da ridisegnare.
+  const gaze: Array<[SVGSVGElement, number, number]> = [];
   for (const el of faces) {
     const r = el.getBoundingClientRect();
     if (!r.width) continue;
@@ -30,8 +35,11 @@ function aim(): void {
     // al massimo, sotto sembra che l'occhio scatti.
     const x = (px - (r.left + r.width / 2)) / (r.width * 3);
     const y = (py - (r.top + r.height / 2)) / (r.height * 3);
-    el.style.setProperty("--gaze-x", String(Math.max(-1, Math.min(1, x))));
-    el.style.setProperty("--gaze-y", String(Math.max(-1, Math.min(1, y))));
+    gaze.push([el, Math.max(-1, Math.min(1, x)), Math.max(-1, Math.min(1, y))]);
+  }
+  for (const [el, x, y] of gaze) {
+    el.style.setProperty("--gaze-x", String(x));
+    el.style.setProperty("--gaze-y", String(y));
   }
 }
 

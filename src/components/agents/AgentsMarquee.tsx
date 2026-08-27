@@ -47,8 +47,28 @@ export function AgentsMarquee({ children }: { children: ReactNode }): ReactEleme
       if (mine || pos !== el.scrollLeft) el.scrollLeft = pos;
       raf = requestAnimationFrame(step);
     };
-    raf = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(raf);
+
+    // Il giro parte solo quando la riga e' a schermo e si ferma quando esce.
+    // Senza questo il loop scrive scrollLeft 60 volte al secondo per sempre, e
+    // ogni scrittura ridisegna la lastra col blur che sta sotto il contenuto —
+    // anche con la dashboard scrollata via o la riga fuori dal viewport.
+    const io = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        if (!raf) {
+          prev = 0; // senza reset il primo dt vale tutta la pausa e la riga salta
+          raf = requestAnimationFrame(step);
+        }
+        return;
+      }
+      cancelAnimationFrame(raf);
+      raf = 0;
+    });
+    io.observe(el);
+
+    return () => {
+      io.disconnect();
+      cancelAnimationFrame(raf);
+    };
   }, []);
 
   const poke = (): void => {
