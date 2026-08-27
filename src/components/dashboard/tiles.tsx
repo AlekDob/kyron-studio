@@ -44,6 +44,7 @@ export const ordersAll = cache(
 /** Giorni indietro per periodo; 0 = oggi, null = tutto lo storico. */
 const RANGE_DAYS: Record<RevenueRange, number | null> = {
   all: null,
+  "30d": 30,
   "7d": 7,
   "3d": 3,
   today: 0,

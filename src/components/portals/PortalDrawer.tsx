@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Store } from "lucide-react";
 import { Drawer, DrawerHeader } from "@studiofuturo/studio-core";
 import { Pill } from "@/components/ui";
+import { useIsMobile } from "@/lib/use-is-mobile";
 import { Section, InfoRow } from "@/components/orders/drawer-primitives";
 import type { PortalDetail } from "@/lib/gateway";
 import { PortalCatalogSections } from "./PortalCatalogSections";
@@ -11,9 +12,9 @@ import { portalShopUrl } from "./portal-links";
 
 const EURO = new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" });
 
-// Il portale visto dal catalogo: sola lettura, sopra il drawer prodotto. Usa il
-// Drawer di studio-core (non quello scritto a mano del catalogo) perche' fa
-// portal su body con z-index proprio: e' l'unico che si impila davvero sopra.
+// Il portale visto dal catalogo: sola lettura, sopra il drawer prodotto. Si
+// impila perche' il Drawer di studio-core fa portal su body: aperto per ultimo,
+// il suo nodo e' l'ultimo del body e sta sopra (stesso z-index per tutti).
 export function PortalDrawer({
   slug,
   onClose,
@@ -23,6 +24,7 @@ export function PortalDrawer({
 }) {
   const [portal, setPortal] = useState<PortalDetail | null>(null);
   const [error, setError] = useState(false);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (!slug) return;
@@ -43,7 +45,12 @@ export function PortalDrawer({
   const addr = (shown?.schoolAddress ?? {}) as Record<string, string>;
 
   return (
-    <Drawer open={Boolean(slug)} onClose={onClose} side="right" width={440}>
+    <Drawer
+      open={Boolean(slug)}
+      onClose={onClose}
+      side={isMobile ? "bottom" : "right"}
+      width={440}
+    >
       <DrawerHeader
         eyebrow="Portale"
         title={shown?.nome ?? "Caricamento..."}

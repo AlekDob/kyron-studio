@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, type ReactElement } from "react";
-import { Card } from "@/components/ui";
+import { Button, Card, Input } from "@/components/ui";
+import { sendDdtTestMailAction } from "@/app/(authed)/agenti/actions";
 
 // Piano di invio della comunicazione ai clienti dei DDT caricati. Non manda
 // niente: mostra chi riceve, cosa riceve e cosa e' gia' partito. L'invio vero
@@ -17,6 +18,10 @@ interface Recipient {
 }
 
 export interface DdtMailPlanProps {
+  /** Indirizzo dell'operatore loggato: precompila il campo della prova. */
+  testTo?: string;
+  /** Serve al server per ri-renderizzare la mail di prova. */
+  importId?: string;
   plan: {
     filename: string;
     campaignId: string;
@@ -33,9 +38,31 @@ export interface DdtMailPlanProps {
   };
 }
 
-export function DdtMailPlan({ plan }: DdtMailPlanProps): ReactElement {
+export function DdtMailPlan({ plan, testTo, importId }: DdtMailPlanProps): ReactElement {
   const [preview, setPreview] = useState(0);
+  const [to, setTo] = useState(testTo ?? "");
+  const [sending, setSending] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
   const shown = plan.previews[preview];
+
+  // Manda il documento della scheda selezionata: la prova e' esattamente la
+  // mail che l'operatore sta guardando.
+  async function sendTest(): Promise<void> {
+    if (!importId || sending) return;
+    setSending(true);
+    setNote(null);
+    const res = await sendDdtTestMailAction({
+      importId,
+      campaignId: plan.campaignId,
+      subject: plan.campaign.subject,
+      heading: plan.campaign.heading,
+      paragraphs: plan.campaign.paragraphs,
+      previewIndex: preview,
+      to,
+    });
+    setNote(res.ok ? `Prova inviata a ${res.to}.` : (res.error ?? "Invio fallito."));
+    setSending(false);
+  }
 
   return (
     <Card padding="md">
@@ -100,11 +127,54 @@ export function DdtMailPlan({ plan }: DdtMailPlanProps): ReactElement {
         </div>
       )}
 
+      {importId && shown && (
+        <div className="mt-3 border-t border-[var(--color-line)] pt-3">
+          <p className="text-xs font-medium text-[var(--color-ink)]">Invia una prova</p>
+          <div className="mt-1 flex items-center gap-2">
+            <Input
+              type="email"
+              value={to}
+              onChange={(e) => setTo(e.target.value)}
+              placeholder="tu@kyronedu.it"
+              className="flex-1"
+            />
+            <Button type="button" onClick={() => void sendTest()} disabled={!to || sending}>
+              {sending ? "Invio..." : "Invia una prova"}
+            </Button>
+          </div>
+          <p className="mt-1 text-xs text-[var(--color-ink-muted)]">
+            {note ?? `Una mail sola, con i dati di ${shown.email}. Non intacca l'invio vero.`}
+          </p>
+        </div>
+      )}
+
       {plan.recipients.length > 0 && (
-        <p className="mt-3 text-xs text-[var(--color-ink-muted)]">
-          Primi destinatari: {plan.recipients.slice(0, 5).map((r) => r.customerName || r.email).join(", ")}
-          {plan.recipients.length > 5 && ` e altri ${plan.recipients.length - 5}`}
-        </p>
+        <div className="mt-3 border-t border-[var(--color-line)] pt-3">
+          <p className="text-xs font-medium text-[var(--color-ink)]">
+            {plan.recipients.length} destinatari · {plan.matched} agganciati a un ordine
+          </p>
+          <div className="mt-2 max-h-56 overflow-auto rounded-[var(--radius-card)] border border-[var(--color-line)]">
+            {plan.recipients.map((r) => (
+              <div
+                key={r.docKey}
+                className="flex items-center gap-3 border-b border-[var(--color-line)] px-3 py-1.5 text-xs last:border-b-0"
+              >
+                <span className="w-40 shrink-0 truncate text-[var(--color-ink)]">
+                  {r.customerName || "—"}
+                </span>
+                <span className="min-w-0 flex-1 truncate text-[var(--color-ink-soft)]">
+                  {r.email}
+                </span>
+                <span className="w-24 shrink-0 truncate text-[var(--color-ink-muted)]">
+                  {r.orderNumber ? `Ordine ${r.orderNumber}` : "nessun ordine"}
+                </span>
+                <span className="w-24 shrink-0 truncate text-[var(--color-ink-muted)]">
+                  {r.portalSlug}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
     </Card>
   );

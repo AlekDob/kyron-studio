@@ -15,7 +15,8 @@ export function Popover({
   trigger: ReactNode;
   /** aria-label del bottone: il trigger e' spesso solo un pallino colorato */
   label: string;
-  children: ReactNode;
+  /** Funzione se il contenuto deve chiudere il popover (es. una scelta). */
+  children: ReactNode | ((close: () => void) => ReactNode);
 }) {
   const ref = useRef<HTMLButtonElement>(null);
   const [box, setBox] = useState<{ top: number; left: number; up: boolean } | null>(null);
@@ -73,7 +74,7 @@ export function Popover({
                 transform: box.up ? "translateY(-100%)" : undefined,
               }}
             >
-              {children}
+              {typeof children === "function" ? children(() => setBox(null)) : children}
             </div>
           </>,
           document.body,

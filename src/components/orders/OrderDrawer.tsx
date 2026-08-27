@@ -1,6 +1,7 @@
 "use client";
-import { useEffect, useState } from "react";
-import { X, ExternalLink } from "lucide-react";
+import { ExternalLink } from "lucide-react";
+import { Drawer, DrawerHeader } from "@studiofuturo/studio-core";
+import { useIsMobile } from "@/lib/use-is-mobile";
 import type { OrderRow } from "@/lib/gateway";
 import { EditableLines } from "./EditableLines";
 import { OrderComms } from "./OrderComms";
@@ -30,9 +31,9 @@ interface OrderDrawerProps {
   onVatReliefValidated: (id: string, status: string) => void;
 }
 
-// Drawer dettaglio ordine. Desktop: scivola da DESTRA. Mobile: bottom sheet.
-// Riusa il pattern animato di AnnotationsDrawer (transform inline + media query
-// inietta il translateX per desktop, non esprimibile inline in Tailwind v4).
+// Drawer dettaglio ordine: bottom sheet su mobile, da destra su desktop.
+// Il Drawer di studio-core porta animazione, Esc, scroll-lock e cache dei figli
+// durante l'uscita: qui non serve piu' nessuno stato locale.
 export function OrderDrawer({
   order,
   onClose,
@@ -45,200 +46,127 @@ export function OrderDrawer({
   onPaymentTotalSaved,
   onVatReliefValidated,
 }: OrderDrawerProps) {
-  // render = presenza nel DOM; show = posizione "aperto". Lo sfasamento di un
-  // frame tra i due fa partire l'animazione di entrata (Mac e iPhone).
-  const [render, setRender] = useState(false);
-  const [show, setShow] = useState(false);
-  const [current, setCurrent] = useState<OrderRow | null>(null);
-
-  useEffect(() => {
-    if (order) {
-      setCurrent(order);
-      setRender(true);
-      return;
-    }
-    setShow(false);
-    const t = setTimeout(() => setRender(false), 320); // attende l'uscita
-    return () => clearTimeout(t);
-  }, [order]);
-
-  // Animazione di ENTRATA: monta a riposo (show=false), poi al frame successivo
-  // (doppio rAF, affidabile su iOS Safari) passa ad aperto → il transform anima.
-  useEffect(() => {
-    if (!render) return;
-    let raf2 = 0;
-    const raf1 = requestAnimationFrame(() => {
-      raf2 = requestAnimationFrame(() => setShow(true));
-    });
-    return () => {
-      cancelAnimationFrame(raf1);
-      cancelAnimationFrame(raf2);
-    };
-  }, [render]);
-
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    if (render) window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [render, onClose]);
-
-  if (!render || !current) return null;
+  const isMobile = useIsMobile();
 
   return (
-    <div
-      aria-hidden={!show}
-      className="fixed inset-0 z-50"
-      style={{ pointerEvents: show ? "auto" : "none" }}
+    <Drawer
+      open={Boolean(order)}
+      onClose={onClose}
+      side={isMobile ? "bottom" : "right"}
+      width={440}
     >
-      <div
-        onClick={onClose}
-        aria-hidden
-        className="absolute inset-0 bg-black/30 backdrop-blur-[2px] transition-opacity duration-300"
-        style={{ opacity: show ? 1 : 0 }}
-      />
-      <aside
-        role="dialog"
-        aria-label={`Ordine ${current.number}`}
-        className="absolute flex flex-col bg-[var(--color-paper)] shadow-2xl
-                   inset-x-0 bottom-0 rounded-t-2xl
-                   max-h-[calc(100dvh-env(safe-area-inset-top)-3rem)]
-                   lg:inset-y-4 lg:right-4 lg:left-auto lg:inset-x-auto
-                   lg:w-[440px] lg:max-h-none lg:rounded-2xl
-                   lg:border lg:border-[var(--color-line)]"
-        style={{
-          transform: show ? "translateY(0)" : "translateY(100%)",
-          transition: "transform 320ms cubic-bezier(0.32, 0.72, 0, 1)",
-        }}
-        data-order-drawer
-      >
-        <DrawerTransform open={show} />
-        <DrawerHeader order={current} onClose={onClose} />
-        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-6 py-5 flex flex-col gap-6">
-          <Section title="Stato lavorazione">
-            <StatusSelector order={current} onStatusChange={onStatusChange} />
-          </Section>
+      {order && (
+        <>
+          <DrawerHeader
+            eyebrow="Ordine"
+            title={`#${order.number}`}
+            meta={`${formatDate(order.created)} · ${formatTime(order.created)}`}
+            onClose={onClose}
+            closeLabel="Chiudi"
+          />
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-6 py-5 flex flex-col gap-6">
+            <Section title="Stato lavorazione">
+              <StatusSelector order={order} onStatusChange={onStatusChange} />
+            </Section>
 
-          <Section title="Cliente">
-            <InfoRow label="Nome" value={current.customerName || "—"} />
-            <InfoRow label="Email" value={current.userEmail || "—"} />
-            {current.customerPhone && (
-              <InfoRow label="Telefono" value={current.customerPhone} />
-            )}
-            {current.customerAddress && (
-              <InfoRow label="Indirizzo" value={current.customerAddress} />
-            )}
-            {/* Dati studente (portali scuola, feature 028). Mostrati se presenti. */}
-            {current.studentName && (
-              <InfoRow label="Studente" value={current.studentName} />
-            )}
-            {current.studentClass && (
-              <InfoRow label="Classe" value={current.studentClass} />
-            )}
-          </Section>
+            <Section title="Cliente">
+              <InfoRow label="Nome" value={order.customerName || "—"} />
+              <InfoRow label="Email" value={order.userEmail || "—"} />
+              {order.customerPhone && (
+                <InfoRow label="Telefono" value={order.customerPhone} />
+              )}
+              {order.customerAddress && (
+                <InfoRow label="Indirizzo" value={order.customerAddress} />
+              )}
+              {/* Dati studente (portali scuola, feature 028). Mostrati se presenti. */}
+              {order.studentName && (
+                <InfoRow label="Studente" value={order.studentName} />
+              )}
+              {order.studentClass && (
+                <InfoRow label="Classe" value={order.studentClass} />
+              )}
+            </Section>
 
-          <FiscalSection order={current} />
+            <FiscalSection order={order} />
 
-          <Section title="Pagamento">
-            <div className="flex items-center justify-between gap-3">
-              <StatusBadges order={current} />
-              <span className="font-medium tabular-nums">
-                {/* Importo annotato prevale sul totale reale (allineamento Danea). */}
-                {formatEur(current.paymentAmountOverride ?? current.totalGross)}
-              </span>
-            </div>
-            {current.pspReference && <StripeLink order={current} />}
-            {/* Allinea il totale (es. IVA 22% -> 4%): reale su bozza, annotazione su confermato. */}
-            <PaymentTotalSection order={current} onSaved={onPaymentTotalSaved} />
-          </Section>
+            <Section title="Pagamento">
+              <div className="flex items-center justify-between gap-3">
+                <StatusBadges order={order} />
+                <span className="font-medium tabular-nums">
+                  {/* Importo annotato prevale sul totale reale (allineamento Danea). */}
+                  {formatEur(order.paymentAmountOverride ?? order.totalGross)}
+                </span>
+              </div>
+              {order.pspReference && <StripeLink order={order} />}
+              {/* Allinea il totale (es. IVA 22% -> 4%): reale su bozza, annotazione su confermato. */}
+              <PaymentTotalSection order={order} onSaved={onPaymentTotalSaved} />
+            </Section>
 
-          {/* Feature 002: richiesta IVA agevolata 4% dal checkout, da validare. */}
-          {current.vatReliefStatus && (
-            <Section title="IVA agevolata 4%">
-              <VatReliefSection
-                order={current}
-                onValidated={onVatReliefValidated}
-                onAmountSaved={onPaymentTotalSaved}
+            {/* Feature 002: richiesta IVA agevolata 4% dal checkout, da validare. */}
+            {order.vatReliefStatus && (
+              <Section title="IVA agevolata 4%">
+                <VatReliefSection
+                  order={order}
+                  onValidated={onVatReliefValidated}
+                  onAmountSaved={onPaymentTotalSaved}
+                />
+              </Section>
+            )}
+
+            {order.paymentMethod === "teacher-card" && (
+              <Section title="Carta del Docente">
+                <TeacherCardBlock
+                  order={order}
+                  onAcquired={onTeacherCardAcquired}
+                  onResidualPaid={onResidualPaid}
+                />
+              </Section>
+            )}
+
+            {order.paymentMethod === "bank-transfer" && (
+              <Section title="Bonifico">
+                <BankTransferBlock order={order} onPaid={onBankTransferPaid} />
+              </Section>
+            )}
+
+            <Section title="Portale">
+              <InfoRow
+                label="Scuola"
+                value={
+                  <PortalLink name={order.portalName} url={order.portalUrl} />
+                }
+              />
+              <InfoRow label="Agente" value={agentName(order.agent)} />
+              <InfoRow
+                label="Cod. mecc."
+                value={order.codiceMeccanografico || "—"}
               />
             </Section>
-          )}
 
-          {current.paymentMethod === "teacher-card" && (
-            <Section title="Carta del Docente">
-              <TeacherCardBlock
-                order={current}
-                onAcquired={onTeacherCardAcquired}
-                onResidualPaid={onResidualPaid}
-              />
+            {/* Prodotti (Parte C2 + decision-019): EditableLines sceglie la modalita'
+                — modifica reale (ordine bozza), cambio colore come annotazione (ordine
+                confermato non spedito) o sola lettura (spedito/chiuso). */}
+            <Section title="Prodotti">
+              <EditableLines order={order} />
             </Section>
-          )}
 
-          {current.paymentMethod === "bank-transfer" && (
-            <Section title="Bonifico">
-              <BankTransferBlock order={current} onPaid={onBankTransferPaid} />
+            {/* Parte C1: override IVA per l'export Danea (non tocca Saleor). */}
+            <Section title="IVA (Danea)">
+              <VatOverrideSection order={order} onSaved={onVatSaved} />
             </Section>
-          )}
 
-          <Section title="Portale">
-            <InfoRow
-              label="Scuola"
-              value={
-                <PortalLink name={current.portalName} url={current.portalUrl} />
-              }
-            />
-            <InfoRow label="Agente" value={agentName(current.agent)} />
-            <InfoRow
-              label="Cod. mecc."
-              value={current.codiceMeccanografico || "—"}
-            />
-          </Section>
+            {/* Parte B: nota libera interna + FootNotes Danea. */}
+            <Section title="Comunicazioni inviate">
+              <OrderComms orderNumber={order.number} />
+            </Section>
 
-          {/* Prodotti (Parte C2 + decision-019): EditableLines sceglie la modalita'
-              — modifica reale (ordine bozza), cambio colore come annotazione (ordine
-              confermato non spedito) o sola lettura (spedito/chiuso). */}
-          <Section title="Prodotti">
-            <EditableLines order={current} />
-          </Section>
-
-          {/* Parte C1: override IVA per l'export Danea (non tocca Saleor). */}
-          <Section title="IVA (Danea)">
-            <VatOverrideSection order={current} onSaved={onVatSaved} />
-          </Section>
-
-          {/* Parte B: nota libera interna + FootNotes Danea. */}
-          <Section title="Comunicazioni inviate">
-            <OrderComms orderNumber={current.number} />
-          </Section>
-
-          <Section title="Note">
-            <NoteSection order={current} onSaved={onNoteSaved} />
-          </Section>
-        </div>
-      </aside>
-    </div>
-  );
-}
-
-function DrawerHeader({ order, onClose }: { order: OrderRow; onClose: () => void }) {
-  return (
-    <header className="flex items-start justify-between border-b border-[var(--color-line)] px-6 py-5">
-      <div>
-        <p className="eyebrow">Ordine</p>
-        <p className="mt-1 text-lg font-medium tabular-nums">#{order.number}</p>
-        <p className="text-xs text-[var(--color-ink-muted)]">
-          {formatDate(order.created)} · {formatTime(order.created)}
-        </p>
-      </div>
-      <button
-        type="button"
-        onClick={onClose}
-        aria-label="Chiudi"
-        className="rounded-full p-1.5 text-[var(--color-ink-muted)] hover:bg-[var(--color-ink)]/5 hover:text-[var(--color-ink)]"
-      >
-        <X size={16} />
-      </button>
-    </header>
+            <Section title="Note">
+              <NoteSection order={order} onSaved={onNoteSaved} />
+            </Section>
+          </div>
+        </>
+      )}
+    </Drawer>
   );
 }
 
@@ -276,19 +204,5 @@ function StripeLink({ order }: { order: OrderRow }) {
       </span>
       <ExternalLink size={14} className="text-[var(--color-ink-muted)]" />
     </a>
-  );
-}
-
-// Desktop: il drawer entra da DESTRA (translateX(100%) → 0);
-// mobile resta translateY (bottom sheet, gestito inline).
-function DrawerTransform({ open }: { open: boolean }) {
-  return (
-    <style>{`
-      @media (min-width: 1024px) {
-        [data-order-drawer] {
-          transform: ${open ? "translateX(0)" : "translateX(100%)"} !important;
-        }
-      }
-    `}</style>
   );
 }

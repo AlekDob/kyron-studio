@@ -7,7 +7,7 @@ import type { Product } from "@/lib/products";
 import type { PortalDetail, SaleorProduct } from "@/lib/gateway";
 import { KitThumbnail } from "./KitThumbnail";
 import { InlineText, InlinePrice } from "./inline-fields";
-import { buildComponent, componentLabel, componentProductSlug } from "./bundle-components";
+import { buildComponent, componentCapacity, componentLabel, componentProductSlug } from "./bundle-components";
 
 type Bundle = PortalDetail["bundles"][number];
 
@@ -39,7 +39,13 @@ export function PortalKitRow({
   // rimuovere un componente non deve toccare la `selection` degli altri (era il
   // bug che riscriveva tutto a variantSku=slug). Brain: gotcha-portal-kit-slug-mismatch.
   const components = (bundle.components ?? []) as Array<Record<string, unknown>>;
-  const images = components
+  // Hero = il componente multi-taglio (l'iPad/Mac usa selection by-attribute):
+  // l'ordine dei componenti e' casuale, senza questo finisce in cover un
+  // alimentatore. Se non c'e', il primo.
+  const heroFirst = [...components].sort(
+    (a, b) => Number(Boolean(componentCapacity(b))) - Number(Boolean(componentCapacity(a))),
+  );
+  const images = heroFirst
     .map((c) => bySlug.get(componentProductSlug(c))?.imageUrl ?? null)
     .filter((u): u is string => Boolean(u));
 

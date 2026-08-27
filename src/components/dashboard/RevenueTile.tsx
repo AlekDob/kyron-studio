@@ -1,12 +1,16 @@
 "use client";
 // La tile fatturato e' l'unica con un periodo scegliibile: "sempre" di base,
-// piu' 7 giorni / 3 giorni / oggi. I quattro totali arrivano gia' calcolati dal
-// server (una sola lettura ordini), quindi lo switch e' istantaneo e offline.
+// piu' 30 / 7 / 3 giorni e oggi. I totali arrivano gia' calcolati dal server
+// (una sola lettura ordini), quindi lo switch e' istantaneo e offline.
+// Il periodo si scegle da un popover e non da una fila di pastiglie: la fila
+// andava a capo e faceva la tile piu' alta delle altre tre del mosaico.
 import { useEffect, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { fmtEur } from "@/components/analytics/format";
+import { Popover } from "@/components/ui";
 import { StatTile, TilePill } from "./StatTile";
 
-export type RevenueRange = "all" | "7d" | "3d" | "today";
+export type RevenueRange = "all" | "30d" | "7d" | "3d" | "today";
 
 export interface RevenueBucket {
   count: number;
@@ -15,6 +19,7 @@ export interface RevenueBucket {
 
 export const REVENUE_RANGES: Array<{ key: RevenueRange; label: string }> = [
   { key: "all", label: "Sempre" },
+  { key: "30d", label: "30 giorni" },
   { key: "7d", label: "7 giorni" },
   { key: "3d", label: "3 giorni" },
   { key: "today", label: "Oggi" },
@@ -57,24 +62,37 @@ export function RevenueTile({
       value={bucket ? fmtEur(bucket.gross) : "—"}
       caption="totale lordo incassato"
       footer={
-        <div className="flex flex-col gap-2">
-          <div className="flex flex-wrap gap-1">
-            {REVENUE_RANGES.map((r) => (
-              <button
-                key={r.key}
-                type="button"
-                onClick={() => pick(r.key)}
-                aria-pressed={r.key === range}
-                className={
-                  r.key === range
-                    ? "rounded-full bg-[var(--color-ink)] px-2.5 py-1 text-[11px] font-medium text-white"
-                    : "rounded-full bg-white/60 px-2.5 py-1 text-[11px] font-medium text-[var(--color-ink-soft)] backdrop-blur transition-colors hover:bg-white/90"
-                }
-              >
-                {r.label}
-              </button>
-            ))}
-          </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Popover
+            label="Scegli il periodo del fatturato"
+            trigger={
+              <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-ink)] px-2.5 py-1 text-[11px] font-medium text-white">
+                {REVENUE_RANGES.find((r) => r.key === range)?.label}
+                <ChevronDown size={12} />
+              </span>
+            }
+          >
+            {(close) => (
+              <div className="flex flex-col">
+                {REVENUE_RANGES.map((r) => (
+                  <button
+                    key={r.key}
+                    type="button"
+                    onClick={() => {
+                      pick(r.key);
+                      close();
+                    }}
+                    aria-pressed={r.key === range}
+                    className={`rounded-lg px-2.5 py-1.5 text-left text-sm transition-colors hover:bg-[var(--studio-hover-surface)] ${
+                      r.key === range ? "font-medium" : "text-[var(--color-ink-soft)]"
+                    }`}
+                  >
+                    {r.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </Popover>
           {bucket && bucket.count > 0 && (
             <TilePill>scontrino medio {fmtEur(bucket.gross / bucket.count)}</TilePill>
           )}

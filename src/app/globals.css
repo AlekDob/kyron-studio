@@ -88,3 +88,52 @@
   border-radius: 12px;
   border: 1px solid var(--color-line);
 }
+
+/* ---------------------------------------------------------------------------
+   Mobile: la lastra della shell si apre in basso (radius solo in alto).
+   La lastra e' `main.studio-content-inset` (studio-core DesktopShell), dentro
+   un wrapper con `px-2 py-4`. Scoped a `main` di proposito: /login usa la
+   stessa classe su un div e deve restare una card chiusa.
+   --------------------------------------------------------------------------- */
+@media (max-width: 1023px) {
+  /* Il fondo scompare sotto il bordo schermo: via il py-4 inferiore del
+     wrapper (il pacchetto non espone una prop per farlo). */
+  div:has(> main.studio-content-inset) {
+    padding-bottom: 0;
+  }
+
+  main.studio-content-inset {
+    border-radius: 1.25rem 1.25rem 0 0;
+    /* --studio-content-shadow e' un ring: un box-shadow non si taglia per lato.
+       Si rifa' `inset` solo su top/left/right, cosi' il bordo inferiore non
+       disegna la linea di chiusura. */
+    box-shadow:
+      inset 0 1px 0 rgb(15 18 26 / 7%),
+      inset 1px 0 0 rgb(15 18 26 / 7%),
+      inset -1px 0 0 rgb(15 18 26 / 7%);
+  }
+}
+
+/* Bottom sheet su iOS: `vh` e' il layout viewport, la sheet supera il viewport
+   visibile e il suo header finisce sotto la notch. Vedi
+   documentation/gotchas/gotcha-ios-bottom-sheet-dvh-not-vh.md.
+   ponytail: override dall'esterno perche' studio-core 0.3.0 scrive
+   `height: min(88vh, 720px)` INLINE (da qui l'!important). Fix vero = `dvh`
+   dentro il Drawer del pacchetto, la prossima volta che lo si tocca. */
+@media (max-width: 1023px) {
+  aside[role="dialog"][aria-modal="true"] {
+    height: min(88dvh, 720px) !important;
+    max-height: calc(100dvh - env(safe-area-inset-top) - 1.5rem) !important;
+  }
+}
+
+/* `.page-enter` (studio-core) anima transform con fill `both`: a animazione
+   finita il transform resta una MATRICE identita', non `none` — e una matrice,
+   anche identita', rende il nodo containing block per i figli position:fixed.
+   Risultato: ogni drawer/modale sotto (authed) si ancorava al wrapper di pagina
+   invece che alla finestra (tagliato, e scorreva con la lista).
+   `backwards`: il fill vale solo prima della partenza, dopo la fine il
+   transform torna `none`. Lo stato finale coincide col naturale, niente salto. */
+.page-enter {
+  animation-fill-mode: backwards;
+}
