@@ -132,6 +132,26 @@ scansiona node_modules.
 `login/page.tsx`, `portals/PortalDetail.tsx`,
 `chat/generative/AnomalyReport.tsx`, 7 pagine con `min-h-screen`
 
+## Mobile: la lastra e' aperta sotto (2026-08-27)
+
+Sotto i 1024px la lastra non e' piu' una card chiusa: radius solo in alto
+(`1.25rem 1.25rem 0 0`) e scende fino al bordo inferiore dello schermo. Il radius
+in basso tagliava il contenuto e faceva sembrare la pagina finita.
+
+Due dettagli non ovvi, entrambi in `globals.css` (la lastra vive dentro
+`@studiofuturo/studio-core`, installato dal registry: l'unico seam e' l'override):
+
+- il fondo scompare togliendo il `padding-bottom` del wrapper, raggiunto con
+  `div:has(> main.studio-content-inset)` perche' il pacchetto non espone una prop;
+- la cornice e' un `box-shadow` ring e **un box-shadow non si taglia per lato**:
+  va rifatta con tre `inset` su top/left/right.
+
+Scoped a `main` di proposito: `/login` usa `studio-content-inset` su un `div` e
+deve restare una card chiusa. Gli 8px di stacco laterale (`px-2`) restano.
+
+Nello stesso blocco c'e' l'override dell'altezza delle bottom sheet in `dvh`:
+vedi [[gotcha-ios-bottom-sheet-dvh-not-vh]].
+
 ## Marchio della sidebar
 
 `shell/StudioMark.tsx`, portato da global-games: sfera indaco 28px con cinque

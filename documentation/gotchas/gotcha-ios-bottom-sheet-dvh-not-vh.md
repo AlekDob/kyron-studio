@@ -2,7 +2,7 @@
 type: gotcha
 project: studio
 created: 2026-06-14
-last_verified: 2026-06-14
+last_verified: 2026-08-27
 tags: [ios, safari, drawer, bottom-sheet, vh, dvh, notch, animation, css]
 ---
 
@@ -40,4 +40,28 @@ useEffect(() => { if (!render) return;
 Se si monta direttamente con lo stato "aperto", il browser non registra il cambio di
 transform e l'apertura non anima (anima solo la chiusura).
 
-Riferimento: `src/components/orders/OrderDrawer.tsx`. Compagno: [[gotcha-ios-date-input-too-wide]].
+## Dove vive oggi (2026-08-27)
+Tutti i drawer dello Studio usano il `Drawer` di `@studiofuturo/studio-core` (portal su
+body, `side="bottom"` su mobile, doppio rAF gia' dentro il pacchetto). Ma **studio-core
+0.3.0 scrive l'altezza inline in `vh`**: `height: min(88vh, 720px)` + classe
+`max-h-[95vh]`. Essendo inline non si sovrascrive da classe: l'override sta in
+`src/app/globals.css` con `!important`, scoped a `@media (max-width: 1023px)`:
+
+```css
+aside[role="dialog"][aria-modal="true"] {
+  height: min(88dvh, 720px) !important;
+  max-height: calc(100dvh - env(safe-area-inset-top) - 1.5rem) !important;
+}
+```
+
+Il fix vero e' passare a `dvh` dentro il `Drawer` del pacchetto: da fare la prossima volta
+che si tocca studio-core, poi si cancella l'override.
+
+## Verifica: le animazioni non partono in browser headless
+In una WebView in background (`document.hidden === true`) il doppio rAF non gira e la
+transizione resta bloccata sul valore iniziale: il drawer sembra "non aprirsi" e resta
+sotto il bordo schermo con `translate: 0 100%`. Non e' un bug: si controlla la geometria
+finale con `offsetTop` / computed `top`, non con `getBoundingClientRect()`.
+
+Riferimenti: `src/app/globals.css`, `node_modules/@studiofuturo/studio-core/dist/drawer/`.
+Compagni: [[gotcha-ios-date-input-too-wide]], [[gotcha-drawer-non-portalato-dietro-overlay]].

@@ -48,8 +48,40 @@ arrivava fino al vero `</Total>` restituendo spazzatura. Ora e'
 3. `plan_ddt_mailing` — non manda niente. Torna la card `DdtMailPlan` con oggetto,
    testo, conteggi e 3 anteprime reali (in `<iframe sandbox>`: l'HTML della mail
    non entra nel DOM di Studio). Il testo si corregge riscrivendo il brief in chat.
-4. `send_ddt_mailing` — vuole `confirm: true`. Manda al massimo 50 destinatari per
+4. `send_ddt_test_mail` — una mail sola, per default all'operatore loggato.
+5. `send_ddt_mailing` — vuole `confirm: true`. Manda al massimo 50 destinatari per
    chiamata e torna `remaining`: il cursore E' l'idempotenza, niente job in background.
+
+## La card di anteprima
+
+Il problema vero non era la card: era che Nico non la chiamava mai. Scriveva la
+bozza a mano nel messaggio ("Oggetto: ... Titolo: ... Paragrafi: 1. 2. 3.") e
+chiedeva il permesso di preparare un piano che non scrive niente. Ora il prompt lo
+vieta: appena il brief e' chiaro, `plan_ddt_mailing` e basta. La conferma serve
+solo per l'invio vero.
+
+Dentro `DdtMailPlan`:
+
+- **Anteprime** — 3 schede, la mail renderizzata davvero in `<iframe sandbox>`.
+- **Box destinatari** — lista scrollabile di *tutti* i pendenti: nome, email,
+  "Ordine N" o "nessun ordine" (i DDT senza `pi_` Stripe, la mail parte lo stesso),
+  portale. Intestazione col conteggio e quanti sono agganciati a un ordine.
+- **Invia una prova** — campo email precompilato con l'indirizzo dell'operatore
+  loggato (`testTo` viaggia nei props `_ui`, non dentro il piano: il modello non
+  lo vede). Manda la scheda di anteprima selezionata. Esito inline.
+
+## La mail di prova
+
+`sendDdtTestMail` in `ddt-mailing.ts`, esposta da `POST /api/v1/orders/ddt-test-mail`
+(**`requireAdmin`**: le altre rotte di quel file leggono, questa manda mail).
+
+- Salta di proposito `DDT_MAIL_ENABLED` e l'allowlist: la prova serve proprio quando
+  l'invio di massa e' ancora spento.
+- **Non tocca `email_log`** e non scrive sull'ordine: non consuma il claim.
+- Il client manda solo il testo, mai HTML: il server ri-renderizza con
+  `planDdtMailing`. `to` e' un solo indirizzo, validato con regex — e' l'unico
+  confine rimasto, quindi ha il suo test.
+- Oggetto prefissato `[PROVA] `, log server-side di chi ha mandato a chi.
 
 ## Le guardie
 

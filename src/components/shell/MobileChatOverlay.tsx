@@ -15,7 +15,7 @@ interface Props {
 
 /**
  * Pannello dell'agente su mobile: un FAB che apre una bottom sheet.
- * Brain: drawer-non-portalato-dietro-overlay — il Drawer di studio-core fa
+ * Brain: gotcha-drawer-non-portalato-dietro-overlay — il Drawer di studio-core fa
  * portal su body con z-index proprio (70/80), quindi i drawer di dettaglio
  * aperti da dentro il pannello si impilano SOPRA e non ci finiscono dietro.
  * Su desktop non monta affatto: il pannello vive nell'`aside` della pagina.

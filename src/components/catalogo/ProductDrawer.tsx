@@ -9,7 +9,7 @@ import { PortalPrices } from "./PortalPrices";
 import { productSales, type ChannelNames, type SalesIndex } from "./catalog-view";
 
 // Drawer dettaglio prodotto: bottom sheet su mobile, da destra su desktop.
-// Brain: drawer-non-portalato-dietro-overlay — prima era un `fixed z-50`
+// Brain: gotcha-drawer-non-portalato-dietro-overlay — prima era un `fixed z-50`
 // scritto a mano dentro la pagina e finiva DIETRO il pannello mobile
 // dell'agente (z-60): il tap sulla riga sembrava non fare niente. Il Drawer di
 // studio-core fa portal su body e cachea i figli durante l'uscita, quindi qui

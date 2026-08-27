@@ -238,3 +238,16 @@ import circolare.
 
 Le comunicazioni ai clienti dai DDT Danea hanno una feature loro:
 `019-ddt-comms.md`.
+
+## Mobile: il dettaglio prodotto si apriva dietro il pannello (2026-08-27)
+
+Su iPhone toccare una riga del pannello di Nico non sembrava fare niente: il
+`ProductDrawer` era un `fixed z-50` renderizzato nell'albero della pagina, mentre
+il pannello agenti (`MobileChatOverlay`) era un portal su body a `zIndex 60`. Il
+dettaglio si apriva **dietro** — chiudendo il pannello con la X ricompariva.
+
+Ora `ProductDrawer` usa il `Drawer` di `@studiofuturo/studio-core` (portal su
+body, z 70/80 uguali per tutti i drawer, `side="bottom"` su mobile), quindi
+l'ordine di apertura decide l'impilamento: lista → dettaglio → portale. Sparito
+tutto lo stato di animazione locale, il `Drawer` cachea i figli durante l'uscita
+(158 → 94 righe). Dettagli: [[gotcha-drawer-non-portalato-dietro-overlay]].
