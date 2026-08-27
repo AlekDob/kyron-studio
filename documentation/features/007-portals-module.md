@@ -2,7 +2,7 @@
 type: feature
 project: kyron-studio
 created: 2026-05-27
-last_verified: 2026-06-22
+last_verified: 2026-08-27
 tags: [portals, onboarding, crud, logo-upload, workstream-04, requested-by, capacita, varianti, outside-bundle, duplicate]
 ---
 
@@ -51,13 +51,47 @@ L'agente resta per onboarding e operazioni "intelligenti", la UI per micro-fix r
 | Informazioni | nome / sito / cod. MIUR | PUT `/api/portals/[slug]` |
 | Indirizzo | via / CAP / citta' / provincia | PUT `/api/portals/[slug]` |
 | Spedizione | toggle `shipToSchool` | PUT `/api/portals/[slug]` |
-| Catalogo | rimuovi chip / Aggiungi prodotto (dropdown Saleor) | PUT `/api/portals/[slug]/catalog` |
+| Prodotti | rimuovi riga / Aggiungi prodotto (dropdown Saleor) | PUT `/api/portals/[slug]/catalog` |
 | Bundle | nome / prezzo / aggiungi-rimuovi componenti | PUT `/api/portals/[slug]/bundles/[bundleSlug]` |
 | Bundle | rimuovi kit (cestino, doppio click conferma) | DELETE `/api/portals/[slug]/bundles/[bundleSlug]` |
 
 **Componenti inline**: `InlineText` (click → input → Enter/✓ salva, Esc annulla),
-`InlinePrice` (parsing virgola/punto), `CatalogEditor`, `BundleCard` con dropdown
-lazy-loaded da `/api/portals/_catalog` (Saleor passthrough).
+`InlinePrice` (parsing virgola/punto), `BundleCard` con dropdown lazy-loaded da
+`/api/portals/_catalog` (Saleor passthrough).
+
+## Sezioni catalogo condivise + drawer (2026-08-27, FUT-82)
+
+`PortalCatalogSections.tsx` e' **un solo componente per due host**: nel pannello
+portali e' editabile (arriva `onSaveCatalog`, compaiono la X e "Aggiungi"), nel
+drawer del catalogo e' read-only. Prima i prodotti del portale erano chip con lo
+slug nudo (`applecare-plus-ipad-a16`): ora ogni riga ha thumbnail, nome vero,
+prezzo **su quel canale** e pezzi venduti. Le sezioni separate "Tagli
+pubblicati" e "Sconti" sono spariti: sono badge di riga.
+
+Nessun endpoint nuovo. Prezzo per canale e vendite arrivano da `/api/products` +
+`/api/products/insights` via `catalogo/use-catalog-index.ts` (una fetch per
+sessione, Promise in cache a livello di modulo) e da
+`portalRows(product, {}, sales)` di `catalog-view.ts`, che restituisce prezzo,
+flag "da X" e vendite in un colpo.
+
+**Non mostrato**: il valore reale del voucher kit. Vive su Saleor e lo legge solo
+Price Guard; servirebbe un endpoint che componga `fetchProduct` +
+`readVoucherDiscount`.
+
+`PortalDrawer.tsx` apre il portale **sopra** il drawer prodotto del catalogo
+(click sul nome del portale nella sezione "Portali"). E' il primo drawer del repo
+che usa `Drawer`/`DrawerHeader` di `@studiofuturo/studio-core`: fa `createPortal`
+su `document.body` con `z-[80]`, mentre i tre drawer scritti a mano (catalogo,
+ordini, anteprima) sono `fixed z-50` inline nell'albero e condividono un `<style>`
+con selettore globale, quindi due istanze si pesterebbero. Il bottone col nome del
+portale e' **fratello** del popover prezzi, non un wrapper della riga: il popover
+e' un bottone e annidarli sarebbe HTML invalido.
+
+File: `portals/PortalCatalogSections.tsx`, `portals/PortalDrawer.tsx`,
+`portals/bundle-components.ts`, `portals/portal-status.ts`,
+`catalogo/use-catalog-index.ts`. `PortalDetail.tsx` ha perso le card con bordo
+(ora `divide-y` + `Section` di `orders/drawer-primitives`) e 250 righe
+(840 → 589, sotto la soglia dei 600).
 
 **Refresh post-edit**: `PortalsWorkspace.handleRefreshDetail()` viene passato come
 `onChanged` al PortalDetail. Dopo ogni mutation refetcha sia il portale aperto
