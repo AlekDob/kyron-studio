@@ -16,11 +16,13 @@ export function ProductDrawer({
   onClose,
   names,
   sales,
+  onOpenPortal,
 }: {
   product: Product | null;
   onClose: () => void;
   names: ChannelNames;
   sales: SalesIndex;
+  onOpenPortal?: (slug: string) => void;
 }) {
   const [render, setRender] = useState(false);
   const [show, setShow] = useState(false);
@@ -138,7 +140,12 @@ export function ProductDrawer({
 
           <div className="py-5">
             <Section title={`Portali (${current.channels.length})`}>
-              <PortalPrices product={current} names={names} sales={sales} />
+              <PortalPrices
+                product={current}
+                names={names}
+                sales={sales}
+                onOpenPortal={onOpenPortal}
+              />
             </Section>
           </div>
 

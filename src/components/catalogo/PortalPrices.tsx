@@ -21,10 +21,13 @@ export function PortalPrices({
   product,
   names,
   sales,
+  onOpenPortal,
 }: {
   product: Product;
   names: ChannelNames;
   sales: SalesIndex;
+  /** apre il drawer del portale sopra questo */
+  onOpenPortal?: (slug: string) => void;
 }) {
   const [q, setQ] = useState("");
   const all = useMemo(() => portalRows(product, names, sales), [product, names, sales]);
@@ -61,7 +64,17 @@ export function PortalPrices({
             className="studio-row-in flex items-baseline justify-between gap-3 rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-[var(--studio-glass-surface)]"
             style={{ animationDelay: `${Math.min(i, 8) * 20}ms` }}
           >
-            <span className="min-w-0 truncate text-[var(--color-ink)]">{r.name}</span>
+            {onOpenPortal ? (
+              <button
+                type="button"
+                onClick={() => onOpenPortal(r.slug)}
+                className="min-w-0 truncate text-left text-[var(--color-ink)] underline-offset-2 hover:underline"
+              >
+                {r.name}
+              </button>
+            ) : (
+              <span className="min-w-0 truncate text-[var(--color-ink)]">{r.name}</span>
+            )}
             <span className="shrink-0 text-right tabular-nums">
               {r.priceFrom ? (
                 <VariantPricesPopover

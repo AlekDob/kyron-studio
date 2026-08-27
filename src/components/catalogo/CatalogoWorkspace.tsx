@@ -10,6 +10,7 @@ import { agentNameOf } from "@/components/shell/modules";
 import type { CatalogInsights, Product } from "@/lib/products";
 import { ProductsPanel } from "./ProductsPanel";
 import { ProductDrawer } from "./ProductDrawer";
+import { PortalDrawer } from "@/components/portals/PortalDrawer";
 import { channelNames } from "./catalog-view";
 
 const AGENT = agentNameOf("catalogo");
@@ -62,6 +63,8 @@ export function CatalogoWorkspace({
   // intero: l'utente ha appena visto il risultato di una ricerca.
   const [fromAgent, setFromAgent] = useState(false);
   const [insights, setInsights] = useState<CatalogInsights | null>(null);
+  // Portale aperto sopra il drawer prodotto (click sul nome in "Portali").
+  const [portalSlug, setPortalSlug] = useState<string | null>(null);
   const [loading, setLoading] = useState(initialProducts.length === 0);
   const selectedRef = useRef<Product | null>(null);
   selectedRef.current = selected;
@@ -165,7 +168,9 @@ export function CatalogoWorkspace({
         onClose={() => setSelected(null)}
         names={names}
         sales={sales}
+        onOpenPortal={setPortalSlug}
       />
+      <PortalDrawer slug={portalSlug} onClose={() => setPortalSlug(null)} />
     </div>
   );
 }

@@ -19,32 +19,12 @@ import {
   User,
 } from "lucide-react";
 import { Pill } from "@/components/ui";
-import { formatDiscount } from "@/components/chat/generative/ProductPickerRow";
+import { Section as BaseSection } from "@/components/orders/drawer-primitives";
 import { EnablePortalButton } from "./EnablePortalButton";
-import type {
-  PortalDetail as PortalDetailType,
-  SaleorProduct,
-  BundleComponent,
-} from "@/lib/gateway";
-
-type CatalogDiscount = { slug: string; kind: "percent" | "eur"; value: number };
-
-const STATUS_LABEL: Record<string, string> = {
-  draft: "Bozza",
-  review: "Da rivedere",
-  approved: "Approvato",
-  onboarded: "Live",
-};
-
-const STATUS_VARIANT: Record<
-  string,
-  "neutral" | "warning" | "accent" | "tertiary"
-> = {
-  draft: "neutral",
-  review: "warning",
-  approved: "accent",
-  onboarded: "tertiary",
-};
+import { PortalCatalogSections } from "./PortalCatalogSections";
+import { STATUS_LABEL, STATUS_VARIANT } from "./portal-status";
+import { buildComponent, componentProductSlug, componentLabel } from "./bundle-components";
+import type { PortalDetail as PortalDetailType, SaleorProduct } from "@/lib/gateway";
 
 const EURO = new Intl.NumberFormat("it-IT", {
   style: "currency",
@@ -88,7 +68,7 @@ export function PortalDetail({ portal, onChanged }: Props) {
   );
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="divide-y divide-[var(--color-line)]">
       <Section title="Pubblicazione">
         <EnablePortalButton
           slug={portal.slug}
@@ -192,73 +172,7 @@ export function PortalDetail({ portal, onChanged }: Props) {
         )}
       </Section>
 
-      <Section
-        title={`Catalogo (${
-          portal.catalog.visibleSlugs.length +
-          (portal.catalog.visibleVariants?.length ?? 0)
-        } prodotti)`}
-      >
-        <CatalogEditor
-          visibleSlugs={portal.catalog.visibleSlugs}
-          discounts={portal.catalog.productDiscounts ?? []}
-          onSave={patchCatalog}
-        />
-      </Section>
-
-      {(portal.catalog.visibleVariants?.length ?? 0) > 0 ? (
-        <Section title={`Tagli pubblicati (${portal.catalog.visibleVariants!.length})`}>
-          <div className="flex flex-wrap gap-1.5">
-            {portal.catalog.visibleVariants!.map((v) => (
-              <span
-                key={`${v.productSlug}-${v.value}`}
-                className="rounded-[var(--radius-control)] border border-[var(--color-line)] px-2 py-0.5 text-xs text-[var(--color-ink-muted)]"
-              >
-                {v.productSlug} ({v.value})
-              </span>
-            ))}
-          </div>
-        </Section>
-      ) : null}
-
-      {(portal.catalog.productDiscounts?.length ?? 0) > 0 ? (
-        <Section title={`Sconti (${portal.catalog.productDiscounts!.length})`}>
-          <div className="flex flex-col gap-1">
-            {portal.catalog.productDiscounts!.map((d, i) => (
-              <div
-                key={`${d.slug}-${d.capacity ?? ""}-${i}`}
-                className="flex items-center justify-between text-xs"
-              >
-                <span className="text-[var(--color-ink)]">
-                  {d.slug}
-                  {d.capacity ? (
-                    <span className="text-[var(--color-ink-muted)]"> ({d.capacity})</span>
-                  ) : null}
-                </span>
-                <span className="tabular-nums text-[var(--color-action)]">
-                  {d.kind === "percent" ? `-${d.value}%` : `→ ${EURO.format(d.value)}`}
-                </span>
-              </div>
-            ))}
-          </div>
-        </Section>
-      ) : null}
-
-      <Section title="Vendita fuori dal bundle">
-        <div className="flex flex-col gap-1 text-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-[var(--color-ink-muted)]">Prodotti hero (iPad/Mac/iPhone)</span>
-            <span className="text-[var(--color-ink)]">
-              {portal.catalog.heroOutsideBundle ? "Sì" : "No"}
-            </span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-[var(--color-ink-muted)]">Accessori</span>
-            <span className="text-[var(--color-ink)]">
-              {portal.catalog.accessoriesOutsideBundle ? "Sì" : "No"}
-            </span>
-          </div>
-        </div>
-      </Section>
+      <PortalCatalogSections portal={portal} onSaveCatalog={patchCatalog} />
 
       <Section title={`Kit (${portal.bundles.length})`}>
         {portal.bundles.length === 0 ? (
@@ -282,13 +196,12 @@ export function PortalDetail({ portal, onChanged }: Props) {
   );
 }
 
+// Le card con bordo sono sparite: sezioni separate da una linea, come nel drawer
+// del catalogo. Il titolo e i colori arrivano da drawer-primitives (unica fonte).
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper)] p-4">
-      <h3 className="text-xs font-medium text-[var(--color-ink-muted)] uppercase tracking-wider mb-3">
-        {title}
-      </h3>
-      <div className="flex flex-col gap-2">{children}</div>
+    <div className="py-5">
+      <BaseSection title={title}>{children}</BaseSection>
     </div>
   );
 }
@@ -406,170 +319,6 @@ function InlineText({
       ) : null}
     </div>
   );
-}
-
-function CatalogEditor({
-  visibleSlugs,
-  discounts,
-  onSave,
-}: {
-  visibleSlugs: string[];
-  discounts: CatalogDiscount[];
-  onSave: (next: string[]) => Promise<void>;
-}) {
-  const discountBySlug = new Map(discounts.map((d) => [d.slug, d]));
-  const [adding, setAdding] = useState(false);
-  const [available, setAvailable] = useState<SaleorProduct[] | null>(null);
-  const [busy, setBusy] = useState(false);
-
-  const loadAvailable = useCallback(async () => {
-    if (available) return;
-    const res = await fetch("/api/portals/_catalog");
-    if (res.ok) setAvailable((await res.json()) as SaleorProduct[]);
-  }, [available]);
-
-  const handleRemove = async (slug: string) => {
-    setBusy(true);
-    try {
-      await onSave(visibleSlugs.filter((s) => s !== slug));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const handleAdd = async (slug: string) => {
-    if (visibleSlugs.includes(slug)) return;
-    setBusy(true);
-    try {
-      await onSave([...visibleSlugs, slug]);
-      setAdding(false);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const candidates = (available ?? []).filter(
-    (p) => !visibleSlugs.includes(p.slug),
-  );
-
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="flex flex-wrap gap-1.5">
-        {visibleSlugs.map((s) => {
-          const disc = discountBySlug.get(s);
-          return (
-          <span
-            key={s}
-            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] ${
-              disc
-                ? "bg-[var(--color-accent-tint)] text-[var(--color-accent)]"
-                : "bg-[var(--color-paper-muted)] text-[var(--color-ink-soft)]"
-            }`}
-          >
-            {s}
-            {disc ? ` · ${formatDiscount(disc)}` : ""}
-            <button
-              type="button"
-              onClick={() => handleRemove(s)}
-              disabled={busy}
-              className="hover:text-[var(--color-ink)]"
-              aria-label={`Rimuovi ${s}`}
-            >
-              <X className="h-3 w-3" />
-            </button>
-          </span>
-          );
-        })}
-        <button
-          type="button"
-          onClick={() => {
-            setAdding((v) => !v);
-            loadAvailable();
-          }}
-          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-dashed border-[var(--color-line)] text-[11px] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
-        >
-          <Plus className="h-3 w-3" /> Aggiungi
-        </button>
-      </div>
-      {adding ? (
-        <div className="border border-[var(--color-line)] rounded-[var(--radius-control)] bg-[var(--color-paper-soft)] max-h-48 overflow-y-auto">
-          {available === null ? (
-            <p className="text-xs text-[var(--color-ink-muted)] p-2">
-              Caricamento...
-            </p>
-          ) : candidates.length === 0 ? (
-            <p className="text-xs text-[var(--color-ink-muted)] p-2">
-              Tutti i prodotti sono gia&apos; nel catalogo.
-            </p>
-          ) : (
-            candidates.map((p) => (
-              <button
-                key={p.slug}
-                type="button"
-                onClick={() => handleAdd(p.slug)}
-                disabled={busy}
-                className="w-full flex justify-between items-center px-2 py-1.5 text-left text-xs hover:bg-[var(--color-paper-muted)]"
-              >
-                <span className="text-[var(--color-ink)] truncate">{p.name}</span>
-                <span className="font-mono text-[10px] text-[var(--color-ink-muted)] shrink-0 ml-2">
-                  {p.slug}
-                </span>
-              </button>
-            ))
-          )}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-// --- Helper componenti kit (forma canonica selection) ---
-
-function componentProductSlug(c: Record<string, unknown>): string {
-  return typeof c.productSlug === "string" ? c.productSlug : "";
-}
-
-// Etichetta leggibile del componente: slug + taglio (by-attribute) o + SKU reale.
-function componentLabel(c: Record<string, unknown>): string {
-  const slug = componentProductSlug(c);
-  const sel = c.selection as Record<string, unknown> | undefined;
-  if (sel && sel.kind === "by-attribute") {
-    const vf = sel.valueFilter as Record<string, unknown> | undefined;
-    const cap = vf && typeof vf.capacita === "string" ? vf.capacita : null;
-    return cap ? `${slug} · ${cap}` : slug;
-  }
-  const sku =
-    sel && typeof sel.variantSku === "string"
-      ? sel.variantSku
-      : typeof c.variantSku === "string"
-        ? c.variantSku
-        : null;
-  return sku && sku !== slug ? `${slug} · ${sku}` : slug;
-}
-
-// Costruisce la selection canonica da una riga catalogo Saleor. Taglio (capacita)
-// => by-attribute colore col taglio fissato (il cliente sceglie il colore al
-// checkout). Prodotto single-variant => fixed sullo SKU reale. Multi-variante
-// senza taglio => null (non aggiungibile dalla UI manuale: serve l'agente).
-// Brain: gotcha-portal-kit-slug-mismatch — mai usare lo slug come variantSku.
-function buildComponent(row: SaleorProduct): BundleComponent | null {
-  if (row.capacitySlug) {
-    return {
-      productSlug: row.slug,
-      selection: {
-        kind: "by-attribute",
-        attribute: "colore",
-        valueFilter: { capacita: row.capacitySlug },
-      },
-    };
-  }
-  if (row.variantSku) {
-    return {
-      productSlug: row.slug,
-      selection: { kind: "variant", variantSku: row.variantSku },
-    };
-  }
-  return null;
 }
 
 function BundleCard({
