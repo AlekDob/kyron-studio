@@ -35,7 +35,10 @@ export function DashboardMosaic() {
         </Suspense>
       </div>
 
-      <div className="sm:col-span-2 lg:col-span-12">
+      {/* min-w-0: la marquee ha contenuto w-max (~2300px). Senza questo la
+          colonna del grid prende quella misura come minimo e da mobile tutta
+          la dashboard sfora in larghezza. */}
+      <div className="min-w-0 sm:col-span-2 lg:col-span-12">
         <div className="mb-3 flex items-baseline justify-between gap-3 px-1">
           <p className="mono-caps text-[var(--studio-muted-label)]">Agenti</p>
           <Link

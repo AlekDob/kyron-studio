@@ -54,17 +54,29 @@ export function PortalDetail({ portal, onChanged }: Props) {
     [portal.slug, onChanged],
   );
 
-  const patchCatalog = useCallback(
-    async (visibleSlugs: string[]) => {
+  // Stessa rotta per prodotti e sconti: cambia solo la chiave nel body.
+  const putCatalog = useCallback(
+    async (body: Record<string, unknown>) => {
       const res = await fetch(`/api/portals/${portal.slug}/catalog`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ visibleSlugs }),
+        body: JSON.stringify(body),
       });
       if (!res.ok) throw new Error(await res.text());
       onChanged?.();
     },
     [portal.slug, onChanged],
+  );
+
+  const patchCatalog = useCallback(
+    (visibleSlugs: string[]) => putCatalog({ visibleSlugs }),
+    [putCatalog],
+  );
+
+  const patchDiscounts = useCallback(
+    (productDiscounts: PortalDetailType["catalog"]["productDiscounts"]) =>
+      putCatalog({ productDiscounts }),
+    [putCatalog],
   );
 
   return (
@@ -172,7 +184,11 @@ export function PortalDetail({ portal, onChanged }: Props) {
         )}
       </Section>
 
-      <PortalCatalogSections portal={portal} onSaveCatalog={patchCatalog} />
+      <PortalCatalogSections
+        portal={portal}
+        onSaveCatalog={patchCatalog}
+        onSaveDiscounts={patchDiscounts}
+      />
 
       <Section title={`Kit (${portal.bundles.length})`}>
         {portal.bundles.length === 0 ? (

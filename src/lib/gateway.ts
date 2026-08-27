@@ -348,6 +348,18 @@ export async function updatePortalCatalog(
   });
 }
 
+// Sconti per prodotto del portale. Stessa rotta del catalogo, chiave diversa:
+// il writer di studio-server patcha solo il campo che gli passi.
+export async function updatePortalDiscounts(
+  slug: string,
+  productDiscounts: PortalDetail["catalog"]["productDiscounts"],
+): Promise<{ ok: boolean; slug: string; updatedFields: string[] }> {
+  return gatewayFetch(`/api/v1/portals/${slug}/catalog`, {
+    method: "PUT",
+    body: JSON.stringify({ productDiscounts }),
+  });
+}
+
 // Forma canonica del componente bundle (allineata a studio-server
 // onboard-school/agent.ts + portals/enable/config.ts). variantSku DEVE essere lo
 // SKU reale Saleor, mai lo slug; per i prodotti multi-taglio (iPad) si usa

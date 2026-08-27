@@ -1,4 +1,5 @@
-import { updatePortalCatalog, GatewayError } from "@/lib/gateway";
+import { updatePortalCatalog, updatePortalDiscounts, GatewayError } from "@/lib/gateway";
+import type { PortalDetail } from "@/lib/gateway";
 
 interface Params {
   params: Promise<{ slug: string }>;
@@ -6,15 +7,20 @@ interface Params {
 
 export async function PUT(req: Request, { params }: Params) {
   const { slug } = await params;
-  const body = (await req.json()) as { visibleSlugs?: string[] };
-  if (!Array.isArray(body.visibleSlugs)) {
+  const body = (await req.json()) as {
+    visibleSlugs?: string[];
+    productDiscounts?: PortalDetail["catalog"]["productDiscounts"];
+  };
+  if (!Array.isArray(body.visibleSlugs) && !Array.isArray(body.productDiscounts)) {
     return Response.json(
-      { error: "visibleSlugs must be an array" },
+      { error: "visibleSlugs or productDiscounts must be an array" },
       { status: 400 },
     );
   }
   try {
-    const result = await updatePortalCatalog(slug, body.visibleSlugs);
+    const result = body.productDiscounts
+      ? await updatePortalDiscounts(slug, body.productDiscounts)
+      : await updatePortalCatalog(slug, body.visibleSlugs ?? []);
     return Response.json(result);
   } catch (err) {
     if (err instanceof GatewayError) {
