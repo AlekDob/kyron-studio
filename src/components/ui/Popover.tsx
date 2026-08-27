@@ -20,6 +20,9 @@ export function Popover({
 }) {
   const ref = useRef<HTMLButtonElement>(null);
   const [box, setBox] = useState<{ top: number; left: number; up: boolean } | null>(null);
+  // Chrome desktop ritargetta il pointer sull'overlay appena montato (copre il
+  // trigger). Lo stesso gesto chiuderebbe subito. Safari iOS non lo fa.
+  const hold = useRef(false);
 
   useEffect(() => {
     if (!box) return;
@@ -34,6 +37,14 @@ export function Popover({
 
   function toggle() {
     if (box) return setBox(null);
+    hold.current = true;
+    const release = () => {
+      hold.current = false;
+      window.removeEventListener("pointerup", release);
+      window.removeEventListener("pointercancel", release);
+    };
+    window.addEventListener("pointerup", release);
+    window.addEventListener("pointercancel", release);
     const r = ref.current?.getBoundingClientRect();
     if (!r) return;
     // Sotto il trigger, allineato a destra; se non c'e' spazio va sopra.
@@ -73,10 +84,10 @@ export function Popover({
           <>
             <div
               aria-hidden
-              // pointerdown come il trigger: se chiudesse sul `click`, il click
-              // di coda della pressione che ha aperto il popover (l'overlay e'
-              // gia' montato quando arriva) lo richiuderebbe subito.
-              onPointerDown={() => setBox(null)}
+              onPointerDown={() => {
+                if (hold.current) return;
+                setBox(null);
+              }}
               className="fixed inset-0 z-[60]"
             />
             <div

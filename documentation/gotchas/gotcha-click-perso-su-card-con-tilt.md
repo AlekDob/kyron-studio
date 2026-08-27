@@ -22,13 +22,15 @@ tap ok. Da qui il "da mobile funzionava", che sembra un problema di hydration e
 non lo e'.
 
 **Fix** (`src/components/ui/Popover.tsx`): aprire su `onPointerDown` invece di
-`onClick`. Un solo evento = immune al bersaglio in movimento. Due accortezze:
+`onClick`. Un solo evento = immune al bersaglio in movimento. Accortezze:
 
-- l'overlay di chiusura deve chiudere anch'esso su `pointerdown`, altrimenti il
-  `click` di coda della stessa pressione (l'overlay e' gia' montato quando
-  arriva) richiude subito il popover;
-- tenere `onClick` filtrato con `e.detail === 0` per la tastiera: Enter/Spazio
-  non emettono `pointerdown`.
+- l'overlay di chiusura ascolta `pointerdown`, ma ignora il gesto che ha
+  aperto (`hold` fino a `pointerup`). Altrimenti Chrome desktop ritargetta
+  il pointer sull'overlay (z-full sopra il trigger) e il popover flickera:
+  apre e chiude nello stesso click. Safari iOS non ritargetta, quindi da
+  mobile "funzionava";
+- `onClick` filtrato con `e.detail === 0` per la tastiera: Enter/Spazio non
+  emettono `pointerdown`.
 
 **Regola**: dentro un contenitore che si muove al hover, i controlli si attivano
 su `pointerdown`. Vale per qualunque bottone dentro `StatTile`/`GlassCard`.
