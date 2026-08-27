@@ -5,6 +5,7 @@ import { Package } from "lucide-react";
 import type { ChatStreamEvent } from "@studiofuturo/studio-core";
 import { AgentChannel } from "@/components/chat/AgentChannel";
 import { CHANNELS } from "@/components/chat/agent-channels";
+import type { GenerativeSubmission } from "@/components/chat/generative/types";
 import { MobileChatOverlay } from "@/components/shell/MobileChatOverlay";
 import { agentNameOf } from "@/components/shell/modules";
 import type { CatalogInsights, Product } from "@/lib/products";
@@ -41,6 +42,29 @@ function describe(product: Product): string {
   return `prodotto aperto — "${product.name}" (slug ${product.slug}); ${variants}`;
 }
 
+interface DaneaContext {
+  id: string;
+  filename: string;
+  kind: "products" | "ddt";
+}
+
+function daneaContextOf(sub: GenerativeSubmission): DaneaContext | null {
+  if (
+    sub.component !== "DaneaUploader" ||
+    !sub.data ||
+    typeof sub.data !== "object"
+  ) return null;
+  const data = sub.data as Record<string, unknown>;
+  if (typeof data.id !== "string" || !data.id.trim()) return null;
+  if (typeof data.filename !== "string" || !data.filename.trim()) return null;
+  if (data.kind !== "products" && data.kind !== "ddt") return null;
+  return { id: data.id, filename: data.filename, kind: data.kind };
+}
+
+function describeDanea(context: DaneaContext): string {
+  return `file Danea attivo — importId "${context.id}"; tipo ${context.kind}; file "${context.filename}"`;
+}
+
 // Dopo una scrittura il pannello e' vecchio: si rilegge il catalogo.
 const WRITE_TOOLS = [
   "update_product",
@@ -67,6 +91,7 @@ export function CatalogoWorkspace({
   const [portalSlug, setPortalSlug] = useState<string | null>(null);
   const [loading, setLoading] = useState(initialProducts.length === 0);
   const selectedRef = useRef<Product | null>(null);
+  const daneaRef = useRef<DaneaContext | null>(null);
   selectedRef.current = selected;
 
   useEffect(() => {
@@ -105,10 +130,17 @@ export function CatalogoWorkspace({
     }
   }, []);
 
-  const selectionContext = useCallback(
-    (): string | null => (selectedRef.current ? describe(selectedRef.current) : null),
-    [],
-  );
+  const onSubmission = useCallback((sub: GenerativeSubmission): void => {
+    const context = daneaContextOf(sub);
+    if (context) daneaRef.current = context;
+  }, []);
+
+  const selectionContext = useCallback((): string | null => {
+    const parts: string[] = [];
+    if (selectedRef.current) parts.push(describe(selectedRef.current));
+    if (daneaRef.current) parts.push(describeDanea(daneaRef.current));
+    return parts.length ? parts.join("\n") : null;
+  }, []);
 
   const handleSelect = useCallback(
     (slug: string): void => {
@@ -141,6 +173,7 @@ export function CatalogoWorkspace({
           {...CHANNELS.catalogo}
           interactive
           onEvent={onEvent}
+          onSubmission={onSubmission}
           selectionContext={selectionContext}
         />
       </div>
