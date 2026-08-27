@@ -2,7 +2,7 @@
 type: feature
 project: studio
 created: 2026-08-25
-last_verified: 2026-08-26
+last_verified: 2026-08-27
 tags: [agent, analytics, posthog, hogql, meta-ads, generative-ui]
 ---
 
