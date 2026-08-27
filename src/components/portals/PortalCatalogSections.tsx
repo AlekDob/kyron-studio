@@ -2,7 +2,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { Plus, Search, X } from "lucide-react";
 import { Section, InfoRow } from "@/components/orders/drawer-primitives";
-import { Badge, Popover } from "@/components/ui";
+import { Badge } from "@/components/ui";
 import { formatDiscount } from "@/components/chat/generative/ProductPickerRow";
 import { ProductThumbnail } from "@/components/catalogo/ProductThumbnail";
 import { VariantPricesPopover } from "@/components/catalogo/VariantPricesPopover";
@@ -11,7 +11,7 @@ import { useCatalogIndex } from "@/components/catalogo/use-catalog-index";
 import { fuzzyFilter } from "@/lib/fuzzy";
 import type { Product } from "@/lib/products";
 import type { PortalDetail, SaleorProduct } from "@/lib/gateway";
-import { componentLabel, componentProductSlug } from "./bundle-components";
+import { PortalKitRow } from "./PortalKitRow";
 
 // Cosa vende questo portale, con la UI del catalogo: thumbnail, nome vero,
 // prezzo su QUESTO canale e pezzi venduti. Prima erano chip con lo slug nudo
@@ -24,12 +24,15 @@ export function PortalCatalogSections({
   portal,
   onSaveCatalog,
   onSaveDiscounts,
+  onChanged,
 }: {
   portal: PortalDetail;
   /** presente = catalogo modificabile (X + Aggiungi). Assente = sola lettura. */
   onSaveCatalog?: (visibleSlugs: string[]) => Promise<void>;
   /** presente = prezzo finale per prodotto modificabile in riga. */
   onSaveDiscounts?: (next: Discount[]) => Promise<void>;
+  /** presente = kit modificabili in riga (nome, prezzo, componenti, elimina). */
+  onChanged?: () => void;
 }) {
   const { bySlug, sales, loading } = useCatalogIndex();
   const slugs = portal.catalog.visibleSlugs;
@@ -55,13 +58,23 @@ export function PortalCatalogSections({
   return (
     <>
       <div className="py-5">
-        <Section title={`Prodotti (${slugs.length + (portal.catalog.visibleVariants?.length ?? 0)})`}>
-          {slugs.length === 0 && (
+        <Section title={`Prodotti e kit (${slugs.length + portal.bundles.length})`}>
+          {slugs.length === 0 && portal.bundles.length === 0 && (
             <p className="text-sm text-[var(--color-ink-muted)]">
               Nessun prodotto nel catalogo.
             </p>
           )}
           <ul className="flex flex-col gap-0.5">
+            {portal.bundles.map((b, i) => (
+              <PortalKitRow
+                key={b.slug}
+                index={i}
+                bundle={b}
+                bySlug={bySlug}
+                portalSlug={onChanged ? portal.slug : undefined}
+                onChanged={onChanged}
+              />
+            ))}
             {slugs.map((slug, i) => (
               <PortalProductRow
                 key={slug}
@@ -90,20 +103,6 @@ export function PortalCatalogSections({
           )}
         </Section>
       </div>
-
-      {/* Il kit editabile vive nel pannello portali (BundleCard): qui la vista
-          read-only, per chi guarda il portale dal catalogo. */}
-      {!onSaveCatalog && portal.bundles.length > 0 && (
-        <div className="py-5">
-          <Section title={`Kit (${portal.bundles.length})`}>
-            <ul className="flex flex-col gap-0.5">
-              {portal.bundles.map((b) => (
-                <KitRow key={b.slug} bundle={b} bySlug={bySlug} />
-              ))}
-            </ul>
-          </Section>
-        </div>
-      )}
 
       <div className="py-5">
         <Section title="Vendita fuori dal kit">
@@ -282,54 +281,6 @@ function FinalPrice({
     />
   );
 }
-
-// Kit read-only: prezzo finale e componenti nel popover (il voucher reale sta in
-// Saleor e lo legge solo Price Guard, qui non lo mostriamo).
-function KitRow({
-  bundle,
-  bySlug,
-}: {
-  bundle: PortalDetail["bundles"][number];
-  bySlug: Map<string, Product>;
-}) {
-  const components = (bundle.components ?? []) as Array<Record<string, unknown>>;
-  const hero = bySlug.get(componentProductSlug(components[0] ?? {}));
-
-  return (
-    <li className="flex items-center gap-3 rounded-lg px-2 py-1.5">
-      <ProductThumbnail src={hero?.imageUrl ?? null} className="h-9 w-9 rounded-lg" />
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm text-[var(--color-ink)]">{bundle.name}</p>
-        <Popover
-          label={`Componenti di ${bundle.name}`}
-          trigger={
-            <span className="text-xs text-[var(--color-ink-muted)] underline decoration-dotted underline-offset-2">
-              {components.length} componenti
-            </span>
-          }
-        >
-          <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-[var(--color-ink-muted)]">
-            Componenti
-          </p>
-          <ul className="flex flex-col gap-1">
-            {components.map((c, i) => {
-              const cslug = componentProductSlug(c);
-              return (
-                <li key={`${cslug}-${i}`} className="text-sm text-[var(--color-ink)]">
-                  {bySlug.get(cslug)?.name ?? componentLabel(c)}
-                </li>
-              );
-            })}
-          </ul>
-        </Popover>
-      </div>
-      <span className="shrink-0 text-sm font-medium tabular-nums">
-        {eur(bundle.finalPriceEur)}
-      </span>
-    </li>
-  );
-}
-
 // Picker "+ Aggiungi": lista dei prodotti Saleor non ancora nel catalogo.
 function AddProduct({
   slugs,
