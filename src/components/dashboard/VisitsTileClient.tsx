@@ -1,44 +1,39 @@
 "use client";
-// La tile visite col periodo scegliibile. A differenza di ordini/fatturato il
-// dato non e' precalcolato: ogni periodo e' una query PostHog, quindi si chiede
-// al server solo quando serve e si tiene in cache per periodo (la Query API sta
-// a ~120 query/ora, condivise con /analytics).
-import { useRef, useState, useTransition } from "react";
+// La tile visite segue il periodo globale. PostHog non ha un "sempre": il tetto
+// e' 90 giorni, quindi "Da sempre" chiede quella finestra. Ogni periodo e' una
+// query, quindi si chiede al server solo quando serve e si tiene in cache
+// (la Query API sta a ~120 query/ora, condivise con /analytics).
+import { useEffect, useRef, useState, useTransition } from "react";
 import { fmtInt } from "@/components/analytics/format";
 import { visitsTotalsAction, type VisitsTotals } from "@/app/(authed)/actions";
+import type { RangeKey } from "@/lib/analytics";
 import { StatTile, TilePill, TILE_CLASS } from "./StatTile";
-import { RangePicker, type RangeOption } from "./RangePicker";
+import { useDashboardRange } from "./DashboardShell";
+import type { DashboardRange } from "./RangePicker";
 
-// Sottoinsieme di RangeKey: PostHog non ha un "sempre" e si ferma a 90 giorni.
-type VisitsRange = "today" | "7d" | "30d" | "90d";
-
-const VISITS_RANGES: Array<RangeOption<VisitsRange>> = [
-  { key: "90d", label: "90 giorni" },
-  { key: "30d", label: "30 giorni" },
-  { key: "7d", label: "7 giorni" },
-  { key: "today", label: "Oggi" },
-];
+function posthogRange(range: DashboardRange): RangeKey {
+  return range === "all" ? "90d" : range;
+}
 
 export function VisitsTileClient({ initial }: { initial: VisitsTotals | null }) {
-  // Il periodo non si ricorda tra un caricamento e l'altro di proposito: farlo
-  // costerebbe una query PostHog in piu' a ogni apertura della dashboard,
-  // mentre i 30 giorni li ha gia' portati il render del server.
-  const [range, setRange] = useState<VisitsRange>("30d");
+  const range = useDashboardRange();
   const [totals, setTotals] = useState(initial);
   const [pending, start] = useTransition();
-  const cache = useRef<Partial<Record<VisitsRange, VisitsTotals | null>>>({
-    "30d": initial,
+  const cache = useRef<Partial<Record<DashboardRange, VisitsTotals | null>>>({
+    all: initial,
   });
 
-  function pick(key: VisitsRange): void {
-    setRange(key);
-    if (key in cache.current) return setTotals(cache.current[key] ?? null);
+  useEffect(() => {
+    if (range in cache.current) {
+      setTotals(cache.current[range] ?? null);
+      return;
+    }
     start(async () => {
-      const next = await visitsTotalsAction(key);
-      cache.current[key] = next;
+      const next = await visitsTotalsAction(posthogRange(range));
+      cache.current[range] = next;
       setTotals(next);
     });
-  }
+  }, [range]);
 
   return (
     <StatTile
@@ -49,17 +44,9 @@ export function VisitsTileClient({ initial }: { initial: VisitsTotals | null }) 
       value={pending ? "…" : totals ? fmtInt(totals.visitors) : "—"}
       caption="sito e shop, visitatori unici"
       footer={
-        <div className="flex flex-wrap items-center gap-2">
-          <RangePicker
-            label="Scegli il periodo: visite"
-            options={VISITS_RANGES}
-            value={range}
-            onPick={pick}
-          />
-          {!pending && totals && (
-            <TilePill>{fmtInt(totals.pageviews)} pagine viste</TilePill>
-          )}
-        </div>
+        !pending && totals ? (
+          <TilePill>{fmtInt(totals.pageviews)} pagine viste</TilePill>
+        ) : null
       }
     />
   );

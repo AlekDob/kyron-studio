@@ -24,7 +24,7 @@ function isoDaysAgo(days: number): string {
 
 /**
  * Tutto lo storico ordini, una volta per richiesta (`cache`): la tile fatturato
- * ha un periodo "sempre", quindi lo storico va letto comunque. Ordini 30 giorni
+ * ha un periodo "da sempre", quindi lo storico va letto comunque. Ordini 30 giorni
  * e grafico si ricavano filtrando in memoria, senza una seconda chiamata.
  * Null se Saleor e' giu'.
  * ponytail: lo storico cresce e il gateway pagina a 100 ordini per volta. Se la
@@ -46,7 +46,6 @@ const RANGE_DAYS: Record<BucketRange, number | null> = {
   all: null,
   "30d": 30,
   "7d": 7,
-  "3d": 3,
   today: 0,
 };
 
@@ -129,8 +128,19 @@ export const overview30d = cache(
   },
 );
 
+/** Default del cruscotto: "Da sempre". PostHog si ferma a 90 giorni. */
+const overview90d = cache(
+  async (): Promise<AnalyticsOverview | null> => {
+    try {
+      return await getAnalyticsOverview("90d");
+    } catch {
+      return null;
+    }
+  },
+);
+
 export async function VisitsTile() {
-  const data = await overview30d();
+  const data = await overview90d();
 
   return (
     <VisitsTileClient

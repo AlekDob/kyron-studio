@@ -1,5 +1,5 @@
-import { PageHeader } from "@/components/ui";
 import { DashboardMosaic } from "@/components/dashboard/DashboardMosaic";
+import { DashboardShell } from "@/components/dashboard/DashboardShell";
 
 export const metadata = { title: "Dashboard — Studio" };
 
@@ -9,12 +9,9 @@ export default function HomePage() {
   return (
     <div className="h-full overflow-y-auto">
       <div className="mx-auto w-full max-w-6xl px-4 py-10 md:px-8 md:py-14 xl:px-12">
-        <PageHeader
-          eyebrow="Kyron"
-          title="Dashboard"
-          description="Ordini, portali e visite degli ultimi 30 giorni."
-        />
-        <DashboardMosaic />
+        <DashboardShell>
+          <DashboardMosaic />
+        </DashboardShell>
       </div>
     </div>
   );

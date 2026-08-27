@@ -58,6 +58,7 @@ ora la sua faccia stabile legata a Livia/Bruno/Elsa/Vera (e a Nico nella chat Da
 | `StatTile.tsx` | tile client con tilt 3D (port di `GradientTile` di global-games) |
 | `tiles.tsx` | i 4 fetch, async server components |
 | `RangePicker.tsx` | selettore di periodo (popover) + `useStoredRange` |
+| `DashboardShell.tsx` | header + periodo globale (context) |
 | `BucketTile.tsx` | tile Ordini e Fatturato: stessa lettura, due metriche |
 | `VisitsTileClient.tsx` | tile Visite: periodi PostHog on demand |
 | `TrafficSection.tsx` | visite + ordini nello stesso `TrafficChart` |
@@ -66,48 +67,46 @@ Le 4 tile:
 
 | Tile | Periodo | Fonte | Fallback |
 |---|---|---|---|
-| Ordini | **scegliibile** (30gg di base) | `ordersAll()` aggregato per periodo | `—` |
-| Fatturato | **scegliibile** (Sempre di base) | stessa lettura, aggregata per periodo | `—` |
+| Ordini | globale (Da sempre di base) | `ordersAll()` aggregato per periodo | `—` |
+| Fatturato | globale (stesso controllo) | stessa lettura, aggregata per periodo | `—` |
 | Portali attivi | — (conteggio di adesso) | `listPortals()` → `status` | `—` |
-| Visite | **scegliibile** (30gg di base) | `getAnalyticsOverview(range)` → `totals.visitors` | `—` |
+| Visite | globale; "Da sempre" = 90gg PostHog | `getAnalyticsOverview(range)` → `totals.visitors` | `—` |
 
 Nessun endpoint nuovo, ne' lato studio ne' lato studio-server.
 
 ### Periodo scegliibile su tre tile (2026-08-27)
 
-Il periodo si scegle da un **popover** (`RangePicker`) e non da una fila di
-pastiglie: la fila andava a capo e faceva la tile piu' alta delle altre tre.
-Fuori dal giro c'e' solo **Portali attivi**: e' un conteggio di adesso, un
-periodo non vuol dire niente.
+Un **solo** popover in alto a destra (`PageHeader.actions`), default
+**Da sempre**. Controlla Ordini, Fatturato e Visite. Fuori dal giro resta
+**Portali attivi**: e' un conteggio di adesso, un periodo non vuol dire niente.
 
-- **Ordini** e **Fatturato** (`BucketTile`, una sola componente per due
-  metriche): Sempre / 30 / 7 / 3 giorni / Oggi. Scelta ricordata in
-  `localStorage` (`studio.dashboard.orders-range`, `...revenue-range`).
-- **Visite** (`VisitsTileClient`): Oggi / 7 / 30 / 90 giorni — i periodi che
-  PostHog sa fare (non c'e' un "sempre", il tetto e' 90 giorni). Ogni periodo e'
-  una query, quindi si chiede al volo con la server action `visitsTotalsAction`
-  (`src/app/(authed)/actions.ts`, ritorna solo visitatori + pagine viste) e il
-  client tiene in cache i periodi gia' chiesti. Il periodo delle visite **non**
-  si ricorda tra un caricamento e l'altro di proposito: ricordarlo costerebbe una
-  query PostHog in piu' a ogni apertura della dashboard, e la Query API sta a
-  ~120 query/ora condivise con `/analytics`.
+Opzioni: Da sempre / 30 giorni / 7 giorni / Oggi. Scelta unica in
+`localStorage` (`studio.dashboard.range`).
 
-Gotcha collegato: i bottoni dentro le tile si attivano su `pointerdown`, non su
-`click` — vedi `gotchas/gotcha-click-perso-su-card-con-tilt.md`.
+- **Ordini** e **Fatturato** (`BucketTile`): i totali di tutti i periodi
+  arrivano gia' calcolati, lo switch e' istantaneo.
+- **Visite** (`VisitsTileClient`): PostHog non ha un "sempre", il tetto e' 90
+  giorni — "Da sempre" chiede quella finestra. Ogni altro periodo e' una query
+  on demand (`visitsTotalsAction`) con cache client. Il grafico sotto resta
+  sui 30 giorni (`overview30d`), non segue il controllo.
+
+Gotcha collegato: i bottoni *dentro* le tile si attivano su `pointerdown`, non su
+`click` — vedi `gotchas/gotcha-click-perso-su-card-con-tilt.md`. Il selettore
+periodo sta nell'header, fuori dal tilt: click normale.
 
 Su ordini e fatturato lo switch non fa rete: i totali di tutti i periodi arrivano **gia' calcolati dal server**
 in un'unica prop, quindi cambiare periodo e' istantaneo e non ricarica nulla.
 
 - `ordersAll()` legge tutto lo storico (`from: 2020-01-01`) invece dei soli 30
-  giorni: la voce "Sempre" lo richiede comunque, e ordini-30gg + grafico si
-  ricavano filtrando in memoria. Resta **una sola** chiamata per tutta la pagina.
+  giorni: la voce "Da sempre" lo richiede comunque, e ordini-30gg + grafico si
+  ricavano filtrando in memoria. Resta **una sola** chiamata Saleor per tutta la pagina.
 - `aggregate(orders, days)` somma `totalGross` esattamente come fa il gateway
   (`studio-server/src/features/orders/route.ts`, reduce su `totalGross`): i
   numeri combaciano con la lista ordini. `days = null` significa tutto lo storico,
   `0` significa oggi.
 - La chiave `localStorage` si legge in `useEffect`, non nell'initializer di
   `useState`: il server non vede la localStorage e leggerla prima romperebbe
-  l'hydration. Costo: un frame su "Sempre" prima di passare al periodo salvato.
+  l'hydration. Costo: un frame su "Da sempre" prima di passare al periodo salvato.
 - Debito segnato in codice (`ponytail:` in `tiles.tsx`): il gateway pagina a 100
   ordini per volta, quindi lo storico che cresce allunga il primo render. Quando
   dara' fastidio, serve un endpoint di aggregati per periodo su studio-server

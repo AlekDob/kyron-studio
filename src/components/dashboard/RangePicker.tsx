@@ -1,8 +1,7 @@
 "use client";
-// Selettore di periodo delle tile del cruscotto, condiviso da ordini, fatturato
-// e visite (i portali attivi sono un conteggio di adesso: nessun periodo).
-// Popover e non fila di pastiglie: la fila andava a capo e faceva la tile piu'
-// alta delle altre tre del mosaico.
+// Selettore di periodo del cruscotto. Vive nell'header (uno solo per ordini,
+// fatturato e visite). I portali attivi sono un conteggio di adesso: nessun
+// periodo. Popover e non fila di pastiglie.
 import { useEffect, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { Popover } from "@/components/ui";
@@ -11,6 +10,16 @@ export interface RangeOption<K extends string> {
   key: K;
   label: string;
 }
+
+/** Un periodo per tutte le tile del cruscotto (portali attivi restano fuori). */
+export type DashboardRange = "all" | "30d" | "7d" | "today";
+
+export const DASHBOARD_RANGES: Array<RangeOption<DashboardRange>> = [
+  { key: "all", label: "Da sempre" },
+  { key: "30d", label: "30 giorni" },
+  { key: "7d", label: "7 giorni" },
+  { key: "today", label: "Oggi" },
+];
 
 /**
  * Periodo scelto, ricordato per tile. Letto dopo il mount e non
