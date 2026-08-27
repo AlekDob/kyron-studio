@@ -35,3 +35,19 @@ export async function listProducts(search?: string): Promise<Product[]> {
   const body = await gatewayFetch<{ products: Product[] }>(`/api/v1/products${qs}`);
   return body.products;
 }
+
+// Contorno del catalogo: nomi leggibili dei portali (lo slug non dice a nessuno
+// di che scuola si tratta) e vendite per SKU, totali e per portale.
+export interface SkuSales {
+  total: number;
+  byChannel: Record<string, number>;
+}
+
+export interface CatalogInsights {
+  channels: Array<{ slug: string; name: string }>;
+  sales: { updatedAt: string; orderCount: number; bySku: Record<string, SkuSales> };
+}
+
+export async function listCatalogInsights(): Promise<CatalogInsights> {
+  return gatewayFetch<CatalogInsights>("/api/v1/products/insights");
+}

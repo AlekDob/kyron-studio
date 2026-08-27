@@ -22,7 +22,7 @@ function formatTime(ts: number): string {
 /** Cerchietto con l'iniziale: l'utente non ha un avatar caricato in Kyron. */
 function UserBadge({ label }: { label: string }): ReactElement {
   return (
-    <span className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--color-line)] bg-[var(--color-paper-muted)] text-[12px] font-medium text-[var(--color-ink-soft)]">
+    <span className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--color-line)] bg-[var(--color-paper-muted)] text-[13px] font-medium text-[var(--color-ink-soft)]">
       {label.slice(0, 1).toUpperCase()}
     </span>
   );
@@ -67,10 +67,10 @@ export function ChannelMessage({
         showAuthor ? "mt-5 first:mt-0" : "mt-1"
       }`}
     >
-      <div className="flex w-8 shrink-0 justify-center pt-0.5">
+      <div className="flex w-9 shrink-0 items-start justify-center">
         {showAuthor ? (
           isAgent ? (
-            <AgentFace seed={agentId} label={agentName} size={32} />
+            <AgentFace seed={agentId} label={agentName} size={36} />
           ) : (
             <UserBadge label={userLabel} />
           )
@@ -118,7 +118,9 @@ export function ChannelMessage({
           </div>
         ))}
         {m.content.trim() ? (
-          <MarkdownContent content={m.content} />
+          <div className="chat-md">
+            <MarkdownContent content={m.content} />
+          </div>
         ) : (
           busy &&
           isAgent &&

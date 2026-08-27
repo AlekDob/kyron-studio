@@ -2,12 +2,11 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { Section, InfoRow } from "@/components/orders/drawer-primitives";
+import { Badge } from "@/components/ui";
 import type { Product, ProductVariant } from "@/lib/products";
-
-const eur = (n: number | null): string =>
-  n === null
-    ? "—"
-    : n.toLocaleString("it-IT", { style: "currency", currency: "EUR" });
+import { ProductThumbnail } from "./ProductThumbnail";
+import { PortalPrices } from "./PortalPrices";
+import { productSales, type ChannelNames, type SalesIndex } from "./catalog-view";
 
 // Drawer dettaglio prodotto. Stessa meccanica di OrderDrawer: bottom sheet su
 // mobile, scivola da destra su desktop (il translateX desktop non e' esprimibile
@@ -15,9 +14,13 @@ const eur = (n: number | null): string =>
 export function ProductDrawer({
   product,
   onClose,
+  names,
+  sales,
 }: {
   product: Product | null;
   onClose: () => void;
+  names: ChannelNames;
+  sales: SalesIndex;
 }) {
   const [render, setRender] = useState(false);
   const [show, setShow] = useState(false);
@@ -91,14 +94,26 @@ export function ProductDrawer({
           }
         `}</style>
         <header className="flex items-start justify-between gap-3 px-6 pt-5 pb-3 border-b border-[var(--color-line)]">
-          <div className="min-w-0">
-            <p className="eyebrow">Prodotto</p>
-            <h2 className="text-base font-medium text-[var(--color-ink)] mt-0.5">
-              {current.name}
-            </h2>
-            <p className="text-xs text-[var(--color-ink-muted)] mt-0.5">
-              {current.slug}
-            </p>
+          <div className="flex min-w-0 gap-3">
+            <ProductThumbnail
+              src={current.imageUrl}
+              className="h-14 w-14 rounded-xl"
+            />
+            <div className="min-w-0">
+              <p className="eyebrow">Prodotto</p>
+              <h2 className="text-base font-medium text-[var(--color-ink)] mt-0.5">
+                {current.name}
+              </h2>
+              <div className="mt-1 flex items-center gap-1.5">
+                <Badge tone="accent">
+                  {productSales(current, sales)} vendut
+                  {productSales(current, sales) === 1 ? "o" : "i"}
+                </Badge>
+                <span className="truncate text-xs text-[var(--color-ink-muted)]">
+                  {current.category ?? current.productType}
+                </span>
+              </div>
+            </div>
           </div>
           <button
             type="button"
@@ -114,14 +129,15 @@ export function ProductDrawer({
           <Section title="Scheda">
             <InfoRow label="Categoria" value={current.category ?? "—"} />
             <InfoRow label="Tipo" value={current.productType} />
-            <InfoRow
-              label="Pubblicato su"
-              value={current.channels.length ? current.channels.join(", ") : "nessun canale"}
-            />
+            <InfoRow label="Codice interno" value={current.slug} />
+          </Section>
+
+          <Section title={`Pubblicato su ${current.channels.length || ""}`.trim()}>
+            <PortalPrices product={current} names={names} sales={sales} />
           </Section>
 
           {current.variants.map((v) => (
-            <VariantBlock key={v.id} variant={v} />
+            <VariantBlock key={v.id} variant={v} sales={sales} />
           ))}
 
           {/* Nessun bottone "chiedi": finche' il drawer e' aperto il prodotto
@@ -132,20 +148,22 @@ export function ProductDrawer({
   );
 }
 
-function VariantBlock({ variant }: { variant: ProductVariant }) {
+// I prezzi per portale non si ripetono qui: stanno tutti nella lista
+// "Pubblicato su", che marca "da X" quando le varianti hanno prezzi diversi.
+function VariantBlock({
+  variant,
+  sales,
+}: {
+  variant: ProductVariant;
+  sales: SalesIndex;
+}) {
   return (
     <Section title={variant.name || variant.sku}>
       <InfoRow label="Codice" value={variant.sku || "—"} />
+      <InfoRow label="Venduti" value={`${sales[variant.sku]?.total ?? 0}`} />
       <InfoRow label="Magazzino" value={`${variant.stock}`} />
       {variant.attributes.map((a) => (
         <InfoRow key={a.name} label={a.name} value={a.value} />
-      ))}
-      {variant.channels.map((c) => (
-        <InfoRow
-          key={c.channelSlug}
-          label={c.channelSlug}
-          value={`${eur(c.priceEur)}${c.published ? "" : " (non pubblicato)"}`}
-        />
       ))}
     </Section>
   );

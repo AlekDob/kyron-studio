@@ -54,3 +54,37 @@
     animation: mo-blink 4.8s linear infinite !important;
   }
 }
+
+/* Lastra di vetro del pannello Catalogo (FUT-82). Il blur sta su ::before e non
+   sul nodo: backdrop-filter sul nodo lo rende containing block per i figli
+   position:fixed (il drawer prodotto si ancorerebbe al pannello invece che alla
+   finestra). Niente -webkit- a mano: Lightning CSS scarterebbe la forma
+   standard e Chromium non applica quella prefissata. */
+.catalog-glass {
+  position: relative;
+  background: var(--studio-glass-surface-strong);
+}
+
+@media (min-width: 1024px) {
+  .catalog-glass {
+    background: transparent;
+  }
+
+  .catalog-glass::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: var(--studio-glass-surface);
+    backdrop-filter: blur(20px) saturate(130%);
+  }
+}
+
+/* Un'immagine markdown in chat non ha classi (MarkdownContent non fa override di
+   img): senza questo il preflight la fa larga quanto la colonna. */
+.chat-md img {
+  max-height: 140px;
+  width: auto;
+  border-radius: 12px;
+  border: 1px solid var(--color-line);
+}

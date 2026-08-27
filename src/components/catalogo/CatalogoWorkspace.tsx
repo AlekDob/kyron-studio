@@ -7,9 +7,10 @@ import { AgentChannel } from "@/components/chat/AgentChannel";
 import { CHANNELS } from "@/components/chat/agent-channels";
 import { MobileChatOverlay } from "@/components/shell/MobileChatOverlay";
 import { agentNameOf } from "@/components/shell/modules";
-import type { Product } from "@/lib/products";
+import type { CatalogInsights, Product } from "@/lib/products";
 import { ProductsPanel } from "./ProductsPanel";
 import { ProductDrawer } from "./ProductDrawer";
+import { channelNames } from "./catalog-view";
 
 const AGENT = agentNameOf("catalogo");
 
@@ -17,6 +18,14 @@ async function fetchProducts(): Promise<Product[]> {
   const res = await fetch("/api/products", { cache: "no-store" });
   if (!res.ok) return [];
   return ((await res.json()) as { products: Product[] }).products;
+}
+
+// Nomi dei portali + vendite per SKU. Contorno: arrivano dopo la lista e la
+// pagina funziona anche se non arrivano (slug al posto dei nomi, vendite a 0).
+async function fetchInsights(): Promise<CatalogInsights | null> {
+  const res = await fetch("/api/products/insights", { cache: "no-store" });
+  if (!res.ok) return null;
+  return (await res.json()) as CatalogInsights;
 }
 
 // Riga di contesto per l'agente: SKU, prezzi e giacenze del prodotto aperto.
@@ -52,12 +61,20 @@ export function CatalogoWorkspace({
   // Quando la lista arriva dall'agente non la sovrascriviamo col catalogo
   // intero: l'utente ha appena visto il risultato di una ricerca.
   const [fromAgent, setFromAgent] = useState(false);
+  const [insights, setInsights] = useState<CatalogInsights | null>(null);
+  const [loading, setLoading] = useState(initialProducts.length === 0);
   const selectedRef = useRef<Product | null>(null);
   selectedRef.current = selected;
 
   useEffect(() => {
+    void fetchInsights().then(setInsights);
+  }, []);
+
+  useEffect(() => {
     if (initialProducts.length) return;
-    fetchProducts().then(setProducts);
+    fetchProducts()
+      .then(setProducts)
+      .finally(() => setLoading(false));
   }, [initialProducts.length]);
 
   const refresh = useCallback(async (): Promise<void> => {
@@ -97,12 +114,19 @@ export function CatalogoWorkspace({
     [products],
   );
 
+  const names = channelNames(insights);
+  const sales = insights?.sales.bySku ?? {};
+
   const panel = (
     <ProductsPanel
       products={products}
       selectedSlug={selected?.slug ?? null}
       onSelect={handleSelect}
       fromAgent={fromAgent}
+      loading={loading}
+      names={names}
+      sales={sales}
+      salesUpdatedAt={insights?.sales.updatedAt ?? ""}
     />
   );
 
@@ -117,7 +141,7 @@ export function CatalogoWorkspace({
           selectionContext={selectionContext}
         />
       </div>
-      <aside className="hidden lg:flex flex-col bg-[var(--color-paper-soft)] sticky top-0 h-full w-[420px] overflow-hidden">
+      <aside className="catalog-glass hidden lg:flex flex-col sticky top-0 h-full w-[420px] overflow-hidden">
         {fromAgent && (
           <button
             type="button"
@@ -136,7 +160,12 @@ export function CatalogoWorkspace({
       >
         {panel}
       </MobileChatOverlay>
-      <ProductDrawer product={selected} onClose={() => setSelected(null)} />
+      <ProductDrawer
+        product={selected}
+        onClose={() => setSelected(null)}
+        names={names}
+        sales={sales}
+      />
     </div>
   );
 }

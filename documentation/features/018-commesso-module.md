@@ -2,7 +2,7 @@
 type: feature
 project: studio
 created: 2026-08-26
-last_verified: 2026-08-26
+last_verified: 2026-08-27
 tags: [agent, catalogo, saleor, prodotti, prezzi, danea, money-path, generative-ui]
 ---
 
@@ -152,8 +152,70 @@ diff, righe a prezzo zero saltate.
   Controllare **una** variante contro la config fiscale del canale prod.
   Sbagliarlo significa essere del 22% fuori su tutto il catalogo.
 
+## Il pannello (FUT-82, 2026-08-27)
+
+La lista mostra anteprima thumbnail, prezzo di riferimento (main shop, altrimenti
+il minimo), dove e' pubblicato col **nome della scuola** e quanto ha venduto.
+Ordine: pubblicati prima, piu' venduti sopra, poi alfabetico. Ricerca fuzzy
+client-side (`lib/fuzzy.ts`) su nome, SKU e categoria. Skeleton al caricamento,
+stagger `.studio-row-in` sulle prime 8 righe, lastra di vetro (`.catalog-glass`,
+blur su `::before` — sul nodo diventerebbe containing block del drawer `fixed`).
+
+Il **magazzino non e' in lista**: a chi guarda il catalogo dice poco. Al suo
+posto le vendite, che vengono da `commesso/sales.ts`: query ordini leggera
+(`status`, `userEmail`, `channel.slug`, `lines{productSku quantity}`), aggregata
+per SKU con totale + per canale, senza annullati e senza le email di test
+(`ORDERS_REPORT_EXCLUDE_EMAILS`), cache in memoria 15 minuti.
+Ceiling: cache non condivisa tra istanze e persa al redeploy — e' un contatore,
+non soldi.
+
+I **nomi dei portali** arrivano da Payload (`listPortals().nome`, stesso join del
+modulo Ordini), col nome canale Saleor come fallback per il main shop e i portali
+pilot senza doc Payload.
+
+Un endpoint solo: `GET /api/v1/products/insights` → `{ channels, sales }`,
+relayato da `studio/src/app/api/products/insights/route.ts`. E' contorno: se
+cade, il pannello resta in piedi con gli slug e le vendite a zero.
+
+Nel drawer "Pubblicato su" e' una lista ordinata per vendite (nome scuola,
+prezzo su quel portale — "da X" se le varianti hanno prezzi diversi — pezzi
+venduti) con ricerca fuzzy da 6 portali in su. I prezzi per canale non si
+ripetono dentro il blocco variante.
+
+File nuovi: `studio-server/src/features/commesso/sales.ts`,
+`studio/src/components/catalogo/{catalog-view.ts,ProductThumbnail.tsx,PortalPrices.tsx}`.
+
 ## Cosa resta fuori
 
 - immagini prodotto automatiche (oggi `add_product_image` vuole un URL)
 - attributi variante veri (capacita/colore finiscono nel nome della variante)
 - cancellazione prodotti, per scelta
+
+## La chat non elenca i prodotti (FUT-82, 2026-08-27)
+
+Nico rispondeva a "cerca iPad" con una lista markdown di 12 prodotti, ognuno con
+un'immagine a piena larghezza. Non era CSS: `list_products` versava nel contesto
+il `ProductRow` integrale, `imageUrl` compreso, e il modello lo ricopiava.
+
+Tre difese, in ordine di peso:
+
+1. `commesso/prompt.ts` — "REGOLA FERREA dopo list_products": il pannello si
+   popola da solo, vietato enumerare, massimo 2 frasi, mai immagini markdown.
+   Stessa formula di `vat-relief/prompt.ts` e `onboard-school/prompt.ts`.
+2. `commesso/agent.ts` — `experimental_toToolResultContent` su `list_products` e
+   `get_product`: al client va il result **intero** (il pannello ci prende le
+   thumbnail via `CatalogoWorkspace.onEvent`), al modello una copia senza
+   `imageUrl`, `description`, `id`. Se non ha l'URL non puo' incollarlo.
+3. `studio`: `.chat-md img { max-height: 140px }` in `globals.css` — rete di
+   sicurezza per tutte le chat, non solo per Nico. `MarkdownContent` di
+   studio-core non fa override di `img` e non accetta prop `components`, quindi
+   il wrapper `<div className="chat-md">` in `ChannelMessage.tsx` e' l'unico
+   punto di aggancio.
+
+I prezzi per variante non si elencano: nel drawer il "da X €" di un portale e'
+un bottone che apre `VariantPricesPopover` (variante -> prezzo, da
+`variantPricesOn`). Div assoluto e non `[popover]` nativo: il preflight Tailwind
+azzera il `margin:auto` con cui il browser centra i popover nativi, e sarebbe
+codice in piu' per la stessa cosa. In lista il prezzo diventa "da X €" quando le
+varianti divergono (`listPriceLabel`), senza popover: un bottone dentro il
+bottone della riga.
