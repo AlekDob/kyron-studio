@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { X, ExternalLink } from "lucide-react";
 import type { OrderRow } from "@/lib/gateway";
 import { EditableLines } from "./EditableLines";
+import { OrderComms } from "./OrderComms";
 import { StatusBadges, PortalLink } from "./StatusBadges";
 import { Section, InfoRow } from "./drawer-primitives";
 import {
@@ -206,6 +207,10 @@ export function OrderDrawer({
           </Section>
 
           {/* Parte B: nota libera interna + FootNotes Danea. */}
+          <Section title="Comunicazioni inviate">
+            <OrderComms orderNumber={current.number} />
+          </Section>
+
           <Section title="Note">
             <NoteSection order={current} onSaved={onNoteSaved} />
           </Section>

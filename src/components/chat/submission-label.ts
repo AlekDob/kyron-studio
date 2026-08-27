@@ -13,7 +13,8 @@ interface SubmissionData {
   // Agevolazioni: documenti 104 caricati.
   names?: string[];
   orderNumber?: string | null;
-  // Catalogo: file listino Danea caricato.
+  // Catalogo: file XML Danea caricato (listino prodotti o DDT).
+  kind?: string;
   filename?: string;
   recordCount?: number;
   groupCount?: number;
@@ -23,7 +24,11 @@ export function describeSubmission(sub: GenerativeSubmission): string {
   const d = (sub.data ?? {}) as SubmissionData;
 
   if (typeof d.filename === "string") {
-    return `Ho caricato ${d.filename}: ${d.recordCount ?? 0} righe, ${d.groupCount ?? 0} gruppi`;
+    const what =
+      d.kind === "ddt"
+        ? `${d.recordCount ?? 0} DDT`
+        : `${d.recordCount ?? 0} righe, ${d.groupCount ?? 0} gruppi`;
+    return `Ho caricato ${d.filename}: ${what}`;
   }
   if (Array.isArray(d.names) && d.names.length > 0) {
     const order = d.orderNumber ? ` per l'ordine ${d.orderNumber}` : "";

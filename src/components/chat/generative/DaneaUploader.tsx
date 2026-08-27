@@ -1,6 +1,7 @@
 "use client";
 
-// Caricamento del file prodotti Danea (EcommProdotti.xml).
+// Caricamento di un export XML di Danea: listino prodotti (EcommProdotti.xml)
+// oppure documenti/DDT. Il tipo lo riconosce il server dal file, non l'utente.
 // L'XML non viene archiviato: studio-server lo parsa e tiene in memoria solo i
 // record per un'ora, il tempo di guardare il piano e confermare.
 import { useRef, useState, type ReactElement } from "react";
@@ -8,6 +9,7 @@ import { Upload, FileCode, Check } from "lucide-react";
 
 interface UploadedImport {
   id: string;
+  kind: "products" | "ddt";
   filename: string;
   recordCount: number;
   groupCount: number;
@@ -63,7 +65,7 @@ export function DaneaUploader({
   return (
     <div className="rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper)] p-4">
       <p className="mb-3 text-sm font-medium text-[var(--color-ink)]">
-        File prodotti da Danea
+        File XML da Danea
       </p>
 
       {!locked && (
@@ -74,7 +76,7 @@ export function DaneaUploader({
           className="flex w-full flex-col items-center gap-2 rounded-[var(--radius-card)] border border-dashed border-[var(--color-line)] bg-[var(--color-paper-muted)] px-4 py-6 text-sm text-[var(--color-ink-muted)] hover:border-[var(--color-action)] disabled:opacity-50"
         >
           <Upload className="h-5 w-5" aria-hidden="true" />
-          {uploading ? "Lettura del file..." : "Scegli l'export XML (EcommProdotti.xml)"}
+          {uploading ? "Lettura del file..." : "Scegli l'export XML (listino prodotti o DDT)"}
         </button>
       )}
 
@@ -93,7 +95,9 @@ export function DaneaUploader({
             {file.filename}
           </span>
           <span className="shrink-0 text-xs text-[var(--color-ink-muted)]">
-            {file.recordCount} righe, {file.groupCount} gruppi
+            {file.kind === "ddt"
+              ? `${file.recordCount} DDT`
+              : `${file.recordCount} righe, ${file.groupCount} gruppi`}
           </span>
         </div>
       )}
@@ -107,17 +111,17 @@ export function DaneaUploader({
           disabled={!file || uploading}
           className="mt-3 w-full rounded-[var(--radius-pill)] bg-[var(--color-action)] px-4 py-2 text-sm font-medium text-[var(--color-paper)] hover:bg-[var(--color-action-hover)] disabled:opacity-30"
         >
-          Calcola il piano
+          {file?.kind === "ddt" ? "Invia il file" : "Calcola il piano"}
         </button>
       ) : (
         <p className="mt-3 flex items-center gap-1.5 text-xs text-[var(--color-ink-muted)]">
           <Check className="h-3.5 w-3.5" aria-hidden="true" />
-          File inviato: sto confrontando col catalogo
+          File inviato: ci sto lavorando
         </p>
       )}
 
       <p className="mt-3 text-xs text-[var(--color-ink-muted)]">
-        Il file non viene archiviato: resta in memoria un'ora, il tempo dell'import.
+        Il file non viene archiviato: resta in memoria un'ora.
       </p>
     </div>
   );

@@ -2,15 +2,33 @@
 import { gatewayFetch, type LineColorChange } from "@/lib/gateway";
 
 // Cambia lo stato lavorazione di un ordine via BFF (PATCH /api/v1/orders/status).
-// Ritorna { ok, status, emailed }: emailed=true se e' partita la mail "spedito".
+// Ritorna { ok, status, emailed, alreadyNotified }: emailed=true se e' partita
+// ora la mail "spedito"; alreadyNotified=true se era gia' partita in passato
+// (la mail non si ripete a ogni click).
 export async function updateOrderStatusAction(
   id: string,
   status: string,
-): Promise<{ ok: boolean; status: string; emailed: boolean }> {
+): Promise<{ ok: boolean; status: string; emailed: boolean; alreadyNotified: boolean }> {
   return gatewayFetch("/api/v1/orders/status", {
     method: "PATCH",
     body: JSON.stringify({ id, status }),
   });
+}
+
+// Comunicazioni gia' inviate al cliente di un ordine (registro email-log).
+export interface OrderComm {
+  campaign?: string;
+  subject?: string;
+  body?: string;
+  sentAt?: string;
+  status?: string;
+}
+
+export async function fetchOrderCommsAction(number: string): Promise<OrderComm[]> {
+  const res = await gatewayFetch<{ comms: OrderComm[] }>(
+    `/api/v1/orders/comms?number=${encodeURIComponent(number)}`,
+  );
+  return res.comms ?? [];
 }
 
 // Brain: decision-019 — segna il buono Carta del Docente come acquisito e manda

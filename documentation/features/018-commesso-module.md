@@ -223,3 +223,18 @@ azzera il `margin:auto` con cui il browser centra i popover nativi, e sarebbe
 codice in piu' per la stessa cosa. In lista il prezzo diventa "da X €" quando le
 varianti divergono (`listPriceLabel`), senza popover: un bottone dentro il
 bottone della riga.
+
+## Nico fa anche gli ordini (2026-08-27)
+
+`list_orders` (periodo + portale + stato), `get_order` (per numero visibile) e
+`set_order_status` (con conferma) in `commesso/order-tools.ts`. Fuori dalla sua
+portata i money-path — bonifico incassato, carta del docente, override IVA, edit
+righe — che restano sul pannello Ordini con le loro guardie.
+
+I tool nuovi stanno in file separati (`order-tools.ts`, `ddt-tools.ts`) che
+esportano un oggetto da spalmare in `tools:`: `agent.ts` era gia' a 398 righe.
+`safe()` e `readable()` sono usciti in `commesso/tool-safe.ts` per non creare un
+import circolare.
+
+Le comunicazioni ai clienti dai DDT Danea hanno una feature loro:
+`019-ddt-comms.md`.

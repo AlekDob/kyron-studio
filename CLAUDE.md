@@ -99,6 +99,7 @@ Live su `https://studio.kyronedu.it` (Coolify + Hetzner CCX23).
 - `documentation/features/015-chat-ui-kit.md` — kit chat condiviso: avatar blobatar per agente (hue libera, tone bloccato 0.45), `ChatBubble` con nome+avatar per l'assistente e loader "thinking" a sfere del brand, `ChatComposer` unico per tutte e 6 le chat. Il nome dell'agente e' il seed dell'avatar
 - `documentation/features/016-studio-dashboard-cruscotto.md` — cruscotto home (tile 30gg in streaming Suspense, PostHog in `cache()`) + gli agenti con nome proprio (Livia, Elsa, Ada, Nico, Vera) da `modules.ts`, pagina `/agenti`
 - `documentation/features/018-commesso-module.md` — Modulo Catalogo (Nico): pannello prodotti + drawer + chat che scrive su Saleor prod. Prezzi solo in due passaggi (piano → applica) con guardia kit e drift detection; import listino Danea
+- `documentation/features/019-ddt-comms.md` — Comunicazioni ai clienti dai DDT Danea: Nico legge l'export documenti, scrive la mail dal brief dell'operatore, la mostra in anteprima e la manda a lotti da 50. Idempotenza durevole su Payload (`email-log`, `key` unique = lock), allowlist `DDT_MAIL_ALLOW`. Nico gestisce anche gli ordini in lettura + stato lavorazione
 - `documentation/features/013-risorse-module.md` — Risorse dentro Dati (`/dati/risorse`): CRUD dedicato con upload PDF + copertina, bozza/pubblicata. Andrea non usa piu' `/admin` Payload
 - Cross-progetto: `Kyron/documentation/workstreams/03-studio-standalone.md` — login OTP, preview iframe, review system
 - `documentation/diary/` — changelog locale

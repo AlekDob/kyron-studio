@@ -51,6 +51,10 @@ const DaneaUploader = lazy(() =>
 const DaneaImportPlan = lazy(() =>
   import("./DaneaImportPlan").then((m) => ({ default: m.DaneaImportPlan })),
 );
+// Modulo Catalogo: comunicazione ai clienti dai DDT Danea
+const DdtMailPlan = lazy(() =>
+  import("./DdtMailPlan").then((m) => ({ default: m.DdtMailPlan })),
+);
 const AnomalyReport = lazy(() =>
   import("./AnomalyReport").then((m) => ({ default: m.AnomalyReport })),
 );
@@ -94,6 +98,9 @@ const COMPONENT_REGISTRY: Record<
     Record<string, unknown>
   >,
   DaneaImportPlan: DaneaImportPlan as unknown as React.ComponentType<
+    Record<string, unknown>
+  >,
+  DdtMailPlan: DdtMailPlan as unknown as React.ComponentType<
     Record<string, unknown>
   >,
 };

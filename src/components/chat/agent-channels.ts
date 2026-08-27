@@ -75,13 +75,15 @@ export const CHANNELS: Record<string, ChannelConfig> = {
   catalogo: {
     endpoint: "/api/agent/commesso",
     intro:
-      "Gestisco il catalogo: creo e modifico prodotti, giacenze e prezzi su Saleor. I prezzi passano sempre da un piano che ti mostro prima di applicarlo, e dopo controllo che i kit dei portali tornino.",
+      "Gestisco catalogo e ordini: prodotti, giacenze, prezzi, stato delle lavorazioni. Posso anche mandare una comunicazione ai clienti partendo da un export di DDT di Danea. Prezzi e mail passano sempre da un piano che ti mostro prima.",
     suggestions: [
       "Mostrami gli iPad",
       "Cambia la descrizione di questo prodotto",
       "Porta il prezzo a 810 sul main shop",
       "Quanti pezzi abbiamo in magazzino",
       "Controlla i prezzi di tutti i portali",
+      "Ordini di questa settimana",
+      "Manda una comunicazione sui ritardi di consegna",
     ],
     toolLabels: {
       list_products: "Catalogo",
@@ -100,6 +102,12 @@ export const CHANNELS: Record<string, ChannelConfig> = {
       render_danea_uploader: "File Danea",
       plan_danea_import: "Piano import",
       apply_danea_import: "Import prodotti",
+      list_orders: "Ordini",
+      get_order: "Ordine",
+      set_order_status: "Stato ordine",
+      parse_ddt_summary: "Lettura DDT",
+      plan_ddt_mailing: "Piano comunicazione",
+      send_ddt_mailing: "Invio comunicazione",
     },
   },
   // Vera ha il suo loop di messaggi (proposte di annotazione): del canale usa

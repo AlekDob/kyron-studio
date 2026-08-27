@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import { NextRequest } from "next/server";
 import { headers } from "next/headers";
 
-// Proxy multipart verso studio-server per il file prodotti Danea.
+// Proxy multipart verso studio-server per un file XML Danea (listino o DDT).
 // L XML non tocca il disco qui: passa dritto allo store in memoria del
 // server, che lo parsa e tiene solo i record (TTL 1h).
 const STUDIO_SERVER_URL =

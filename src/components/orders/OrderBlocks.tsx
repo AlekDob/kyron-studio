@@ -35,7 +35,15 @@ export function StatusSelector({
     onStatusChange(order.id, status); // ottimistico
     try {
       const res = await updateOrderStatusAction(order.id, status);
-      setNote(res.emailed ? "Email di spedizione inviata al cliente." : "Stato aggiornato.");
+      // La mail "spedito" parte una volta sola: se era gia' partita, dillo
+      // invece di lasciar credere che sia stata rimandata.
+      setNote(
+        res.emailed
+          ? "Email di spedizione inviata al cliente."
+          : res.alreadyNotified
+            ? "Stato aggiornato. Email di spedizione gia' inviata in precedenza."
+            : "Stato aggiornato.",
+      );
     } catch {
       setNote("Errore nel salvataggio. Riprova.");
       onStatusChange(order.id, order.workflowStatus); // rollback
