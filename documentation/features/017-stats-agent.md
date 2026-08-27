@@ -37,6 +37,7 @@ La Query API PostHog sta a **~120 query/ora per key**. La stessa key serve
 | `overview({ range })` | KPI, serie, citta', fonti, pagine, device, per portale sui 7 range predefiniti. Riusa `getOverview`. | no |
 | `run_hogql({ query, title, view })` | Sanifica, esegue, ritorna `{columns, rows}` + descriptor `_ui` `Chart`. | si |
 | `render_chart({ title, kind, columns, rows })` | Disegna dati che Ada ha gia' in mano (da `overview` o dai tool Meta) senza rifare una query. Stesso descriptor `Chart`. | no |
+| `sales_by_product({ range, channelSlug?, view?, top? })` | Prodotti realmente venduti: quantita', fatturato e ordini per prodotto dalle righe d'ordine **Saleor** (`fetchOrdersForRange`), esclusi CANCELED e email di test. Descriptor `_ui` `Chart`. PostHog non conosce i prodotti. | no |
 | `list_portals()` | slug + nome dei portali, per tradurre "Massari" nello `school_slug`. | no |
 | `get_meta_campaigns({ range })` | spesa, impression, click, CTR, CPC per campagna dalla Marketing API. Descriptor `_ui` `MetaCampaignsCard`. | no |
 | `get_meta_campaign_detail({ campaignId, range })` | serie giornaliera di una campagna. | no |
@@ -109,7 +110,8 @@ Convenzioni imposte: visitatori = `count(DISTINCT person_id)`, pageview =
 | `studio-server/src/features/analytics/posthog.ts` | `runHogqlWithColumns` (come `runHogql` ma tiene i nomi delle colonne) |
 | `studio-server/src/features/stats-agent/hogql-guard.ts` | sanitize + budget |
 | `studio-server/src/features/stats-agent/prompt.ts` | schema PostHog + regole di query |
-| `studio-server/src/features/stats-agent/agent.ts` | `runStatsAgent`, `maxSteps: 6`, i 3 tool |
+| `studio-server/src/features/stats-agent/agent.ts` | `runStatsAgent`, `maxSteps: 6`, i tool |
+| `studio-server/src/features/stats-agent/sales.ts` | `rangeToDays` + `aggregateByProduct` — vendite per prodotto da Saleor (test in `tests/features/stats-sales-by-product.test.ts`) |
 | `studio-server/src/features/stats-agent/route.ts` | SSE `/agents/stats` (tenant + studioAuth) |
 | `studio/src/app/(authed)/stats/page.tsx` | pagina, chat a larghezza piena (no pannello laterale) |
 | `studio/src/components/stats/StatsChat.tsx` | chat client |

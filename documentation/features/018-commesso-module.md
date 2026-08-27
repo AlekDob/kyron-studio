@@ -50,9 +50,11 @@ Alek. La protezione sta nel codice, non in un click:
 - **Niente `delete_product`.** Si de-pubblica dal canale: gli ordini vecchi
   restano attaccati al prodotto.
 
-Il verificatore post-scrittura c'e' gia': Bruno (`price-guard`, feature 011) e'
-sola lettura e deterministico. Dopo un cambio prezzo su un portale si gira
-`run_all_checks`.
+Il verificatore post-scrittura ora e' **dentro Nico** (dal 27/08/2026: l'agente
+Bruno e' stato fuso qui, vedi feature 011). Il motore resta lo stesso codice
+deterministico di prima (`price-guard/check.ts`), Nico lo chiama e basta: dopo
+`apply_price_plan` il prompt gli impone `check_portal` sul portale toccato,
+senza aspettare che l'utente lo chieda.
 
 ## Gotcha: la ricerca di Saleor non funziona su questa installazione
 
@@ -78,6 +80,8 @@ il search vector di Saleor.
 | `render_danea_uploader` | riquadro di caricamento file | `DaneaUploader` |
 | `plan_danea_import` | diff nuovi / prezzi cambiati / invariati | `DaneaImportPlan` |
 | `apply_danea_import({ confirm, mappings })` | crea solo le cose nuove | no |
+| `run_all_checks()` | Price Guard su tutti i portali, sola lettura | `AnomalyReport` |
+| `check_portal({ query })` | Price Guard su un portale (fuzzy match) | `AnomalyReport` |
 
 ## Import Danea (fase 2)
 

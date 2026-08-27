@@ -27,20 +27,6 @@ export const CHANNELS: Record<string, ChannelConfig> = {
       get_meta_campaign_detail: "Dettaglio campagna",
     },
   },
-  checks: {
-    endpoint: "/api/agent/price-guard",
-    intro:
-      "Controllo prezzi e sconti dei portali su Saleor produzione e ti spiego le anomalie. Solo lettura.",
-    suggestions: [
-      "Controlla tutti i portali",
-      "Controlla massari",
-      "Quali portali hanno sconti sbagliati",
-    ],
-    toolLabels: {
-      run_all_checks: "Controllo tutti i portali",
-      check_portal: "Controllo portale",
-    },
-  },
   "vat-relief": {
     endpoint: "/api/agent/vat-relief",
     intro:
@@ -89,12 +75,13 @@ export const CHANNELS: Record<string, ChannelConfig> = {
   catalogo: {
     endpoint: "/api/agent/commesso",
     intro:
-      "Gestisco il catalogo: creo e modifico prodotti, giacenze e prezzi su Saleor. I prezzi passano sempre da un piano che ti mostro prima di applicarlo.",
+      "Gestisco il catalogo: creo e modifico prodotti, giacenze e prezzi su Saleor. I prezzi passano sempre da un piano che ti mostro prima di applicarlo, e dopo controllo che i kit dei portali tornino.",
     suggestions: [
       "Mostrami gli iPad",
       "Cambia la descrizione di questo prodotto",
       "Porta il prezzo a 810 sul main shop",
       "Quanti pezzi abbiamo in magazzino",
+      "Controlla i prezzi di tutti i portali",
     ],
     toolLabels: {
       list_products: "Catalogo",
@@ -108,6 +95,8 @@ export const CHANNELS: Record<string, ChannelConfig> = {
       publish_product: "Pubblicazione",
       plan_prices: "Piano prezzi",
       apply_price_plan: "Applicazione prezzi",
+      run_all_checks: "Controllo tutti i portali",
+      check_portal: "Controllo portale",
       render_danea_uploader: "File Danea",
       plan_danea_import: "Piano import",
       apply_danea_import: "Import prodotti",

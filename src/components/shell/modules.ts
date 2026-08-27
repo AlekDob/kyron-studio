@@ -6,7 +6,6 @@ import {
   Eye,
   ChartNoAxesColumn,
   ShoppingBag,
-  ShieldCheck,
   FileCheck,
   LineChart,
   Bot,
@@ -59,15 +58,6 @@ export const AGENTS: KyronAgent[] = [
     status: "live",
   },
   {
-    id: "checks",
-    ...agent("Bruno", "Controlli"),
-    description: "Controlla prezzi e sconti dei portali e ti spiega le anomalie.",
-    href: "/checks",
-    icon: ShieldCheck,
-    kind: "agent",
-    status: "live",
-  },
-  {
     id: "vat-relief",
     ...agent("Elsa", "Agevolazioni"),
     description: "Legge i documenti 104 e valida le richieste di IVA al 4%.",
@@ -89,7 +79,7 @@ export const AGENTS: KyronAgent[] = [
   {
     id: "catalogo",
     ...agent("Nico", "Catalogo"),
-    description: "Catalogo, giacenze e prezzi dello shop. Scrive su Saleor.",
+    description: "Catalogo, giacenze e prezzi dello shop. Scrive su Saleor e controlla i portali.",
     href: "/catalogo",
     icon: Package,
     kind: "agent",

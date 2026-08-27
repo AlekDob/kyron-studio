@@ -2,7 +2,7 @@
 type: feature
 project: kyron-studio
 created: 2026-07-27
-last_verified: 2026-07-27
+last_verified: 2026-08-27
 tags: [controlli, price-guard, agente, sola-lettura, report-email]
 ---
 
@@ -10,7 +10,16 @@ tags: [controlli, price-guard, agente, sola-lettura, report-email]
 
 ## Cosa
 
-Modulo `/checks` ("Controlli" in sidebar) + report email giornaliero. Verifica
+> **2026-08-27 — l'agente Bruno non esiste piu'.** I due tool `run_all_checks` e
+> `check_portal` sono passati a **Nico (Catalogo)**, il modulo `/checks` e la
+> rotta `/agents/price-guard` sono stati rimossi. Motivo: chi cambia i prezzi
+> ora controlla nello stesso thread, senza cambiare canale e rispiegare il
+> contesto. Il giudizio resta codice deterministico (`runPriceGuard`), quindi
+> Nico non puo' ammorbidire il verdetto piu' di quanto potesse Bruno. Il
+> **report email giornaliero e gli endpoint admin restano identici**: sono le
+> altre due porte sullo stesso motore.
+
+Report email giornaliero + tool di controllo dentro Nico (Catalogo). Verifica
 prezzi e sconti dei portali scuola su Saleor produzione con **sei regole**
 indipendenti e spiega le anomalie in italiano semplice, sia in chat (a
 richiesta) sia via mail (automatico). Nessuna modifica: sia l'agente sia lo
@@ -80,14 +89,11 @@ portali scuola con un catalogo ristretto.
 - `src/features/price-guard/render.ts` — HTML email: card per anomalia, riga `mostrato → reale` con badge scarto, riepilogo (anomalie/portali/ordini coinvolti/scarto totale €), chip ordini colpiti (numero+data+importo)
 - `src/features/price-guard/report.ts` — `runAndNotify()`: mail SOLO se `anomalies.length > 0` (override `PRICE_GUARD_ALWAYS_SEND`); `armDailyPriceGuard()` scheduler 08:45 Europe/Rome opt-in `PRICE_GUARD_ENABLED`, prima di analytics (09:00) e ordini (09:30)
 - `src/features/price-guard/route.ts` — `POST /api/v1/price-guard/run` (con mail, admin) e `/check` (dry, opzionale `portalSlug`)
-- `src/features/price-guard/agent.ts` — agente SSE, tool `run_all_checks` (tutti i portali) e `check_portal` (fuzzy match via `resolvePortal`)
-- `src/features/price-guard/agent-route.ts` — `POST /agents/price-guard`, protetta da `studioAuthMiddleware`
+- `src/features/commesso/agent.ts` — i tool `run_all_checks` e `check_portal` (fuzzy match via `resolvePortal`) vivono qui, dentro Nico. ~~`price-guard/agent.ts` + `agent-route.ts`~~ rimossi il 27/08/2026.
 - `tests/features/price-guard-rules.test.ts` — matematica di riconciliazione: doppio sconto, overcharge, conti ok, voucher mancante, componente non risolto (regressione)
 
 **studio:**
-- `src/app/(authed)/checks/page.tsx` — pagina modulo
-- `src/components/checks/ChecksWorkspace.tsx` — split-pane: chat a sinistra, ultimo report anomalie a destra
-- `src/components/checks/ChecksChat.tsx` — chat SSE, sola lettura (readOnly su tutti i componenti generativi)
+- ~~`src/app/(authed)/checks/`, `src/components/checks/`, `src/app/api/agent/price-guard/`~~ rimossi il 27/08/2026: il report anomalie appare nella chat di Nico via descriptor `_ui` `AnomalyReport` (il componente resta, e' nel registry).
 - `src/components/chat/generative/AnomalyReport.tsx` — componente generativo che renderizza l'elenco anomalie raggruppate per tipo
 
 ## Pattern
@@ -137,7 +143,7 @@ giorni, non i bug di sintassi (quelli li becca tsc).
 ```bash
 cd ~/Desktop/Dev/Personal/Kyron/studio-server && npm run dev
 cd ~/Desktop/Dev/Personal/Kyron/studio && STUDIO_DEV_USER=tua@email npm run dev
-# http://localhost:3010/checks → chiedi "controlla tutti i portali"
+# http://localhost:3010/catalogo → chiedi a Nico "controlla tutti i portali"
 ```
 
 Dry-run diretto in prod (senza mail): `POST /api/v1/price-guard/check` con
