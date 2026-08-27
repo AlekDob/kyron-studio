@@ -1,8 +1,14 @@
 "use client";
 
 import { useState, type ReactElement } from "react";
-import { Button, Card, Input } from "@/components/ui";
+import { Button, Card } from "@/components/ui";
 import { sendDdtTestMailAction } from "@/app/(authed)/agenti/actions";
+
+const KYRON_LOGO_URL = "https://kyronedu.it/kyron-logo.png";
+
+function previewHtml(html: string): string {
+  return html.replaceAll("cid:kyron-logo", KYRON_LOGO_URL);
+}
 
 // Piano di invio della comunicazione ai clienti dei DDT caricati. Non manda
 // niente: mostra chi riceve, cosa riceve e cosa e' gia' partito. L'invio vero
@@ -88,10 +94,37 @@ export function DdtMailPlan({ plan, testTo, importId }: DdtMailPlanProps): React
         </p>
       )}
 
+      {importId && shown && (
+        <div className="mt-3 overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper)]">
+          <div className="flex items-center gap-2 px-3 py-2">
+            <span className="w-16 shrink-0 text-xs font-medium text-[var(--color-ink-muted)]">
+              A:
+            </span>
+            <input
+              type="email"
+              aria-label="Destinatario della prova"
+              value={to}
+              onChange={(e) => setTo(e.target.value)}
+              placeholder="tu@kyronedu.it"
+              className="min-w-0 flex-1 bg-transparent text-sm text-[var(--color-ink)] outline-none"
+            />
+            <Button type="button" onClick={() => void sendTest()} disabled={!to || sending}>
+              {sending ? "Invio..." : "Invia prova"}
+            </Button>
+          </div>
+          <div className="flex items-start gap-2 border-t border-[var(--color-line)] px-3 py-2">
+            <span className="w-16 shrink-0 text-xs font-medium text-[var(--color-ink-muted)]">
+              Oggetto:
+            </span>
+            <span className="text-sm text-[var(--color-ink)]">{plan.campaign.subject}</span>
+          </div>
+          <p className="border-t border-[var(--color-line)] bg-[var(--color-paper-muted)] px-3 py-2 text-xs text-[var(--color-ink-soft)]">
+            {note ?? `La prova verra' inviata solo a ${to || "questo indirizzo"}. Nessun cliente dell'anteprima ricevera' la mail.`}
+          </p>
+        </div>
+      )}
+
       <div className="mt-3 border-t border-[var(--color-line)] pt-2">
-        <p className="text-xs font-medium text-[var(--color-ink)]">
-          {plan.campaign.subject}
-        </p>
         {plan.campaign.paragraphs.map((p, i) => (
           <p key={i} className="mt-1 text-xs text-[var(--color-ink-soft)]">
             {p}
@@ -101,6 +134,12 @@ export function DdtMailPlan({ plan, testTo, importId }: DdtMailPlanProps): React
 
       {shown && (
         <div className="mt-3">
+          <p className="text-xs font-medium text-[var(--color-ink)]">
+            Dati cliente nell'anteprima
+          </p>
+          <p className="mt-0.5 text-xs text-[var(--color-ink-muted)]">
+            Questi indirizzi cambiano solo i dati mostrati sotto. Non ricevono la prova.
+          </p>
           <div className="flex items-center gap-2">
             {plan.previews.map((p, i) => (
               <button
@@ -120,31 +159,10 @@ export function DdtMailPlan({ plan, testTo, importId }: DdtMailPlanProps): React
           {/* iframe: l'HTML della mail non entra nel DOM di Studio. */}
           <iframe
             title={`Anteprima per ${shown.email}`}
-            srcDoc={shown.html}
+            srcDoc={previewHtml(shown.html)}
             sandbox=""
             className="mt-2 h-64 w-full rounded-[var(--radius-card)] border border-[var(--color-line)] bg-white"
           />
-        </div>
-      )}
-
-      {importId && shown && (
-        <div className="mt-3 border-t border-[var(--color-line)] pt-3">
-          <p className="text-xs font-medium text-[var(--color-ink)]">Invia una prova</p>
-          <div className="mt-1 flex items-center gap-2">
-            <Input
-              type="email"
-              value={to}
-              onChange={(e) => setTo(e.target.value)}
-              placeholder="tu@kyronedu.it"
-              className="flex-1"
-            />
-            <Button type="button" onClick={() => void sendTest()} disabled={!to || sending}>
-              {sending ? "Invio..." : "Invia una prova"}
-            </Button>
-          </div>
-          <p className="mt-1 text-xs text-[var(--color-ink-muted)]">
-            {note ?? `Una mail sola, con i dati di ${shown.email}. Non intacca l'invio vero.`}
-          </p>
         </div>
       )}
 
