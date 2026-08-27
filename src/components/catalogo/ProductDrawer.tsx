@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui";
 import type { Product } from "@/lib/products";
 import { ProductThumbnail } from "./ProductThumbnail";
 import { PortalPrices } from "./PortalPrices";
-import { VariantDots } from "./VariantDots";
 import { productSales, type ChannelNames, type SalesIndex } from "./catalog-view";
 
 // Drawer dettaglio prodotto. Stessa meccanica di OrderDrawer: bottom sheet su
@@ -140,12 +139,6 @@ export function ProductDrawer({
           <div className="py-5">
             <Section title={`Portali (${current.channels.length})`}>
               <PortalPrices product={current} names={names} sales={sales} />
-            </Section>
-          </div>
-
-          <div className="py-5">
-            <Section title={`Varianti (${current.variants.length})`}>
-              <VariantDots variants={current.variants} sales={sales} />
             </Section>
           </div>
 
