@@ -50,10 +50,15 @@ function pricesOn(product: Product, channel: string): number[] {
     .filter((p): p is number => p !== null);
 }
 
-/** Etichetta breve della variante: il colore se c'e', altrimenti lo SKU. */
+/**
+ * Etichetta della variante nel popover prezzi: la capacita', non il colore.
+ * Un iPad costa 509/639/889 per 128/256/512GB e lo stesso su tutti i colori:
+ * etichettare col colore mostrava "Blu 509, Rosa 509, Blu 639..." senza dire
+ * niente. Se il taglio non c'e' resta il nome della variante.
+ */
 function variantLabel(v: Product["variants"][number]): string {
-  const color = v.attributes.find((a) => /color|colore/i.test(a.name))?.value;
-  return color || v.name || v.sku;
+  const size = v.attributes.find((a) => /capacit|memoria|taglia/i.test(a.name))?.value;
+  return size || v.name || v.sku;
 }
 
 /** Prezzo di ogni variante su un canale: quello che sta dietro al "da X". */
@@ -61,12 +66,17 @@ export function variantPricesOn(
   product: Product,
   channel: string,
 ): Array<{ label: string; priceEur: number }> {
-  return product.variants
-    .map((v) => ({
-      label: variantLabel(v),
-      priceEur: v.channels.find((c) => c.channelSlug === channel)?.priceEur ?? null,
-    }))
-    .filter((r): r is { label: string; priceEur: number } => r.priceEur !== null)
+  const seen = new Map<string, number>();
+  for (const v of product.variants) {
+    const price = v.channels.find((c) => c.channelSlug === channel)?.priceEur;
+    if (price === undefined || price === null) continue;
+    // Un taglio per riga: le quattro varianti colore dello stesso taglio hanno
+    // lo stesso prezzo e vanno unite. Se due tagli con la stessa etichetta
+    // avessero prezzi diversi si vedrebbero come due righe, ed e' giusto.
+    seen.set(`${variantLabel(v)}·${price}`, price);
+  }
+  return [...seen.entries()]
+    .map(([key, priceEur]) => ({ label: key.split("·")[0], priceEur }))
     .sort((a, b) => a.priceEur - b.priceEur);
 }
 

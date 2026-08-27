@@ -26,7 +26,7 @@ export function VariantPricesPopover({
       <div className="flex flex-col gap-1">
         {rows.map((r) => (
           <div
-            key={r.label}
+            key={`${r.label}-${r.priceEur}`}
             className="flex items-baseline justify-between gap-3 text-sm"
           >
             <span className="truncate text-[var(--color-ink-muted)]">{r.label}</span>
