@@ -33,4 +33,5 @@ export type {
 export { ChatBubble, type ChatBubbleProps } from "./ChatBubble";
 export { ActionCard, type ActionCardProps } from "./ActionCard";
 export { FloatingModal, type FloatingModalProps } from "./FloatingModal";
+export { Popover } from "./Popover";
 export { SourceCard, type SourceCardProps, type SourceType } from "./SourceCard";

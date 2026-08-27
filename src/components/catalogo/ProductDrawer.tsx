@@ -3,9 +3,10 @@ import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { Section, InfoRow } from "@/components/orders/drawer-primitives";
 import { Badge } from "@/components/ui";
-import type { Product, ProductVariant } from "@/lib/products";
+import type { Product } from "@/lib/products";
 import { ProductThumbnail } from "./ProductThumbnail";
 import { PortalPrices } from "./PortalPrices";
+import { VariantDots } from "./VariantDots";
 import { productSales, type ChannelNames, type SalesIndex } from "./catalog-view";
 
 // Drawer dettaglio prodotto. Stessa meccanica di OrderDrawer: bottom sheet su
@@ -125,46 +126,33 @@ export function ProductDrawer({
           </button>
         </header>
 
-        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-6 py-5 flex flex-col gap-6">
-          <Section title="Scheda">
-            <InfoRow label="Categoria" value={current.category ?? "—"} />
-            <InfoRow label="Tipo" value={current.productType} />
-            <InfoRow label="Codice interno" value={current.slug} />
-          </Section>
+        {/* Sezioni separate da una linea, non solo da spazio: con tre blocchi
+            diversi (info, portali, varianti) lo stacco deve essere leggibile. */}
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-6 divide-y divide-[var(--color-line)]">
+          <div className="py-5">
+            <Section title="Informazioni">
+              <InfoRow label="Categoria" value={current.category ?? "—"} />
+              <InfoRow label="Tipo" value={current.productType} />
+              <InfoRow label="Codice interno" value={current.slug} />
+            </Section>
+          </div>
 
-          <Section title={`Pubblicato su ${current.channels.length || ""}`.trim()}>
-            <PortalPrices product={current} names={names} sales={sales} />
-          </Section>
+          <div className="py-5">
+            <Section title={`Portali (${current.channels.length})`}>
+              <PortalPrices product={current} names={names} sales={sales} />
+            </Section>
+          </div>
 
-          {current.variants.map((v) => (
-            <VariantBlock key={v.id} variant={v} sales={sales} />
-          ))}
+          <div className="py-5">
+            <Section title={`Varianti (${current.variants.length})`}>
+              <VariantDots variants={current.variants} sales={sales} />
+            </Section>
+          </div>
 
           {/* Nessun bottone "chiedi": finche' il drawer e' aperto il prodotto
               viaggia da solo in coda al messaggio (selectionContext). */}
         </div>
       </aside>
     </div>
-  );
-}
-
-// I prezzi per portale non si ripetono qui: stanno tutti nella lista
-// "Pubblicato su", che marca "da X" quando le varianti hanno prezzi diversi.
-function VariantBlock({
-  variant,
-  sales,
-}: {
-  variant: ProductVariant;
-  sales: SalesIndex;
-}) {
-  return (
-    <Section title={variant.name || variant.sku}>
-      <InfoRow label="Codice" value={variant.sku || "—"} />
-      <InfoRow label="Venduti" value={`${sales[variant.sku]?.total ?? 0}`} />
-      <InfoRow label="Magazzino" value={`${variant.stock}`} />
-      {variant.attributes.map((a) => (
-        <InfoRow key={a.name} label={a.name} value={a.value} />
-      ))}
-    </Section>
   );
 }

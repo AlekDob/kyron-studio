@@ -39,18 +39,18 @@ export function PortalPrices({
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2.5">
       {all.length >= SEARCHABLE_FROM && (
         <div className="relative">
           <Search
             aria-hidden
-            className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--color-ink-muted)]"
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-ink-muted)]"
           />
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder={`Cerca tra ${all.length} portali`}
-            className="w-full rounded-lg border border-[var(--studio-glass-line)] bg-[var(--studio-glass-surface-strong)] pl-8 pr-2.5 py-1.5 text-xs outline-none focus:border-[var(--color-ink)]"
+            className="w-full rounded-lg border border-[var(--color-line-strong)] bg-[var(--color-paper-muted)] pl-9 pr-3 py-2 text-sm text-[var(--color-ink)] outline-none transition-colors placeholder:text-[var(--color-ink-muted)] focus:border-[var(--color-ink)] focus:bg-[var(--color-paper)]"
           />
         </div>
       )}
