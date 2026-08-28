@@ -1,12 +1,14 @@
 "use client";
 import { Drawer, DrawerHeader } from "@studiofuturo/studio-core";
 import type { OrderRow } from "@/lib/gateway";
-import { OrderDetail, type OrderDetailHandlers } from "./OrderDetail";
+import { OrderDetail, type OrderDetailHandlers, type OrderTab } from "./OrderDetail";
 import { formatDate, formatTime } from "./format";
 
 interface OrderDrawerProps extends OrderDetailHandlers {
   order: OrderRow | null;
   onClose: () => void;
+  tab: OrderTab;
+  onTabChange: (tab: OrderTab) => void;
 }
 
 // Guscio mobile della scheda ordine: bottom sheet col contenuto di OrderDetail.
@@ -14,7 +16,7 @@ interface OrderDrawerProps extends OrderDetailHandlers {
 // destra coprirebbe la chat, e l'agente deve vedere l'ordine mentre lo apre.
 // Il Drawer del core porta animazione, Esc, scroll-lock e cache dei figli
 // durante l'uscita: qui non serve nessuno stato locale.
-export function OrderDrawer({ order, onClose, ...handlers }: OrderDrawerProps) {
+export function OrderDrawer({ order, onClose, tab, onTabChange, ...handlers }: OrderDrawerProps) {
   return (
     <Drawer open={Boolean(order)} onClose={onClose} side="bottom">
       {order && (
@@ -26,7 +28,7 @@ export function OrderDrawer({ order, onClose, ...handlers }: OrderDrawerProps) {
             onClose={onClose}
             closeLabel="Chiudi"
           />
-          <OrderDetail order={order} {...handlers} />
+          <OrderDetail order={order} tab={tab} onTabChange={onTabChange} {...handlers} />
         </>
       )}
     </Drawer>

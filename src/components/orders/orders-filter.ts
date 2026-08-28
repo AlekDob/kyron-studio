@@ -90,6 +90,10 @@ export function emptyFilter(from: string, to: string): OrdersFilter {
 // workspace lo legge, OrdersReceipt lo valida. Se divergono e' un errore zod
 // visibile, non una card muta.
 
+/** Le quattro sezioni della scheda ordine. Anche l'agente le nomina cosi'. */
+export const ORDER_TABS = ["cliente", "pagamento", "prodotti", "note"] as const;
+export type OrderTab = (typeof ORDER_TABS)[number];
+
 export const filterSpecSchema = z.object({
   from: z.string(),
   to: z.string(),
@@ -109,6 +113,10 @@ export const ordersReceiptSchema = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("order"),
     number: z.string(),
+    /** Sezione da mostrare: l'agente puo' portare l'operatore sul punto giusto. */
+    tab: z.enum(ORDER_TABS).optional(),
+    /** L'agente ha scritto sull'ordine: i dati in pagina sono vecchi, rileggi. */
+    refresh: z.boolean().default(false),
     customer: z.string().default(""),
     portalName: z.string().default(""),
     totalGross: z.number().default(0),

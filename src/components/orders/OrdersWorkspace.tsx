@@ -30,6 +30,7 @@ import {
   ordersReceiptSchema,
   type OrdersFilter,
   type OrdersReceiptProps,
+  type OrderTab,
 } from "./orders-filter";
 
 // La ricevuta e' l'unica fonte: stesso descriptor che la chat renderizza, letto
@@ -55,6 +56,9 @@ export function OrdersWorkspace({
   const [, startTransition] = useTransition();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filter, setFilter] = useState<OrdersFilter>(() => emptyFilter(from, to));
+  // Tab della scheda: sta qui e non in OrderDetail perche' lo cambia anche
+  // Nico (`get_order`/`add_order_note` mandano `tab` dentro la ricevuta).
+  const [tab, setTab] = useState<OrderTab>("cliente");
 
   // Le date sono nell'URL: quando il periodo cambia il server rifa' il fetch e
   // qui riallineiamo lo specchio (gli altri filtri restano dove sono).
@@ -72,6 +76,9 @@ export function OrdersWorkspace({
   const applyReceipt = useCallback(
     (receipt: OrdersReceiptProps): void => {
       if (receipt.kind === "order") {
+        if (receipt.tab) setTab(receipt.tab);
+        // L'agente ha scritto sull'ordine: il payload in memoria e' di prima.
+        if (receipt.refresh) startTransition(() => router.refresh());
         // Apriamo la scheda solo se l'ordine e' nel periodo che l'operatore ha
         // davanti: aprirne una fuori lista sarebbe una scheda senza contesto.
         const hit = data.orders.find((o) => o.number === receipt.number);
@@ -159,6 +166,8 @@ export function OrdersWorkspace({
             onFilterChange={patchFilter}
             selectedId={selectedId}
             onSelectId={setSelectedId}
+            tab={tab}
+            onTabChange={setTab}
           />
         </div>
         <aside className="hidden min-h-0 w-[420px] shrink-0 flex-col border-l border-[var(--color-line)] lg:flex">

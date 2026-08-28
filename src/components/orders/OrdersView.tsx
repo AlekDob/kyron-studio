@@ -5,7 +5,7 @@ import type { PortalOption } from "./OrdersFilters";
 import { OrdersHeader } from "./OrdersHeader";
 import { OrdersList } from "./OrdersList";
 import { OrderDrawer } from "./OrderDrawer";
-import { OrderDetail, type OrderDetailHandlers } from "./OrderDetail";
+import { OrderDetail, type OrderDetailHandlers, type OrderTab } from "./OrderDetail";
 import { OrdersEmptyState } from "./OrdersEmptyState";
 import { agentName, dayKey, dayLabel } from "./format";
 import { agentNameOf } from "@/components/shell/modules";
@@ -25,6 +25,9 @@ interface OrdersViewProps {
   /** Ordine aperto nel drawer. Vive nel workspace: lo apre anche l'agente. */
   selectedId: string | null;
   onSelectId: (id: string | null) => void;
+  /** Tab della scheda: sta nel workspace perche' lo cambia anche l'agente. */
+  tab: OrderTab;
+  onTabChange: (tab: OrderTab) => void;
 }
 
 // true se il buono Carta del Docente copre l'intero totale ordine (tolleranza
@@ -110,6 +113,8 @@ export function OrdersView({
   onFilterChange,
   selectedId,
   onSelectId,
+  tab,
+  onTabChange,
 }: OrdersViewProps) {
   // Override ottimistici per ordine (id -> override) dopo un'azione nel drawer.
   const [overrides, setOverrides] = useState<Record<string, OrderOverrides>>({});
@@ -170,6 +175,8 @@ export function OrdersView({
       <OrderDetail
         order={selected}
         onBack={() => onSelectId(null)}
+        tab={tab}
+        onTabChange={onTabChange}
         {...handlers}
       />
     );
@@ -206,7 +213,13 @@ export function OrdersView({
       </div>
 
       {/* Mobile: la stessa scheda dentro una bottom sheet. */}
-      <OrderDrawer order={selected} onClose={() => onSelectId(null)} {...handlers} />
+      <OrderDrawer
+        order={selected}
+        onClose={() => onSelectId(null)}
+        tab={tab}
+        onTabChange={onTabChange}
+        {...handlers}
+      />
 
     </div>
   );
