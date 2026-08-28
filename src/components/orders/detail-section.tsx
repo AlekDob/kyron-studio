@@ -50,8 +50,14 @@ export function Section({
   title,
   icon,
   tone,
+  action,
   children,
-}: { title: string; children: ReactNode } & Omit<IconProps, "size">) {
+}: {
+  title: string;
+  children: ReactNode;
+  /** Contenuto allineato a destra nella testata (es. badge di stato). */
+  action?: ReactNode;
+} & Omit<IconProps, "size">) {
   return (
     <Card className="gap-3 border-border py-4 shadow-none">
       <CardHeader className="flex flex-row items-center gap-2.5 px-4">
@@ -59,6 +65,7 @@ export function Section({
         <CardTitle className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
           {title}
         </CardTitle>
+        {action && <span className="ml-auto flex items-center gap-2">{action}</span>}
       </CardHeader>
       <CardContent className="flex flex-col gap-1.5 px-4">{children}</CardContent>
     </Card>
