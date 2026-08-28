@@ -56,6 +56,8 @@ interface Props {
    * senza che l'utente riscriva SKU e prezzi, e senza un tool in piu'.
    */
   selectionContext?: () => string | null;
+  /** Dentro una bottom sheet la testata la disegna gia' il DrawerHeader. */
+  hideHeader?: boolean;
 }
 
 export function AgentChannel({
@@ -72,6 +74,7 @@ export function AgentChannel({
   aboveComposer,
   hideCards,
   selectionContext,
+  hideHeader = false,
 }: Props): ReactElement {
   const name = agentNameOf(agentId);
   const channel = name.toLowerCase();
@@ -131,7 +134,7 @@ export function AgentChannel({
 
   return (
     <div className="flex h-full min-h-0 w-full flex-col bg-[var(--color-paper)]">
-      <ChannelHeader agentId={agentId} name={name} />
+      {!hideHeader && <ChannelHeader agentId={agentId} name={name} />}
 
       <div className="min-h-0 flex-1 overflow-y-auto px-2 py-3 sm:px-3">
         <div className="mx-auto w-full max-w-3xl">

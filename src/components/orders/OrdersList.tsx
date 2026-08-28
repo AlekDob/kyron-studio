@@ -2,6 +2,7 @@
 import type { OrderRow } from "@/lib/gateway";
 import type { DayGroup } from "./OrdersView";
 import { OrderListRow } from "./OrderListRow";
+import { Slides } from "@/components/animate-ui/primitives/effects/slide";
 
 interface OrdersListProps {
   groups: DayGroup[];
@@ -24,11 +25,16 @@ export function OrdersList({ groups, onSelect }: OrdersListProps) {
             </span>
           </div>
           <ul className="overflow-hidden rounded-2xl border border-[var(--color-line)] divide-y divide-[var(--color-line)]">
-            {g.orders.map((o) => (
-              <li key={o.number}>
-                <OrderListRow order={o} onSelect={onSelect} />
-              </li>
-            ))}
+            {/* Le righe entrano a scalare: quando Nico cambia il filtro si vede
+                che la lista si e' rifatta, invece di cambiare di scatto.
+                `asChild` per non infilare un div tra <ul> e <li>. */}
+            <Slides asChild direction="up" offset={10} holdDelay={28}>
+              {g.orders.map((o) => (
+                <li key={o.number}>
+                  <OrderListRow order={o} onSelect={onSelect} />
+                </li>
+              ))}
+            </Slides>
           </ul>
         </section>
       ))}

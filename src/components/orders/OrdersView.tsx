@@ -5,9 +5,11 @@ import type { PortalOption } from "./OrdersFilters";
 import { OrdersHeader } from "./OrdersHeader";
 import { OrdersList } from "./OrdersList";
 import { OrderDrawer } from "./OrderDrawer";
+import { OrderDetail, type OrderDetailHandlers } from "./OrderDetail";
 import { OrdersEmptyState } from "./OrdersEmptyState";
 import { agentName, dayKey, dayLabel } from "./format";
 import { agentNameOf } from "@/components/shell/modules";
+import { useIsMobile } from "@/lib/use-is-mobile";
 import {
   emptyFilter,
   matchesFilter,
@@ -111,6 +113,7 @@ export function OrdersView({
 }: OrdersViewProps) {
   // Override ottimistici per ordine (id -> override) dopo un'azione nel drawer.
   const [overrides, setOverrides] = useState<Record<string, OrderOverrides>>({});
+  const isMobile = useIsMobile();
 
   // Merge di un override parziale sull'ordine (helper per gli handler del drawer).
   const patch = (id: string, delta: OrderOverrides) =>
@@ -146,6 +149,32 @@ export function OrdersView({
 
   const groups = useMemo(() => groupByDay(filtered), [filtered]);
 
+  // Gli otto handler ottimistici sono gli stessi per la scheda al centro e per
+  // la bottom sheet: un oggetto solo, niente elenco ripetuto due volte.
+  const handlers: OrderDetailHandlers = {
+    onStatusChange: (id, status) => patch(id, { workflow: status }),
+    onTeacherCardAcquired: (id) => patch(id, { acquired: true }),
+    onBankTransferPaid: (id) => patch(id, { paid: true }),
+    onResidualPaid: (id) => patch(id, { residualPaid: true }),
+    onNoteSaved: (id, note) => patch(id, { note }),
+    onVatSaved: (id, vatOverride) => patch(id, { vatOverride }),
+    onPaymentTotalSaved: (id, paymentAmountOverride) =>
+      patch(id, { paymentAmountOverride }),
+    onVatReliefValidated: (id, vatReliefStatus) => patch(id, { vatReliefStatus }),
+  };
+
+  // Desktop: la scheda prende tutta la colonna centrale al posto della lista.
+  // La chat resta a destra, cosi' l'agente vede l'ordine mentre e' aperto.
+  if (selected && !isMobile) {
+    return (
+      <OrderDetail
+        order={selected}
+        onBack={() => onSelectId(null)}
+        {...handlers}
+      />
+    );
+  }
+
   return (
     <div className="flex h-full min-h-0 flex-col">
       {/* Testata ferma: KPI, ricerca e filtri restano a vista mentre la lista scorre. */}
@@ -176,20 +205,9 @@ export function OrdersView({
         )}
       </div>
 
-      <OrderDrawer
-        order={selected}
-        onClose={() => onSelectId(null)}
-        onStatusChange={(id, status) => patch(id, { workflow: status })}
-        onTeacherCardAcquired={(id) => patch(id, { acquired: true })}
-        onBankTransferPaid={(id) => patch(id, { paid: true })}
-        onResidualPaid={(id) => patch(id, { residualPaid: true })}
-        onNoteSaved={(id, note) => patch(id, { note })}
-        onVatSaved={(id, vatOverride) => patch(id, { vatOverride })}
-        onPaymentTotalSaved={(id, paymentAmountOverride) =>
-          patch(id, { paymentAmountOverride })
-        }
-        onVatReliefValidated={(id, vatReliefStatus) => patch(id, { vatReliefStatus })}
-      />
+      {/* Mobile: la stessa scheda dentro una bottom sheet. */}
+      <OrderDrawer order={selected} onClose={() => onSelectId(null)} {...handlers} />
+
     </div>
   );
 }

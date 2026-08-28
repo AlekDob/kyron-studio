@@ -159,3 +159,39 @@
 .page-enter {
   animation-fill-mode: backwards;
 }
+
+/* ---------------------------------------------------------------------------
+   Ponte per i componenti shadcn (prova su Ordini, feature 010).
+   shadcn da' per scontati nomi di token che qui non esistono: --background,
+   --foreground, --border, --primary... I nostri si chiamano --color-paper,
+   --color-ink, --color-line. Invece di importare il set OKLCH della CLI (che
+   porterebbe dentro anche un blocco .dark, tolto apposta con la feature 014),
+   mappiamo i suoi nomi sui nostri: un design system solo.
+   `inline` perche' i valori sono gia' variabili: senza, Tailwind le indirebbe
+   una seconda volta. --------------------------------------------------------- */
+@theme inline {
+  --color-background: var(--color-paper);
+  --color-foreground: var(--color-ink);
+  --color-card: var(--color-paper);
+  --color-card-foreground: var(--color-ink);
+  --color-popover: var(--color-paper);
+  --color-popover-foreground: var(--color-ink);
+  --color-primary: var(--color-action);
+  --color-primary-foreground: var(--color-paper);
+  --color-secondary: var(--color-paper-muted);
+  --color-secondary-foreground: var(--color-ink);
+  --color-muted: var(--color-paper-muted);
+  --color-muted-foreground: var(--color-ink-muted);
+  --color-accent-foreground: var(--color-paper);
+  --color-destructive: var(--color-critical);
+  --color-destructive-foreground: var(--color-paper);
+  --color-border: var(--color-line);
+  --color-input: var(--color-line);
+  --color-ring: var(--color-accent);
+
+  /* shadcn scrive rounded-xl/lg/md/sm: sono i nostri raggi, non una scala nuova. */
+  --radius-xl: var(--radius-card);
+  --radius-lg: var(--radius-input);
+  --radius-md: var(--radius-control);
+  --radius-sm: 0.5rem;
+}

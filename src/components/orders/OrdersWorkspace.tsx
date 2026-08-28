@@ -16,7 +16,11 @@ import { useRouter } from "next/navigation";
 import type { ChatStreamEvent } from "@studiofuturo/studio-core";
 import type { OrdersResponse, OrderRow } from "@/lib/gateway";
 import { AgentChannel } from "@/components/chat/AgentChannel";
+import { AgentFace } from "@/components/chat/AgentFace";
 import { CHANNELS } from "@/components/chat/agent-channels";
+import { MobileChatOverlay } from "@/components/shell/MobileChatOverlay";
+import { agentNameOf } from "@/components/shell/modules";
+import { OrdersPanelContext } from "./orders-panel-context";
 import { extractGenerativeDescriptor } from "@/components/chat/generative/types";
 import { OrdersView } from "./OrdersView";
 import {
@@ -63,10 +67,10 @@ export function OrdersWorkspace({
     [],
   );
 
-  const onEvent = useCallback(
-    (ev: ChatStreamEvent): void => {
-      const receipt = parseReceipt(ev);
-      if (!receipt) return;
+  // Un punto solo: la chiama l'evento in arrivo e la richiama il click sulla
+  // ricevuta, cosi' riaprire un risultato vecchio fa esattamente la stessa cosa.
+  const applyReceipt = useCallback(
+    (receipt: OrdersReceiptProps): void => {
       if (receipt.kind === "order") {
         // Apriamo la scheda solo se l'ordine e' nel periodo che l'operatore ha
         // davanti: aprirne una fuori lista sarebbe una scheda senza contesto.
@@ -85,6 +89,14 @@ export function OrdersWorkspace({
       }
     },
     [data.orders, from, to, router],
+  );
+
+  const onEvent = useCallback(
+    (ev: ChatStreamEvent): void => {
+      const receipt = parseReceipt(ev);
+      if (receipt) applyReceipt(receipt);
+    },
+    [applyReceipt],
   );
 
   const visible = useMemo(
@@ -120,27 +132,45 @@ export function OrdersWorkspace({
 
   const extraBody = useCallback(() => ({ scope: "orders" }), []);
 
+  // Stesso canale in due gusci: colonna a destra su desktop, bottom sheet
+  // dietro la faccia di Nico su mobile. Il montaggio e' esclusivo (MobileChat-
+  // Overlay non monta sopra i 1024px), quindi non ci sono due chat vive.
+  const channel = (hideHeader: boolean) => (
+    <AgentChannel
+      agentId="orders"
+      {...CHANNELS.orders}
+      interactive
+      hideHeader={hideHeader}
+      onEvent={onEvent}
+      extraBody={extraBody}
+      selectionContext={selectionContext}
+    />
+  );
+
+  const agent = agentNameOf("orders");
+
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden lg:flex-row">
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-        <OrdersView
-          data={data}
-          filter={filter}
-          onFilterChange={patchFilter}
-          selectedId={selectedId}
-          onSelectId={setSelectedId}
-        />
+    <OrdersPanelContext.Provider value={applyReceipt}>
+      <div className="flex h-full min-h-0 flex-col overflow-hidden lg:flex-row">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          <OrdersView
+            data={data}
+            filter={filter}
+            onFilterChange={patchFilter}
+            selectedId={selectedId}
+            onSelectId={setSelectedId}
+          />
+        </div>
+        <aside className="hidden min-h-0 w-[420px] shrink-0 flex-col border-l border-[var(--color-line)] lg:flex">
+          {channel(false)}
+        </aside>
+        <MobileChatOverlay
+          label={agent}
+          icon={<AgentFace seed="orders" label={agent} size={28} />}
+        >
+          {channel(true)}
+        </MobileChatOverlay>
       </div>
-      <aside className="hidden min-h-0 w-[420px] shrink-0 flex-col border-l border-[var(--color-line)] lg:flex">
-        <AgentChannel
-          agentId="orders"
-          {...CHANNELS.orders}
-          interactive
-          onEvent={onEvent}
-          extraBody={extraBody}
-          selectionContext={selectionContext}
-        />
-      </aside>
-    </div>
+    </OrdersPanelContext.Provider>
   );
 }
