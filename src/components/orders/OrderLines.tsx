@@ -33,7 +33,7 @@ export function OrderLines({ order }: { order: OrderRow }) {
                     {l.sku}{" "}
                   </span>
                 )}
-                {l.name}
+                <span className="font-medium">{l.name}</span>
                 <span className="text-[var(--color-ink-muted)]"> × {l.quantity}</span>
               </span>
               <span className="shrink-0 tabular-nums">{formatEur(l.totalGross)}</span>

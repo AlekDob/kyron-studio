@@ -123,7 +123,7 @@ function BackBar({ order, onBack }: { order: OrderRow; onBack: () => void }) {
         Ordini
       </button>
       <span className="text-[var(--color-line-strong)]">/</span>
-      <p className="font-medium">#{order.number}</p>
+      <p className="text-base font-semibold">#{order.number}</p>
       <p className="text-xs text-[var(--color-ink-muted)]">
         {formatDate(order.created)} · {formatTime(order.created)}
       </p>
@@ -182,7 +182,7 @@ function MoneyColumn({
       <Section title="Pagamento">
         <div className="flex items-center justify-between gap-3">
           <StatusBadges order={order} />
-          <span className="font-medium tabular-nums">
+          <span className="text-lg font-semibold tabular-nums">
             {/* Importo annotato prevale sul totale reale (allineamento Danea). */}
             {formatEur(order.paymentAmountOverride ?? order.totalGross)}
           </span>

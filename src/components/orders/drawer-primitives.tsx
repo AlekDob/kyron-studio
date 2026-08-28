@@ -19,7 +19,7 @@ export function InfoRow({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="flex items-baseline justify-between gap-4 text-sm">
       <span className="shrink-0 text-[var(--color-ink-muted)]">{label}</span>
-      <span className="text-right">{value}</span>
+      <span className="text-right font-medium">{value}</span>
     </div>
   );
 }

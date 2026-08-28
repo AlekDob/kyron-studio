@@ -210,7 +210,7 @@ function LineHeading({ line }: { line: EditLine }) {
         {line.sku && (
           <span className="font-mono text-xs text-[var(--color-ink-muted)]">{line.sku} </span>
         )}
-        {line.productName}
+        <span className="font-medium">{line.productName}</span>
       </span>
     </div>
   );
