@@ -11,7 +11,7 @@ import {
   Wallet,
 } from "lucide-react";
 import type { OrderRow } from "@/lib/gateway";
-import { StatusBadges, PortalLink } from "./StatusBadges";
+import { PortalLink } from "./StatusBadges";
 import { InfoRow } from "./drawer-primitives";
 import { Section } from "./detail-section";
 import {
@@ -70,7 +70,7 @@ export function MoneyTab({
     <>
       <Section title="Pagamento" icon={Wallet} tone="emerald">
         <div className="flex items-center justify-between gap-3">
-          <StatusBadges order={order} />
+          <span className="text-sm text-[var(--color-ink-muted)]">Totale</span>
           <span className="text-lg font-semibold tabular-nums">
             {/* Importo annotato prevale sul totale reale (allineamento Danea). */}
             {formatEur(order.paymentAmountOverride ?? order.totalGross)}

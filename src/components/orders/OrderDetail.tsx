@@ -13,6 +13,7 @@ import { EditableLines } from "./EditableLines";
 import { OrderComms } from "./OrderComms";
 import { Section, SectionIcon, type Tone } from "./detail-section";
 import { IdentityTab, MoneyTab } from "./OrderSections";
+import { StatusBadges } from "./StatusBadges";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
 import { Slide } from "@/components/animate-ui/primitives/effects/slide";
 import { StatusSelector, NoteSection } from "./OrderBlocks";
@@ -76,8 +77,8 @@ export function OrderDetail({ order, onBack, tab, onTabChange, ...h }: Props) {
         onValueChange={(v) => onTabChange(v as OrderTab)}
         className="min-h-0 flex-1 gap-0"
       >
-        <div className="shrink-0 px-6 pt-4">
-          <TabsList variant="line" className="h-auto w-full justify-start gap-1">
+        <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2 px-6 pt-4">
+          <TabsList variant="line" className="h-auto flex-none justify-start gap-1">
             {ORDER_TABS.map((k) => (
               <TabsTrigger key={k} value={k} className="flex-none gap-2 px-2.5 py-1.5">
                 <SectionIcon icon={TAB_META[k].icon} tone={TAB_META[k].tone} size={24} />
@@ -85,6 +86,9 @@ export function OrderDetail({ order, onBack, tab, onTabChange, ...h }: Props) {
               </TabsTrigger>
             ))}
           </TabsList>
+          {/* Stato pagamento sempre sotto gli occhi: e' la cosa che l'operatore
+              controlla per prima, e stava sepolta dentro il tab Pagamento. */}
+          <StatusBadges order={order} />
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-5">
