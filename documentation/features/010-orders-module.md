@@ -8,6 +8,26 @@ tags: [orders, ordini, commerciali, portali, saleor]
 
 # Feature 010 — Modulo Ordini
 
+> **Update 2026-08-28 — dettaglio al centro, Nico su mobile, prova shadcn** (branch
+> `feat/orders-detail-center`, non pushato). Con la chat dell'agente fissa a destra il
+> drawer laterale la copriva: l'ordine aperto ora prende la **colonna centrale** al posto
+> della lista (barra "indietro" + `Esc`), cosi' Nico vede l'ordine mentre ci lavora.
+> Nuovo `orders/OrderDetail.tsx` = corpo scorporato da `OrderDrawer.tsx` (che resta il solo
+> guscio bottom-sheet su mobile); due colonne via **container query** (`@container` +
+> `@3xl:`) e non breakpoint di finestra, perche' la larghezza cambia col resize della chat.
+> **Mobile**: `shell/MobileChatOverlay` monta la faccia di Nico in basso a destra sotto i
+> 1024px → bottom sheet con lo stesso `AgentChannel` (nuovo prop `hideHeader`, se no due
+> testate). La **ricevuta in chat e' diventata un bottone**: riapplica filtro/scheda e
+> chiude la sheet (`orders/orders-panel-context.ts` + `useCloseMobileChat`); la logica di
+> applicazione e' estratta in `applyReceipt()`, condivisa con l'evento agente.
+> **Prova shadcn + Animate UI solo qui**: `components.json` scritto a mano (mai
+> `shadcn init` — su Tailwind v4 appende il suo set OKLCH + blocco `.dark`), blocco
+> `@theme inline` in `globals.css` che mappa i nomi shadcn sui nostri token, componenti in
+> `src/components/shadcn/`. Animate UI riportata a `framer-motion` (gia' installato) invece
+> di `motion`, per non avere due copie in bundle. Applicato: `Section` del dettaglio come
+> `Card`, righe lista che entrano a scalare (`Slides`). Non toccati `Pill` e il `Section`
+> condiviso di `drawer-primitives` (li usano anche Portali e Catalogo).
+
 > **Update 2026-07-27 — link al modulo Agevolazioni**: nel drawer, sezione
 > **IVA agevolata** (`VatReliefSection`), nuovo link "Valuta documenti con
 > l'agente" → `/vat-relief?case=<numero>`. Apre il nuovo modulo Agevolazioni
