@@ -38,6 +38,9 @@ export function StatTile({
   footer,
   className,
   index = 0,
+  size = "md",
+  active,
+  onClick,
 }: {
   tone: TileTone;
   label: string;
@@ -49,10 +52,21 @@ export function StatTile({
   className?: string;
   /** Ritardo a scalare dell'entrata. */
   index?: number;
+  /** "sm" per i pannelli a mezzo schermo: stessa tile, meno altezza. */
+  size?: "md" | "sm";
+  /** Solo con onClick: la tile e' un filtro acceso. */
+  active?: boolean;
+  onClick?: () => void;
 }) {
   const { x, y, onPointerMove, onPointerLeave } = usePointer();
   const rotateY = useTransform(x, [-0.5, 0.5], [-9, 9]);
   const rotateX = useTransform(y, [-0.5, 0.5], [7, -7]);
+
+  const sm = size === "sm";
+
+  // Con onClick la tile e' un bottone vero (tastiera + aria-pressed): il
+  // gradiente ci sta dentro, il tilt resta sul wrapper esterno.
+  const Body = onClick ? "button" : "div";
 
   return (
     <motion.div
@@ -65,8 +79,20 @@ export function StatTile({
       onPointerMove={onPointerMove}
       onPointerLeave={onPointerLeave}
     >
+      <Body
+        type={onClick ? "button" : undefined}
+        onClick={onClick}
+        aria-pressed={onClick ? active : undefined}
+        className="block w-full text-left"
+      >
       <motion.div
-        className="relative flex min-h-[176px] flex-col justify-between overflow-hidden rounded-3xl p-5"
+        className={cn(
+          "relative flex flex-col justify-between overflow-hidden rounded-3xl p-5",
+          sm ? "min-h-[120px]" : "min-h-[176px]",
+          // Anello quando la tile e' il filtro attivo: dentro il gradiente,
+          // cosi' non litiga col tilt del wrapper.
+          active && "ring-2 ring-inset ring-[var(--color-accent)]",
+        )}
         style={{
           background: GRADIENTS[tone],
           rotateX,
@@ -79,7 +105,12 @@ export function StatTile({
         <p className="mono-caps text-[var(--color-ink-soft)] opacity-80">{label}</p>
         {/* translateZ: senza rilievo il tilt non si legge */}
         <div style={{ transform: "translateZ(24px)" }}>
-          <p className="text-[34px] font-semibold leading-none tracking-tight text-[var(--color-ink)]">
+          <p
+            className={cn(
+              "font-semibold leading-none tracking-tight text-[var(--color-ink)]",
+              sm ? "text-[26px]" : "text-[34px]",
+            )}
+          >
             {value}
           </p>
           {caption && (
@@ -90,6 +121,7 @@ export function StatTile({
         </div>
         {footer}
       </motion.div>
+      </Body>
     </motion.div>
   );
 }

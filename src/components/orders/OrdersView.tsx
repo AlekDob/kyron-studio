@@ -1,21 +1,15 @@
 "use client";
 import { useMemo, useState } from "react";
 import type { OrdersResponse, OrderRow } from "@/lib/gateway";
-import type { PortalOption } from "./OrdersFilters";
 import { OrdersHeader } from "./OrdersHeader";
 import { OrdersList } from "./OrdersList";
 import { OrderDrawer } from "./OrderDrawer";
 import { OrderDetail, type OrderDetailHandlers, type OrderTab } from "./OrderDetail";
 import { OrdersEmptyState } from "./OrdersEmptyState";
-import { agentName, dayKey, dayLabel } from "./format";
+import { dayKey, dayLabel } from "./format";
 import { agentNameOf } from "@/components/shell/modules";
 import { useIsMobile } from "@/lib/use-is-mobile";
-import {
-  emptyFilter,
-  matchesFilter,
-  statusBucketOf,
-  type OrdersFilter,
-} from "./orders-filter";
+import { emptyFilter, type OrdersFilter } from "./orders-filter";
 
 interface OrdersViewProps {
   data: OrdersResponse;
@@ -74,21 +68,6 @@ function applyOverrides(o: OrderRow, ov: OrderOverrides): OrderRow {
   return next;
 }
 
-// Opzioni portale uniche dal payload del periodo (channelSlug -> nome).
-function portalOptions(orders: OrderRow[]): PortalOption[] {
-  const map = new Map<string, string>();
-  for (const o of orders) map.set(o.channelSlug, o.portalName);
-  return Array.from(map, ([slug, name]) => ({ slug, name })).sort((a, b) =>
-    a.name.localeCompare(b.name),
-  );
-}
-
-function agentOptions(orders: OrderRow[]): string[] {
-  const set = new Set<string>();
-  for (const o of orders) if (o.agent) set.add(agentName(o.agent));
-  return Array.from(set).sort();
-}
-
 export interface DayGroup {
   key: string;
   label: string;
@@ -124,27 +103,14 @@ export function OrdersView({
   const patch = (id: string, delta: OrderOverrides) =>
     setOverrides((prev) => ({ ...prev, [id]: { ...prev[id], ...delta } }));
 
+  // Le righe arrivano gia' filtrate dal server: qui si applicano solo gli
+  // override ottimistici e l'ordinamento per data.
   const orders = useMemo(
-    () => data.orders.map((o) => applyOverrides(o, overrides[o.id] ?? {})),
-    [data.orders, overrides],
-  );
-
-  const portals = useMemo(() => portalOptions(orders), [orders]);
-  const agents = useMemo(() => agentOptions(orders), [orders]);
-
-  // I KPI contano ignorando lo stato: sono bottoni di navigazione, se si
-  // azzerassero non si potrebbe piu' saltare da un gruppo all'altro.
-  const scoped = useMemo(
-    () => orders.filter((o) => matchesFilter(o, { ...filter, status: "all" })),
-    [orders, filter],
-  );
-
-  const filtered = useMemo(
     () =>
-      scoped
-        .filter((o) => filter.status === "all" || statusBucketOf(o) === filter.status)
+      data.orders
+        .map((o) => applyOverrides(o, overrides[o.id] ?? {}))
         .sort((a, b) => b.created.localeCompare(a.created)),
-    [scoped, filter.status],
+    [data.orders, overrides],
   );
 
   const selected = useMemo(
@@ -152,7 +118,7 @@ export function OrdersView({
     [orders, selectedId],
   );
 
-  const groups = useMemo(() => groupByDay(filtered), [filtered]);
+  const groups = useMemo(() => groupByDay(orders), [orders]);
 
   // Gli otto handler ottimistici sono gli stessi per la scheda al centro e per
   // la bottom sheet: un oggetto solo, niente elenco ripetuto due volte.
@@ -186,11 +152,11 @@ export function OrdersView({
     <div className="flex h-full min-h-0 flex-col">
       {/* Testata ferma: KPI, ricerca e filtri restano a vista mentre la lista scorre. */}
       <OrdersHeader
-        rows={scoped}
+        buckets={data.buckets}
         filter={filter}
         onChange={onFilterChange}
-        portals={portals}
-        agents={agents}
+        portals={data.portals}
+        agents={data.agents}
       />
 
       <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-8">
@@ -205,7 +171,7 @@ export function OrdersView({
             Filtrato da {agentNameOf("orders")} · mostra tutto
           </button>
         )}
-        {filtered.length === 0 ? (
+        {orders.length === 0 ? (
           <OrdersEmptyState variant="no-data" />
         ) : (
           <OrdersList groups={groups} onSelect={(o) => onSelectId(o.id)} />

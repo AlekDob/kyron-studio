@@ -1,10 +1,9 @@
 "use client";
-import { useRouter } from "next/navigation";
 import { Input, Select } from "@/components/ui";
 import type { OrdersFilter } from "./orders-filter";
 
-// Filtri ordini. Le DATE vivono nell'URL (refetch server-side per periodo);
-// PORTALE e AGENTE sono stato client (filtro istantaneo sul payload, no refetch).
+// Filtri ordini. Nessuno di questi filtra qui: ogni cambio passa da onChange,
+// finisce nell'URL e lo applica il server (vedi OrdersWorkspace.pushFilter).
 
 export interface PortalOption {
   slug: string;
@@ -63,16 +62,10 @@ export function OrdersFilters({
   agents,
   onChange,
 }: OrdersFiltersProps) {
-  const router = useRouter();
   const { from, to, portal, agent } = filter;
 
-  // Le date restano nell'URL: cambiarle rifa' il fetch del periodo. Lo stato
-  // locale si allinea subito cosi' i preset si accendono senza aspettare il giro.
-  function pushDates(nextFrom: string, nextTo: string) {
+  const pushDates = (nextFrom: string, nextTo: string) =>
     onChange({ from: nextFrom, to: nextTo, source: "browse" });
-    const params = new URLSearchParams({ from: nextFrom, to: nextTo });
-    router.push(`/orders?${params.toString()}`);
-  }
 
   return (
     <div className="flex flex-col gap-3">

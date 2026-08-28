@@ -6,7 +6,6 @@
 import {
   useCallback,
   useEffect,
-  useMemo,
   useRef,
   useState,
   useTransition,
@@ -24,10 +23,9 @@ import { OrdersPanelContext } from "./orders-panel-context";
 import { extractGenerativeDescriptor } from "@/components/chat/generative/types";
 import { OrdersView } from "./OrdersView";
 import {
-  emptyFilter,
   filterChips,
-  matchesFilter,
   ordersReceiptSchema,
+  toSearchParams,
   type OrdersFilter,
   type OrdersReceiptProps,
   type OrderTab,
@@ -45,30 +43,36 @@ function parseReceipt(ev: ChatStreamEvent): OrdersReceiptProps | null {
 
 export function OrdersWorkspace({
   data,
-  from,
-  to,
+  filter: serverFilter,
 }: {
   data: OrdersResponse;
-  from: string;
-  to: string;
+  /** Filtro risolto dall'URL: e' quello che il server ha gia' applicato. */
+  filter: OrdersFilter;
 }): ReactElement {
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [filter, setFilter] = useState<OrdersFilter>(() => emptyFilter(from, to));
+  // Specchio locale del filtro: i select si accendono subito, senza aspettare
+  // il giro sul server. La verita' resta l'URL.
+  const [filter, setFilter] = useState<OrdersFilter>(serverFilter);
+  const filterRef = useRef(filter);
+  filterRef.current = filter;
   // Tab della scheda: sta qui e non in OrderDetail perche' lo cambia anche
   // Nico (`get_order`/`add_order_note` mandano `tab` dentro la ricevuta).
   const [tab, setTab] = useState<OrderTab>("cliente");
 
-  // Le date sono nell'URL: quando il periodo cambia il server rifa' il fetch e
-  // qui riallineiamo lo specchio (gli altri filtri restano dove sono).
-  useEffect(() => {
-    setFilter((f) => (f.from === from && f.to === to ? f : { ...f, from, to }));
-  }, [from, to]);
+  useEffect(() => setFilter(serverFilter), [serverFilter]);
 
-  const patchFilter = useCallback(
-    (patch: Partial<OrdersFilter>) => setFilter((f) => ({ ...f, ...patch })),
-    [],
+  // Unico punto di scrittura del filtro: lo usano i controlli, le tile di stato
+  // e la ricevuta dell'agente. Un giro solo di router.push per ogni cambio.
+  const pushFilter = useCallback(
+    (patch: Partial<OrdersFilter>) => {
+      const next = { ...filterRef.current, ...patch };
+      filterRef.current = next;
+      setFilter(next);
+      startTransition(() => router.push(`/orders?${toSearchParams(next).toString()}`));
+    },
+    [router],
   );
 
   // Un punto solo: la chiama l'evento in arrivo e la richiama il click sulla
@@ -85,17 +89,9 @@ export function OrdersWorkspace({
         if (hit) setSelectedId(hit.id);
         return;
       }
-      setFilter({ ...receipt.filter, source: "agent" });
-      // Periodo diverso da quello in pagina: serve un refetch, l'URL comanda.
-      if (receipt.filter.from !== from || receipt.filter.to !== to) {
-        const params = new URLSearchParams({
-          from: receipt.filter.from,
-          to: receipt.filter.to,
-        });
-        startTransition(() => router.push(`/orders?${params.toString()}`));
-      }
+      pushFilter({ ...receipt.filter, source: "agent" });
     },
-    [data.orders, from, to, router],
+    [data.orders, pushFilter, router],
   );
 
   const onEvent = useCallback(
@@ -106,28 +102,26 @@ export function OrdersWorkspace({
     [applyReceipt],
   );
 
-  const visible = useMemo(
-    () => data.orders.filter((o) => matchesFilter(o, filter)),
-    [data.orders, filter],
-  );
-
   // Il contesto viaggia in uscita col messaggio: Nico sa periodo, filtri e
   // ordini a video senza rileggere tutto con un tool.
-  const ctxRef = useRef<{ visible: OrderRow[]; filter: OrdersFilter; id: string | null }>({
-    visible,
+  const ctxRef = useRef<{ rows: OrderRow[]; filter: OrdersFilter; id: string | null }>({
+    rows: data.orders,
     filter,
     id: selectedId,
   });
-  ctxRef.current = { visible, filter, id: selectedId };
+  ctxRef.current = { rows: data.orders, filter, id: selectedId };
 
   const selectionContext = useCallback((): string => {
-    const { visible: rows, filter: f, id } = ctxRef.current;
+    const { rows, filter: f, id } = ctxRef.current;
     const chips = filterChips(f);
     const open = id ? rows.find((o) => o.id === id) : null;
     return [
       `Pannello Ordini: periodo ${f.from} → ${f.to}, ${rows.length} ordini a video${
         chips.length ? ` (filtri: ${chips.join(", ")})` : ""
       }.`,
+      // La spec attiva serve tale e quale: Nico ci aggiunge condizioni sopra
+      // invece di ricomporre il filtro da zero a ogni richiesta di raffinamento.
+      f.spec ? `Spec attiva: ${JSON.stringify(f.spec)}.` : "",
       rows.length
         ? `Primi numeri: ${rows.slice(0, 10).map((o) => o.number).join(", ")}.`
         : "",
@@ -163,7 +157,7 @@ export function OrdersWorkspace({
           <OrdersView
             data={data}
             filter={filter}
-            onFilterChange={patchFilter}
+            onFilterChange={pushFilter}
             selectedId={selectedId}
             onSelectId={setSelectedId}
             tab={tab}

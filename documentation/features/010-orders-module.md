@@ -8,6 +8,29 @@ tags: [orders, ordini, commerciali, portali, saleor]
 
 # Feature 010 — Modulo Ordini
 
+> **Update 2026-08-28 (3) — ricerca e filtri lato server, guidati da Nico**
+> I filtri non stanno piu' in memoria nel pannello: sono un **motore di query
+> generico** in studio-server (`src/core/query/spec.ts`) — condizioni JSON validate
+> zod (`all` = AND, `any` = OR, `sort`), valutate su una **mappa campi** per dominio
+> (`src/features/orders/query-fields.ts`, `ORDER_FIELDS`: numero, cliente, totale,
+> data, portale, agente, `metodoPagamento`, `prodotti` = SKU+nomi righe, ecc.).
+> Aggiungere Prodotti domani = scrivere una seconda `FieldMap`, il motore e' gia' li'.
+>
+> - `GET /api/v1/orders` accetta `portal`, `agent`, `status`, `q` **e** `spec` (query
+>   JSON urlencoded, 400 se malformata) e risponde anche con `buckets` (conteggio +
+>   euro per stato, calcolati su tutto tranne lo stato), `portals` e `agents`.
+> - `list_orders` di Nico prende `from`, `to`, `spec`: compone lui la query ("sopra
+>   600 euro non confermati di r.russo", "con un iPad pagati con Carta del Docente").
+>   La spec attiva viaggia nel `[Contesto UI: ...]`, cosi' raffina invece di ricominciare.
+> - **Una sola `statusBucketOf`** (era in tre copie: route, tool, pannello — quando
+>   divergevano i conteggi in chat non tornavano coi KPI in pagina).
+> - Frontend: ogni filtro sta **nell'URL**, `OrdersView` non filtra piu' niente.
+>   Filtro complesso = link condivisibile, indietro/avanti del browser funzionano.
+>   Ricerca con debounce 300ms. Testata: le `StatTile` della dashboard in taglia `sm`
+>   (`OrdersTiles.tsx`), le tre di stato cliccabili come filtro.
+> - Cache di processo 60s su `fetchOrdersForRange` (invalidata dalle scritture):
+>   senza, ogni tocco di filtro riscaricava l'intero range da Saleor.
+
 > **Update 2026-08-28 (2) — scheda a tab, icone di vetro, note scritte da Nico**
 > (stesso branch). La scheda e' divisa in **Cliente / Pagamento / Prodotti / Note**;
 > lo **stato lavorazione** resta fuori dai tab, e' l'azione piu' frequente. Le due
@@ -143,11 +166,13 @@ Danea e — su ordini `UNCONFIRMED` — editing righe (qty/colore).
 
 | File | Ruolo |
 |---|---|
-| `src/app/(authed)/orders/page.tsx` | Server Component: auth, default periodo 30g, `listOrders({from,to})` |
+| `src/app/(authed)/orders/page.tsx` | Server Component: auth, legge **tutti** i filtri dai searchParams → `listOrders(...)` |
 | `src/app/(authed)/orders/loading.tsx` | Skeleton |
 | `src/app/(authed)/orders/actions.ts` | Server action: stato, carta docente, bonifico, **residuo**, **note**, **IVA**, **edit riga** (via BFF) |
-| `src/components/orders/OrdersView.tsx` | Client: filtri portale/agente + **ricerca**, sort **desc**, **grouping per giorno**, stato drawer, KPI |
-| `src/components/orders/OrdersFilters.tsx` | Date (→ URL, refetch) + select portale/agente (→ client state) |
+| `src/components/orders/OrdersView.tsx` | Client: sort **desc**, **grouping per giorno**, override ottimistici, stato drawer (non filtra) |
+| `src/components/orders/OrdersTiles.tsx` | Le 5 tile in testata: `StatTile` della dashboard, taglia `sm`, le 3 di stato cliccabili |
+| `src/lib/query-spec.ts` | Mirror client dello schema query (solo trasporto + chip leggibili) |
+| `src/components/orders/OrdersFilters.tsx` | Preset periodo, date, select portale/agente — tutto → URL |
 | `src/components/orders/OrdersList.tsx` | Gruppi giorno (header data + conteggio) |
 | `src/components/orders/OrderListRow.tsx` | Riga ordine cliccabile responsive → apre drawer |
 | `src/components/orders/OrderDrawer.tsx` | Drawer dettaglio (shell + composizione sezioni): **dx desktop / bottom sheet mobile** |
@@ -164,8 +189,9 @@ Danea e — su ordini `UNCONFIRMED` — editing righe (qty/colore).
 
 ## Pattern
 
-- **Un solo fetch** al BFF per periodo (date nei searchParams → refetch server); portale,
-  agente e **ricerca** filtrano **client-side** sul payload (zero refetch), come Analytics.
+- **Filtri nell'URL, filtraggio sul server** (dal 2026-08-28): periodo, portale, agente,
+  stato, ricerca e `spec` vanno nei searchParams e li applica il BFF col motore di query.
+  Il client non filtra: cache 60s lato server perche' ogni cambio filtro e' un refetch.
 - **Ordine desc per data**, **raggruppato per giorno** (Oggi/Ieri/data, fuso Europe/Rome).
 - **Ricerca** per n° ordine, dati cliente (nome/email/telefono) o transazione Stripe.
 - **Drawer dettaglio** (pattern animato di `AnnotationsDrawer`): scivola da **destra** su

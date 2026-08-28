@@ -14,6 +14,7 @@ import { FeedbackNote } from "./drawer-primitives";
 import { ProductThumbnail } from "@/components/catalogo/ProductThumbnail";
 import { Button } from "@/components/shadcn/button";
 import { ColorPicker } from "./ColorPicker";
+import { SkeletonRows } from "@/components/ui";
 
 type EditLine = OrderEditView["lines"][number];
 
@@ -24,17 +25,25 @@ type EditLine = OrderEditView["lines"][number];
 // - "locked" / caricamento fallito: righe in sola lettura (con eventuali annotazioni)
 export function EditableLines({ order }: { order: OrderRow }) {
   const [view, setView] = useState<OrderEditView | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let alive = true;
+    setLoading(true);
     fetchOrderEditAction(order.id)
       .then((v) => alive && setView(v))
-      .catch(() => alive && setView(null));
+      .catch(() => alive && setView(null))
+      .finally(() => alive && setLoading(false));
     return () => {
       alive = false;
     };
   }, [order.id]);
 
+  // Righe sola lettura come skeleton: senza, si vedono per un istante le righe
+  // non editabili e poi saltano nella versione con le azioni.
+  if (loading) {
+    return <SkeletonRows rows={3} rowClassName="h-[76px]" label="Carico le righe" />;
+  }
   if (!view || view.mode === "locked") return <OrderLines order={order} />;
   if (view.mode === "annotate") {
     return <AnnotateLines order={order} view={view} onView={setView} />;
