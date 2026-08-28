@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { OrderRow } from "@/lib/gateway";
 import { cn } from "@/lib/cn";
 import {
@@ -249,10 +249,21 @@ export function NoteSection({
   order: OrderRow;
   onSaved: (id: string, note: string) => void;
 }) {
-  const [value, setValue] = useState(order.note ?? "");
+  const saved = order.note ?? "";
+  const [value, setValue] = useState(saved);
   const [saving, setSaving] = useState(false);
   const [note, setNote] = useState("");
-  const dirty = value.trim() !== (order.note ?? "").trim();
+  const dirty = value.trim() !== saved.trim();
+
+  // La nota puo' cambiare sotto di noi: la scrive anche Nico dalla chat. Riallinea
+  // il campo solo quando il valore salvato cambia davvero, cosi' non cancella
+  // quello che l'operatore sta scrivendo a ogni refresh della pagina.
+  const seen = useRef(saved);
+  useEffect(() => {
+    if (seen.current === saved) return;
+    seen.current = saved;
+    setValue(saved);
+  }, [saved]);
 
   async function save() {
     if (!dirty || saving) return;

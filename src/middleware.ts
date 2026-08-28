@@ -44,12 +44,28 @@ async function signCookie(email: string): Promise<string> {
   return `${data}.${sig}`;
 }
 
+// Un cookie c'e' ma non vale piu' (scaduto, o firmato con un altro segreto):
+// va rifirmato come se non ci fosse, altrimenti in locale resta 401 per sempre.
+async function isValid(raw: string | undefined): Promise<boolean> {
+  if (!raw) return false;
+  const dot = raw.lastIndexOf(".");
+  if (dot < 0) return false;
+  const data = raw.slice(0, dot);
+  if (raw.slice(dot + 1) !== (await hmac(data))) return false;
+  try {
+    const { exp } = JSON.parse(atob(data.replace(/-/g, "+").replace(/_/g, "/")));
+    return typeof exp === "number" && exp > Date.now();
+  } catch {
+    return false;
+  }
+}
+
 export async function middleware(req: NextRequest): Promise<NextResponse> {
   const res = NextResponse.next();
   if (
     process.env.NODE_ENV !== "production" &&
     process.env.STUDIO_DEV_USER &&
-    !req.cookies.get(REVIEW_COOKIE)
+    !(await isValid(req.cookies.get(REVIEW_COOKIE)?.value))
   ) {
     const value = await signCookie(process.env.STUDIO_DEV_USER);
     res.cookies.set(REVIEW_COOKIE, value, {
