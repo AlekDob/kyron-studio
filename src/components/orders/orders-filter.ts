@@ -1,20 +1,21 @@
 // Stato del filtro ordini: uno solo, per due chiamanti. L'umano lo muove dai
-// select/KPI della pagina, Nico lo scrive dalla chat mandando la stessa
-// specifica dentro la ricevuta. Le date NON si filtrano qui: vivono nell'URL e
-// fanno un refetch server-side (il payload in memoria e' gia' quel periodo).
+// select/tile della pagina, Nico lo scrive dalla chat mandando la stessa
+// specifica dentro la ricevuta. Nessun filtro si applica qui: tutto vive
+// nell'URL e lo esegue il server (studio-server, core/query + query-fields).
 import { z } from "zod";
-import type { OrderRow } from "@/lib/gateway";
-import { agentName } from "./format";
+import { querySpecSchema, specChips, type QuerySpec } from "@/lib/query-spec";
 
 export type StatusBucket = "all" | "da-confermare" | "confermati" | "annullati";
 
 export interface OrdersFilter {
-  from: string; // specchio dell'URL
-  to: string; // specchio dell'URL
+  from: string;
+  to: string;
   portal: string; // channelSlug | "all"
   agent: string; // local-part | "all"
   status: StatusBucket;
   query: string;
+  /** Query ricca composta da Nico. null = solo i filtri semplici. */
+  spec: QuerySpec | null;
   /** Chi possiede il pannello adesso: un tocco umano degrada sempre a "browse". */
   source: "browse" | "agent";
 }
@@ -25,44 +26,6 @@ export const STATUS_LABELS: Record<Exclude<StatusBucket, "all">, string> = {
   annullati: "Annullati",
 };
 
-/**
- * Bucket di stato di un ordine. Priorita': annullato -> bozza -> confermato.
- * Questa stessa priorita' e' replicata in studio-server (order-tools.ts): se le
- * due divergono, il conteggio della ricevuta e quello dei KPI non tornano.
- */
-export function statusBucketOf(o: OrderRow): Exclude<StatusBucket, "all"> {
-  if (o.workflowStatus === "annullato" || o.status === "CANCELED") return "annullati";
-  if (o.status === "UNCONFIRMED" || o.status === "DRAFT") return "da-confermare";
-  return "confermati";
-}
-
-// Ricerca su numero ordine, dati cliente (nome/email/telefono) e Stripe.
-export function matchesQuery(o: OrderRow, q: string): boolean {
-  const needle = q.trim().toLowerCase();
-  if (!needle) return true;
-  return [
-    o.number,
-    o.customerName,
-    o.companyName,
-    o.userEmail,
-    o.customerPhone,
-    o.fiscalCode,
-    o.vatNumber,
-    o.sdiCode,
-    o.pspReference,
-  ]
-    .join(" ")
-    .toLowerCase()
-    .includes(needle);
-}
-
-export function matchesFilter(o: OrderRow, f: OrdersFilter): boolean {
-  if (f.portal !== "all" && o.channelSlug !== f.portal) return false;
-  if (f.agent !== "all" && agentName(o.agent) !== f.agent) return false;
-  if (f.status !== "all" && statusBucketOf(o) !== f.status) return false;
-  return matchesQuery(o, f.query);
-}
-
 /** Etichette dei filtri attivi: le usano i chip in pagina e la ricevuta in chat. */
 export function filterChips(f: OrdersFilter): string[] {
   const chips: string[] = [];
@@ -70,6 +33,7 @@ export function filterChips(f: OrdersFilter): string[] {
   if (f.agent !== "all") chips.push(`agente ${f.agent}`);
   if (f.status !== "all") chips.push(STATUS_LABELS[f.status]);
   if (f.query.trim()) chips.push(`"${f.query.trim()}"`);
+  chips.push(...specChips(f.spec));
   return chips;
 }
 
@@ -81,8 +45,20 @@ export function emptyFilter(from: string, to: string): OrdersFilter {
     agent: "all",
     status: "all",
     query: "",
+    spec: null,
     source: "browse",
   };
+}
+
+/** Il filtro come query string: e' l'URL la sua unica casa. */
+export function toSearchParams(f: OrdersFilter): URLSearchParams {
+  const p = new URLSearchParams({ from: f.from, to: f.to });
+  if (f.portal !== "all") p.set("portal", f.portal);
+  if (f.agent !== "all") p.set("agent", f.agent);
+  if (f.status !== "all") p.set("status", f.status);
+  if (f.query.trim()) p.set("q", f.query.trim());
+  if (f.spec) p.set("spec", JSON.stringify(f.spec));
+  return p;
 }
 
 // --- Ricevuta in chat (descriptor _ui) ---------------------------------------
@@ -101,6 +77,7 @@ export const filterSpecSchema = z.object({
   agent: z.string(),
   status: z.enum(["all", "da-confermare", "confermati", "annullati"]),
   query: z.string(),
+  spec: querySpecSchema.nullable().default(null),
 });
 
 export const ordersReceiptSchema = z.discriminatedUnion("kind", [

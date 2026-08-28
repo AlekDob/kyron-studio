@@ -476,11 +476,21 @@ export interface OrderRow {
   lines: OrderLine[];
 }
 
+export interface OrdersBucket {
+  count: number;
+  eur: number;
+}
+
 export interface OrdersResponse {
   from: string;
   to: string;
   count: number;
   totalGross: number;
+  /** KPI per stato, contati prima del filtro stato (li usano le tile). */
+  buckets: Record<"all" | "confermati" | "da-confermare" | "annullati", OrdersBucket>;
+  /** Opzioni dei select: tutto il periodo, non solo cio' che passa il filtro. */
+  portals: Array<{ slug: string; name: string }>;
+  agents: string[];
   orders: OrderRow[];
 }
 
@@ -489,16 +499,19 @@ export interface ListOrdersParams {
   to?: string;
   portal?: string;
   agent?: string;
+  status?: string;
+  q?: string;
+  /** Query strutturata composta da Nico, gia' serializzata in JSON. */
+  spec?: string;
 }
 
 export async function listOrders(
   params: ListOrdersParams = {},
 ): Promise<OrdersResponse> {
   const search = new URLSearchParams();
-  if (params.from) search.set("from", params.from);
-  if (params.to) search.set("to", params.to);
-  if (params.portal) search.set("portal", params.portal);
-  if (params.agent) search.set("agent", params.agent);
+  for (const [k, v] of Object.entries(params)) {
+    if (v && v !== "all") search.set(k, v);
+  }
   const qs = search.toString();
   return gatewayFetch<OrdersResponse>(`/api/v1/orders${qs ? `?${qs}` : ""}`);
 }

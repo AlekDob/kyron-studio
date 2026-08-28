@@ -13,13 +13,7 @@ import { ColorChangeNote } from "./ColorChangeNote";
 import { FeedbackNote } from "./drawer-primitives";
 import { ProductThumbnail } from "@/components/catalogo/ProductThumbnail";
 import { Button } from "@/components/shadcn/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/shadcn/select";
+import { ColorPicker } from "./ColorPicker";
 
 type EditLine = OrderEditView["lines"][number];
 
@@ -144,7 +138,7 @@ function AnnotateLines({
   );
 }
 
-// Riga in modalita' annotazione: prodotto originale + tendina colore + esito.
+// Riga in modalita' annotazione: prodotto + icona colore (solo dove serve).
 function AnnotateRow({
   line,
   saving,
@@ -154,55 +148,36 @@ function AnnotateRow({
   saving: boolean;
   onApply: (line: EditLine, to: string) => void;
 }) {
-  const hasChange = Boolean(line.requestedColor);
   return (
     <div className="flex flex-col gap-2 rounded-[var(--radius-md)] border border-[var(--color-line)] p-3">
-      <LineHeading line={line} />
-      {line.colorName && (
-        <span className="text-xs text-[var(--color-ink-muted)]">
-          Acquistato: <span className="text-[var(--color-ink-soft)]">{line.colorName}</span>
-        </span>
-      )}
-      {line.colorOptions.length > 0 ? (
-        <div className="flex flex-wrap items-center gap-2">
-          <Select disabled={saving} value="" onValueChange={(v) => onApply(line, v)}>
-            <SelectTrigger size="sm" className="w-48">
-              <SelectValue placeholder="Cambia colore…" />
-            </SelectTrigger>
-            <SelectContent>
-              {line.colorOptions.map((o) => (
-                <SelectItem key={o.variantId} value={o.label}>
-                  {o.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {saving && <span className="text-xs text-[var(--color-ink-muted)]">Salvataggio…</span>}
-        </div>
-      ) : (
-        <span className="text-xs text-[var(--color-ink-muted)]">
-          Nessun altro colore disponibile.
-        </span>
-      )}
-      {hasChange && (
-        <div className="flex items-center gap-3">
-          <ColorChangeNote from={line.colorName} to={line.requestedColor} />
-          <button
-            type="button"
+      <LineHeading line={line}>
+        {saving && <span className="text-xs text-[var(--color-ink-muted)]">Salvataggio…</span>}
+        {line.colorOptions.length > 0 && (
+          <ColorPicker
+            bought={line.colorName}
+            requested={line.requestedColor}
+            options={line.colorOptions}
             disabled={saving}
-            onClick={() => onApply(line, "")}
-            className="text-xs text-[var(--color-ink-muted)] underline hover:text-[var(--color-ink)] disabled:opacity-50"
-          >
-            Annulla
-          </button>
-        </div>
+            onPick={(v) => onApply(line, v)}
+            valueOf={(o) => o.label}
+          />
+        )}
+      </LineHeading>
+      {line.requestedColor ? (
+        <ColorChangeNote from={line.colorName} to={line.requestedColor} />
+      ) : (
+        line.colorName && (
+          <span className="text-xs text-[var(--color-ink-muted)]">
+            Colore: <span className="text-[var(--color-ink-soft)]">{line.colorName}</span>
+          </span>
+        )
       )}
     </div>
   );
 }
 
-// Intestazione riga: foto + SKU + nome prodotto (condivisa edit/annotate).
-function LineHeading({ line }: { line: EditLine }) {
+// Intestazione riga: foto + SKU + nome prodotto, con slot azioni a destra.
+function LineHeading({ line, children }: { line: EditLine; children?: React.ReactNode }) {
   return (
     <div className="flex items-center gap-3 text-sm">
       <ProductThumbnail src={line.imageUrl} className="h-10 w-10 rounded-lg" />
@@ -212,11 +187,12 @@ function LineHeading({ line }: { line: EditLine }) {
         )}
         <span className="font-medium">{line.productName}</span>
       </span>
+      <span className="ml-auto flex items-center gap-2">{children}</span>
     </div>
   );
 }
 
-// Riga in modalita' edit reale: stepper quantita' + select colore (cambia variante).
+// Riga in modalita' edit reale: stepper quantita' + icona colore (cambia variante).
 function EditRow({
   line,
   saving,
@@ -228,33 +204,24 @@ function EditRow({
 }) {
   return (
     <div className="flex flex-col gap-2 rounded-[var(--radius-md)] border border-[var(--color-line)] p-3">
-      <LineHeading line={line} />
-      <div className="flex flex-wrap items-center gap-2">
-        <QtyStepper
-          value={line.quantity}
-          disabled={saving}
-          onChange={(q) => onApply(line.id, { quantity: q })}
-        />
-        {line.colorOptions.length > 0 && (
-          <Select
-            disabled={saving}
-            value=""
-            onValueChange={(v) => onApply(line.id, { variantId: v, quantity: line.quantity })}
-          >
-            <SelectTrigger size="sm" className="w-48">
-              <SelectValue placeholder="Cambia colore…" />
-            </SelectTrigger>
-            <SelectContent>
-              {line.colorOptions.map((o) => (
-                <SelectItem key={o.variantId} value={o.variantId}>
-                  {o.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
+      <LineHeading line={line}>
         {saving && <span className="text-xs text-[var(--color-ink-muted)]">Salvataggio…</span>}
-      </div>
+        {line.colorOptions.length > 0 && (
+          <ColorPicker
+            bought={line.colorName}
+            requested=""
+            options={line.colorOptions}
+            disabled={saving}
+            onPick={(v) => onApply(line.id, { variantId: v, quantity: line.quantity })}
+            valueOf={(o) => o.variantId}
+          />
+        )}
+      </LineHeading>
+      <QtyStepper
+        value={line.quantity}
+        disabled={saving}
+        onChange={(q) => onApply(line.id, { quantity: q })}
+      />
     </div>
   );
 }
