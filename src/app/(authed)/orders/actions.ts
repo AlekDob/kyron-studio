@@ -95,7 +95,13 @@ export async function updateOrderVatAction(
 export async function updateOrderPaymentTotalAction(
   id: string,
   amount: number,
-): Promise<{ ok: boolean; mode: EditMode; total: number; override: number | null }> {
+): Promise<{
+  ok: boolean;
+  mode: EditMode;
+  total: number;
+  override: number | null;
+  emailed: boolean; // true = mail col nuovo importo IVA 4% inviata al cliente
+}> {
   return gatewayFetch("/api/v1/orders/payment-total", {
     method: "PATCH",
     body: JSON.stringify({ id, amount }),

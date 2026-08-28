@@ -464,7 +464,10 @@ export function VatReliefSection({
     try {
       const res = await updateOrderPaymentTotalAction(order.id, parsed);
       onAmountSaved(order.id, res.override);
-      setNote(`Importo IVA 4% allineato a ${formatEur(parsed)}.`);
+      setNote(
+        `Importo IVA 4% allineato a ${formatEur(parsed)}.` +
+          (res.emailed ? " Mail col nuovo importo inviata al cliente." : ""),
+      );
     } catch {
       setNote("Errore nel salvataggio importo. Riprova.");
     } finally {
