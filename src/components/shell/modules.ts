@@ -123,6 +123,8 @@ export const MODULES: KyronModule[] = [
   {
     id: "orders",
     label: "Ordini",
+    // La lista e' lo strumento, Nico e' la chat che la pilota: resta kind "tool".
+    agentName: "Nico",
     description: "Tutti gli ordini dei portali: filtra per scuola e data, vedi agente e stato.",
     href: "/orders",
     icon: ShoppingBag,

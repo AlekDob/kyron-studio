@@ -34,6 +34,14 @@ function isPreviewPath(pathname: string): boolean {
   return pathname.startsWith("/preview");
 }
 
+// Workspace: pannello + chat a tutta altezza, lo scroll lo gestisce la pagina.
+// Senza questo la lastra scrolla tutta insieme e il pannello perde la testata.
+const WORKSPACE_PATHS = ["/orders", "/catalogo", "/portals", "/preview"];
+
+function isWorkspacePath(pathname: string): boolean {
+  return WORKSPACE_PATHS.some((p) => pathname.startsWith(p));
+}
+
 /** Gli agenti sono i canali della voce "Agenti": nome + ruolo, come su Slack. */
 function agentChannels(m: ModuleDefinition): ReactNode {
   if (m.id !== "agents") return null;
@@ -60,6 +68,7 @@ export function StudioShell({
       modules={MODULES}
       userEmail={userEmail}
       copy={COPY}
+      fillPane={isWorkspacePath}
       compactRail={isPreviewPath}
       subChannels={agentChannels}
       brandBadge={

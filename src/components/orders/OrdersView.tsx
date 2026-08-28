@@ -1,18 +1,28 @@
 "use client";
 import { useMemo, useState } from "react";
-import { Search } from "lucide-react";
 import type { OrdersResponse, OrderRow } from "@/lib/gateway";
-import { Card, Input } from "@/components/ui";
-import { OrdersFilters, type PortalOption } from "./OrdersFilters";
+import type { PortalOption } from "./OrdersFilters";
+import { OrdersHeader } from "./OrdersHeader";
 import { OrdersList } from "./OrdersList";
 import { OrderDrawer } from "./OrderDrawer";
 import { OrdersEmptyState } from "./OrdersEmptyState";
-import { agentName, dayKey, dayLabel, formatEur } from "./format";
+import { agentName, dayKey, dayLabel } from "./format";
+import { agentNameOf } from "@/components/shell/modules";
+import {
+  emptyFilter,
+  matchesFilter,
+  statusBucketOf,
+  type OrdersFilter,
+} from "./orders-filter";
 
 interface OrdersViewProps {
   data: OrdersResponse;
-  from: string;
-  to: string;
+  /** Filtro condiviso: lo muove l'umano dalla testata, lo scrive Nico dalla chat. */
+  filter: OrdersFilter;
+  onFilterChange: (patch: Partial<OrdersFilter>) => void;
+  /** Ordine aperto nel drawer. Vive nel workspace: lo apre anche l'agente. */
+  selectedId: string | null;
+  onSelectId: (id: string | null) => void;
 }
 
 // true se il buono Carta del Docente copre l'intero totale ordine (tolleranza
@@ -74,25 +84,6 @@ function agentOptions(orders: OrderRow[]): string[] {
   return Array.from(set).sort();
 }
 
-// Ricerca su numero ordine, dati cliente (nome/email/telefono) e Stripe.
-function matchesQuery(o: OrderRow, q: string): boolean {
-  if (!q) return true;
-  const hay = [
-    o.number,
-    o.customerName,
-    o.companyName,
-    o.userEmail,
-    o.customerPhone,
-    o.fiscalCode,
-    o.vatNumber,
-    o.sdiCode,
-    o.pspReference,
-  ]
-    .join(" ")
-    .toLowerCase();
-  return hay.includes(q.toLowerCase());
-}
-
 export interface DayGroup {
   key: string;
   label: string;
@@ -111,11 +102,13 @@ function groupByDay(orders: OrderRow[]): DayGroup[] {
   return groups;
 }
 
-export function OrdersView({ data, from, to }: OrdersViewProps) {
-  const [portal, setPortal] = useState("all");
-  const [agent, setAgent] = useState("all");
-  const [query, setQuery] = useState("");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+export function OrdersView({
+  data,
+  filter,
+  onFilterChange,
+  selectedId,
+  onSelectId,
+}: OrdersViewProps) {
   // Override ottimistici per ordine (id -> override) dopo un'azione nel drawer.
   const [overrides, setOverrides] = useState<Record<string, OrderOverrides>>({});
 
@@ -131,17 +124,19 @@ export function OrdersView({ data, from, to }: OrdersViewProps) {
   const portals = useMemo(() => portalOptions(orders), [orders]);
   const agents = useMemo(() => agentOptions(orders), [orders]);
 
+  // I KPI contano ignorando lo stato: sono bottoni di navigazione, se si
+  // azzerassero non si potrebbe piu' saltare da un gruppo all'altro.
+  const scoped = useMemo(
+    () => orders.filter((o) => matchesFilter(o, { ...filter, status: "all" })),
+    [orders, filter],
+  );
+
   const filtered = useMemo(
     () =>
-      orders
-        .filter(
-          (o) =>
-            (portal === "all" || o.channelSlug === portal) &&
-            (agent === "all" || agentName(o.agent) === agent) &&
-            matchesQuery(o, query),
-        )
+      scoped
+        .filter((o) => filter.status === "all" || statusBucketOf(o) === filter.status)
         .sort((a, b) => b.created.localeCompare(a.created)),
-    [orders, portal, agent, query],
+    [scoped, filter.status],
   );
 
   const selected = useMemo(
@@ -149,90 +144,41 @@ export function OrdersView({ data, from, to }: OrdersViewProps) {
     [orders, selectedId],
   );
 
-  const total = useMemo(
-    () => filtered.reduce((sum, o) => sum + o.totalGross, 0),
-    [filtered],
-  );
   const groups = useMemo(() => groupByDay(filtered), [filtered]);
 
-  // Conteggi per stato: annullato = workflow interno o evasione Saleor CANCELED;
-  // da confermare = bozza Saleor (UNCONFIRMED/DRAFT); il resto e' confermato.
-  const counts = useMemo(() => {
-    let canceled = 0;
-    let canceledEur = 0;
-    let toConfirm = 0;
-    let toConfirmEur = 0;
-    for (const o of filtered) {
-      if (o.workflowStatus === "annullato" || o.status === "CANCELED") {
-        canceled++;
-        canceledEur += o.totalGross;
-      } else if (o.status === "UNCONFIRMED" || o.status === "DRAFT") {
-        toConfirm++;
-        toConfirmEur += o.totalGross;
-      }
-    }
-    return {
-      canceled,
-      canceledEur,
-      toConfirm,
-      toConfirmEur,
-      confirmed: filtered.length - canceled - toConfirm,
-      confirmedEur: total - canceledEur - toConfirmEur,
-    };
-  }, [filtered, total]);
-
   return (
-    <div className="flex flex-col gap-5">
-      <div className="grid grid-cols-2 gap-3">
-        <Kpi label="Ordini" value={String(filtered.length)} />
-        <Kpi label="Totale" value={formatEur(total)} />
-      </div>
-      <div className="grid grid-cols-3 gap-3">
-        <Kpi
-          label="Confermati"
-          value={String(counts.confirmed)}
-          sub={formatEur(counts.confirmedEur)}
-        />
-        <Kpi
-          label="Da confermare"
-          value={String(counts.toConfirm)}
-          sub={formatEur(counts.toConfirmEur)}
-        />
-        <Kpi
-          label="Annullati"
-          value={String(counts.canceled)}
-          sub={formatEur(counts.canceledEur)}
-        />
-      </div>
-
-      <Input
-        size="sm"
-        placeholder="Cerca per n° ordine, cliente o transazione Stripe…"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        iconLeft={<Search size={15} />}
-      />
-
-      <OrdersFilters
-        from={from}
-        to={to}
-        portal={portal}
-        agent={agent}
+    <div className="flex h-full min-h-0 flex-col">
+      {/* Testata ferma: KPI, ricerca e filtri restano a vista mentre la lista scorre. */}
+      <OrdersHeader
+        rows={scoped}
+        filter={filter}
+        onChange={onFilterChange}
         portals={portals}
         agents={agents}
-        onPortalChange={setPortal}
-        onAgentChange={setAgent}
       />
 
-      {filtered.length === 0 ? (
-        <OrdersEmptyState variant="no-data" />
-      ) : (
-        <OrdersList groups={groups} onSelect={(o) => setSelectedId(o.id)} />
-      )}
+      <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-8">
+        {/* Il pannello e' in mano all'agente: si vede da dove arriva la lista
+            e si torna a tutti gli ordini con un click. */}
+        {filter.source === "agent" && (
+          <button
+            type="button"
+            onClick={() => onFilterChange(emptyFilter(filter.from, filter.to))}
+            className="mb-3 rounded-full border border-[var(--color-line)] px-3 py-1.5 text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
+          >
+            Filtrato da {agentNameOf("orders")} · mostra tutto
+          </button>
+        )}
+        {filtered.length === 0 ? (
+          <OrdersEmptyState variant="no-data" />
+        ) : (
+          <OrdersList groups={groups} onSelect={(o) => onSelectId(o.id)} />
+        )}
+      </div>
 
       <OrderDrawer
         order={selected}
-        onClose={() => setSelectedId(null)}
+        onClose={() => onSelectId(null)}
         onStatusChange={(id, status) => patch(id, { workflow: status })}
         onTeacherCardAcquired={(id) => patch(id, { acquired: true })}
         onBankTransferPaid={(id) => patch(id, { paid: true })}
@@ -245,27 +191,5 @@ export function OrdersView({ data, from, to }: OrdersViewProps) {
         onVatReliefValidated={(id, vatReliefStatus) => patch(id, { vatReliefStatus })}
       />
     </div>
-  );
-}
-
-function Kpi({
-  label,
-  value,
-  sub,
-}: {
-  label: string;
-  value: string;
-  sub?: string; // valore economico sotto il conteggio
-}) {
-  return (
-    <Card padding="md">
-      <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-ink-muted)]">
-        {label}
-      </p>
-      <p className="mt-1 text-2xl font-medium tracking-tight">{value}</p>
-      {sub && (
-        <p className="mt-0.5 text-sm text-[var(--color-ink-muted)]">{sub}</p>
-      )}
-    </Card>
   );
 }

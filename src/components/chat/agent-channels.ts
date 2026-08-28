@@ -38,7 +38,6 @@ export const CHANNELS: Record<string, ChannelConfig> = {
     ],
     toolLabels: {
       render_doc_uploader: "Carica documenti",
-      get_order: "Ordine",
       analyze_documents: "Controllo documenti",
       propose_decision: "Proposta",
     },
@@ -75,15 +74,13 @@ export const CHANNELS: Record<string, ChannelConfig> = {
   catalogo: {
     endpoint: "/api/agent/commesso",
     intro:
-      "Gestisco catalogo e ordini: prodotti, giacenze, prezzi, stato delle lavorazioni. Posso anche mandare una comunicazione ai clienti partendo da un export di DDT di Danea. Prezzi e mail passano sempre da un piano che ti mostro prima.",
+      "Gestisco il catalogo: prodotti, giacenze, prezzi, controlli sui portali. I prezzi passano sempre da un piano che ti mostro prima. Per gli ordini vieni a trovarmi in Ordini.",
     suggestions: [
       "Mostrami gli iPad",
       "Cambia la descrizione di questo prodotto",
       "Porta il prezzo a 810 sul main shop",
       "Quanti pezzi abbiamo in magazzino",
       "Controlla i prezzi di tutti i portali",
-      "Ordini di questa settimana",
-      "Manda una comunicazione sui ritardi di consegna",
     ],
     toolLabels: {
       list_products: "Catalogo",
@@ -103,9 +100,27 @@ export const CHANNELS: Record<string, ChannelConfig> = {
       plan_danea_import: "Piano import",
       apply_danea_import: "Import prodotti",
       add_to_portals: "Aggiungi ai portali",
+    },
+  },
+  // Stesso agente del catalogo, stesso endpoint: cambia solo lo `scope` nel
+  // body, che lato server sceglie prompt e tool. Qui Nico vede solo ordini e
+  // comunicazioni ai clienti; il pannello a fianco e' la lista vera.
+  orders: {
+    endpoint: "/api/agent/commesso",
+    intro:
+      "Filtro la lista ordini qui a fianco e ti dico cosa vedo. Posso anche mandare una comunicazione ai clienti partendo da un export di DDT di Danea.",
+    suggestions: [
+      "Mostrami gli ordini da confermare",
+      "Ordini del portale massari",
+      "Ordini di Ravelli di questo mese",
+      "Apri l'ordine 495",
+      "Manda una comunicazione sui ritardi di consegna",
+    ],
+    toolLabels: {
       list_orders: "Ordini",
       get_order: "Ordine",
       set_order_status: "Stato ordine",
+      render_danea_uploader: "File Danea",
       parse_ddt_summary: "Lettura DDT",
       plan_ddt_mailing: "Piano comunicazione",
       send_ddt_mailing: "Invio comunicazione",

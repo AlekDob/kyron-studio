@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser, loginUrl } from "@/lib/auth";
 import { listOrders, type OrdersResponse } from "@/lib/gateway";
-import { OrdersView } from "@/components/orders/OrdersView";
+import { OrdersWorkspace } from "@/components/orders/OrdersWorkspace";
 import { OrdersEmptyState } from "@/components/orders/OrdersEmptyState";
 
 export const metadata = { title: "Ordini — Studio" };
@@ -48,24 +48,13 @@ export default async function OrdersPage({ searchParams }: PageProps) {
     failed = true;
   }
 
-  return (
-    <main className="min-h-full px-5 py-8 sm:px-8 lg:px-10 max-w-6xl mx-auto">
-      <header className="mb-6 rounded-2xl border border-[var(--color-line)] bg-[var(--color-paper-soft)] px-5 py-5">
-        <p className="eyebrow mb-2">Studio · Ordini</p>
-        <h1 className="text-3xl font-medium tracking-tight">
-          Ordini <span className="text-[var(--color-ink-muted)]">portali</span>
-        </h1>
-        <p className="text-[var(--color-ink-muted)] mt-2 text-sm max-w-xl">
-          Tutti gli ordini dei portali scuola. Filtra per data, portale o agente
-          commerciale; espandi un ordine per vedere i prodotti.
-        </p>
-      </header>
-
-      {failed || !data ? (
+  if (failed || !data) {
+    return (
+      <main className="px-5 py-8 sm:px-8">
         <OrdersEmptyState variant="error" />
-      ) : (
-        <OrdersView data={data} from={from} to={to} />
-      )}
-    </main>
-  );
+      </main>
+    );
+  }
+
+  return <OrdersWorkspace data={data} from={from} to={to} />;
 }

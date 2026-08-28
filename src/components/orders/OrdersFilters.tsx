@@ -1,6 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { Input, Select } from "@/components/ui";
+import type { OrdersFilter } from "./orders-filter";
 
 // Filtri ordini. Le DATE vivono nell'URL (refetch server-side per periodo);
 // PORTALE e AGENTE sono stato client (filtro istantaneo sul payload, no refetch).
@@ -50,29 +51,25 @@ const PRESETS: Array<{ key: string; label: string }> = [
 ];
 
 interface OrdersFiltersProps {
-  from: string;
-  to: string;
-  portal: string; // channelSlug | "all"
-  agent: string; // local-part | "all"
+  filter: OrdersFilter;
   portals: PortalOption[];
   agents: string[];
-  onPortalChange: (value: string) => void;
-  onAgentChange: (value: string) => void;
+  onChange: (patch: Partial<OrdersFilter>) => void;
 }
 
 export function OrdersFilters({
-  from,
-  to,
-  portal,
-  agent,
+  filter,
   portals,
   agents,
-  onPortalChange,
-  onAgentChange,
+  onChange,
 }: OrdersFiltersProps) {
   const router = useRouter();
+  const { from, to, portal, agent } = filter;
 
+  // Le date restano nell'URL: cambiarle rifa' il fetch del periodo. Lo stato
+  // locale si allinea subito cosi' i preset si accendono senza aspettare il giro.
   function pushDates(nextFrom: string, nextTo: string) {
+    onChange({ from: nextFrom, to: nextTo, source: "browse" });
     const params = new URLSearchParams({ from: nextFrom, to: nextTo });
     router.push(`/orders?${params.toString()}`);
   }
@@ -125,7 +122,7 @@ export function OrdersFilters({
         <Select
           className="h-8 text-sm"
           value={portal}
-          onChange={(e) => onPortalChange(e.target.value)}
+          onChange={(e) => onChange({ portal: e.target.value, source: "browse" })}
         >
           <option value="all">Tutti i portali</option>
           {portals.map((p) => (
@@ -139,7 +136,7 @@ export function OrdersFilters({
         <Select
           className="h-8 text-sm"
           value={agent}
-          onChange={(e) => onAgentChange(e.target.value)}
+          onChange={(e) => onChange({ agent: e.target.value, source: "browse" })}
         >
           <option value="all">Tutti gli agenti</option>
           {agents.map((a) => (

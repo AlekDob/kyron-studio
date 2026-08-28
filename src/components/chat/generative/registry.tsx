@@ -55,6 +55,10 @@ const DaneaImportPlan = lazy(() =>
 const DdtMailPlan = lazy(() =>
   import("./DdtMailPlan").then((m) => ({ default: m.DdtMailPlan })),
 );
+// Modulo Ordini (Nico): ricevuta di cosa ha filtrato o aperto nel pannello
+const OrdersReceipt = lazy(() =>
+  import("./OrdersReceipt").then((m) => ({ default: m.OrdersReceipt })),
+);
 const AnomalyReport = lazy(() =>
   import("./AnomalyReport").then((m) => ({ default: m.AnomalyReport })),
 );
@@ -101,6 +105,9 @@ const COMPONENT_REGISTRY: Record<
     Record<string, unknown>
   >,
   DdtMailPlan: DdtMailPlan as unknown as React.ComponentType<
+    Record<string, unknown>
+  >,
+  OrdersReceipt: OrdersReceipt as unknown as React.ComponentType<
     Record<string, unknown>
   >,
 };
