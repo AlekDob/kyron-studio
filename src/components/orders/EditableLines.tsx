@@ -12,6 +12,14 @@ import { OrderLines } from "./OrderLines";
 import { ColorChangeNote } from "./ColorChangeNote";
 import { FeedbackNote } from "./drawer-primitives";
 import { ProductThumbnail } from "@/components/catalogo/ProductThumbnail";
+import { Button } from "@/components/shadcn/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/shadcn/select";
 
 type EditLine = OrderEditView["lines"][number];
 
@@ -157,19 +165,18 @@ function AnnotateRow({
       )}
       {line.colorOptions.length > 0 ? (
         <div className="flex flex-wrap items-center gap-2">
-          <select
-            disabled={saving}
-            value=""
-            onChange={(e) => e.target.value && onApply(line, e.target.value)}
-            className="rounded-[var(--radius-md)] border border-[var(--color-line)] bg-[var(--color-paper-soft)] px-2 py-1.5 text-sm outline-none focus:border-[var(--color-line-strong)] disabled:opacity-50"
-          >
-            <option value="">Cambia colore…</option>
-            {line.colorOptions.map((o) => (
-              <option key={o.variantId} value={o.label}>
-                {o.label}
-              </option>
-            ))}
-          </select>
+          <Select disabled={saving} value="" onValueChange={(v) => onApply(line, v)}>
+            <SelectTrigger size="sm" className="w-48">
+              <SelectValue placeholder="Cambia colore…" />
+            </SelectTrigger>
+            <SelectContent>
+              {line.colorOptions.map((o) => (
+                <SelectItem key={o.variantId} value={o.label}>
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           {saving && <span className="text-xs text-[var(--color-ink-muted)]">Salvataggio…</span>}
         </div>
       ) : (
@@ -229,22 +236,22 @@ function EditRow({
           onChange={(q) => onApply(line.id, { quantity: q })}
         />
         {line.colorOptions.length > 0 && (
-          <select
+          <Select
             disabled={saving}
-            defaultValue=""
-            onChange={(e) =>
-              e.target.value &&
-              onApply(line.id, { variantId: e.target.value, quantity: line.quantity })
-            }
-            className="rounded-[var(--radius-md)] border border-[var(--color-line)] bg-[var(--color-paper-soft)] px-2 py-1.5 text-sm outline-none focus:border-[var(--color-line-strong)] disabled:opacity-50"
+            value=""
+            onValueChange={(v) => onApply(line.id, { variantId: v, quantity: line.quantity })}
           >
-            <option value="">Cambia colore…</option>
-            {line.colorOptions.map((o) => (
-              <option key={o.variantId} value={o.variantId}>
-                {o.label}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger size="sm" className="w-48">
+              <SelectValue placeholder="Cambia colore…" />
+            </SelectTrigger>
+            <SelectContent>
+              {line.colorOptions.map((o) => (
+                <SelectItem key={o.variantId} value={o.variantId}>
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         )}
         {saving && <span className="text-xs text-[var(--color-ink-muted)]">Salvataggio…</span>}
       </div>
@@ -271,14 +278,9 @@ function QtyStepper({
       <span className="min-w-6 text-center text-sm tabular-nums">{q}</span>
       <StepBtn label="+" disabled={disabled} onClick={() => step(1)} />
       {q !== value && (
-        <button
-          type="button"
-          disabled={disabled}
-          onClick={() => onChange(q)}
-          className="ml-1 rounded-[var(--radius-pill)] border border-[var(--color-ink)] bg-[var(--color-ink)] px-2 py-1 text-xs font-medium text-[var(--color-paper)] disabled:opacity-50"
-        >
+        <Button type="button" size="xs" className="ml-1" disabled={disabled} onClick={() => onChange(q)}>
           Applica
-        </button>
+        </Button>
       )}
     </span>
   );
@@ -294,13 +296,15 @@ function StepBtn({
   onClick: () => void;
 }) {
   return (
-    <button
+    <Button
       type="button"
+      variant="outline"
+      size="icon-sm"
+      className="rounded-full"
       disabled={disabled}
       onClick={onClick}
-      className="h-7 w-7 rounded-full border border-[var(--color-line)] text-sm leading-none disabled:opacity-40 hover:border-[var(--color-line-strong)]"
     >
       {label}
-    </button>
+    </Button>
   );
 }

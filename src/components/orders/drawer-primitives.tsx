@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Button } from "@/components/shadcn/button";
 
 // Primitive di layout condivise dal drawer ordine e dai suoi blocchi (DRY):
 // una sezione con eyebrow + una riga label/valore allineata.
@@ -35,15 +36,12 @@ export function ActionButton({
   savingLabel?: string;
   onClick: () => void;
 }) {
+  // Prova shadcn (solo Ordini): un solo punto e tutti i bottoni azione della
+  // scheda passano al Button di shadcn. `ActionButton` lo usa solo OrderBlocks.
   return (
-    <button
-      type="button"
-      disabled={saving}
-      onClick={onClick}
-      className="rounded-[var(--radius-pill)] border border-[var(--color-ink)] bg-[var(--color-ink)] px-3 py-2 text-sm font-medium text-[var(--color-paper)] transition-opacity disabled:opacity-50"
-    >
+    <Button type="button" disabled={saving} onClick={onClick}>
       {saving ? savingLabel : label}
-    </button>
+    </Button>
   );
 }
 
