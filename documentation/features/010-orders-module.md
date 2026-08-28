@@ -8,6 +8,24 @@ tags: [orders, ordini, commerciali, portali, saleor]
 
 # Feature 010 — Modulo Ordini
 
+> **Update 2026-08-28 (2) — scheda a tab, icone di vetro, note scritte da Nico**
+> (stesso branch). La scheda e' divisa in **Cliente / Pagamento / Prodotti / Note**;
+> lo **stato lavorazione** resta fuori dai tab, e' l'azione piu' frequente. Le due
+> colonne con container query spariscono: i tab fanno lo stesso lavoro con meno codice.
+> `ORDER_TABS` sta in `orders-filter.ts` e non nel componente, perche' lo schema della
+> ricevuta lo importa e non deve tirarsi dietro il grafo client.
+> **Icone**: `orders/detail-section.tsx` — pastiglia di vetro colorata (`color-mix`
+> sulla tinta + `backdrop-blur` + molla framer-motion al hover), una tinta per
+> argomento: indaco cliente, verde soldi, ambra prodotti, viola note. Stesso
+> componente in testata di sezione e dentro i tab.
+> **Il tab lo cambia anche l'agente**: vive in `OrdersWorkspace`, scende a
+> `OrdersView` → `OrderDetail`/`OrderDrawer`. `get_order` accetta `tab` e lo mette nel
+> descriptor `_ui`, `applyReceipt` lo applica.
+> **Nuovo tool `add_order_note`** (studio-server, `commesso/order-tools.ts`): ACCODA
+> una riga a `kyron_note`, mai sovrascrive — il campo e' condiviso con l'operatore e
+> finisce nelle FootNotes dell'export Danea. Non manda niente al cliente. La ricevuta
+> ha `refresh: true`, se no il pannello mostrerebbe la nota di prima.
+
 > **Update 2026-08-28 — dettaglio al centro, Nico su mobile, prova shadcn** (branch
 > `feat/orders-detail-center`, non pushato). Con la chat dell'agente fissa a destra il
 > drawer laterale la copriva: l'ordine aperto ora prende la **colonna centrale** al posto
