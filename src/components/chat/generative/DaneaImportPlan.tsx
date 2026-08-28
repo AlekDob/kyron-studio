@@ -7,6 +7,7 @@ import { fmtEur } from "@/components/analytics/format";
 interface PlanGroup {
   slug: string;
   aggregator: string;
+  suggestedName?: string;
   subcategory: string;
   isNew: boolean;
   newVariants: Array<{ sku: string; name: string; priceEur: number }>;
@@ -98,7 +99,7 @@ export function DaneaImportPlan({
             ? json.mappings
             : newGroups.map((g) => ({
                 aggregator: g.aggregator,
-                productName: g.aggregator,
+                productName: g.suggestedName || g.aggregator,
                 slug: g.slug,
                 productTypeId: fallbackType,
                 categorySlug: fallbackCat,
@@ -228,7 +229,7 @@ export function DaneaImportPlan({
           return (
             <div key={g.aggregator} className="mt-3 border-t border-[var(--color-line)] pt-2">
               <p className="text-xs text-[var(--color-ink)]">
-                {g.aggregator}
+                {g.suggestedName || g.aggregator}
                 <span className="text-[var(--color-ink-muted)]"> · {g.isNew ? "nuovo" : "esistente"}</span>
               </p>
               {g.newVariants.map((v) => (

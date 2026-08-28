@@ -156,6 +156,11 @@ diff, righe a prezzo zero saltate.
   chiedeva `products(first: 200)` per il catalogo esistente e Saleor rifiutava
   la query ("Limit of 100 exceeded"). Nico lo traduceva come "il file supera
   100 record" anche con un XML da 53 righe. Ora `listProducts` pagina a 100.
+- **Import Danea "scaduto" dopo 10 secondi.** La card manda `dan_…` solo nel JSON
+  del primo turno; in cronologia resta "Ho caricato EcommProdotti.xml". Nico
+  poi chiede il canale e chiama `plan_danea_import` col nome file. Lo store
+  non lo trova. Ora il tool ripesca l'id dal Contesto UI o l'ultimo listino
+  in memoria.
 - **`productVariantCreate` vuole `attributes: []`** anche se non ne servono.
 - **Le mutation di listing vogliono l'ID del canale, non lo slug** →
   `resolveChannelId`.
