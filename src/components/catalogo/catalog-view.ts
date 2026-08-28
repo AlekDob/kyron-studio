@@ -80,8 +80,10 @@ export function variantPricesOn(
     .sort((a, b) => a.priceEur - b.priceEur);
 }
 
-/** Prezzo di riferimento in lista: main shop se c'e', altrimenti il minimo. */
-export function listPrice(product: Product): number | null {
+/** Prezzo di riferimento in lista: canale della ricerca, altrimenti main shop, altrimenti il minimo. */
+export function listPrice(product: Product, channel?: string | null): number | null {
+  const scoped = channel ? pricesOn(product, channel) : [];
+  if (scoped.length) return Math.min(...scoped);
   const main = pricesOn(product, MAIN_SHOP);
   if (main.length) return Math.min(...main);
   const all = product.variants.flatMap((v) =>
@@ -91,15 +93,18 @@ export function listPrice(product: Product): number | null {
 }
 
 /** Etichetta prezzo in lista: "da X" se le varianti hanno prezzi diversi. */
-export function listPriceLabel(product: Product): string {
-  const price = listPrice(product);
+export function listPriceLabel(product: Product, channel?: string | null): string {
+  const price = listPrice(product, channel);
   if (price === null) return "—";
+  const scoped = channel ? pricesOn(product, channel) : [];
   const main = pricesOn(product, MAIN_SHOP);
-  const prices = main.length
-    ? main
-    : product.variants.flatMap((v) =>
-        v.channels.map((c) => c.priceEur).filter((p): p is number => p !== null),
-      );
+  const prices = scoped.length
+    ? scoped
+    : main.length
+      ? main
+      : product.variants.flatMap((v) =>
+          v.channels.map((c) => c.priceEur).filter((p): p is number => p !== null),
+        );
   return new Set(prices).size > 1 ? `da ${eur(price)}` : eur(price);
 }
 

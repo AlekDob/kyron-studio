@@ -20,6 +20,7 @@ export function ProductRow({
   names,
   sales,
   index,
+  priceChannel,
 }: {
   product: Product;
   selected: boolean;
@@ -27,6 +28,7 @@ export function ProductRow({
   names: ChannelNames;
   sales: SalesIndex;
   index: number;
+  priceChannel?: string | null;
 }) {
   const sold = productSales(product, sales);
   const published = product.channels.length > 0;
@@ -56,7 +58,7 @@ export function ProductRow({
             {product.name}
           </span>
           <span className="shrink-0 text-xs font-semibold tabular-nums text-[var(--color-ink)]">
-            {listPriceLabel(product)}
+            {listPriceLabel(product, priceChannel)}
           </span>
         </div>
         <div className="mt-1 flex items-center gap-1.5">

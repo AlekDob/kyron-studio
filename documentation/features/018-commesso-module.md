@@ -2,7 +2,7 @@
 type: feature
 project: studio
 created: 2026-08-26
-last_verified: 2026-08-27
+last_verified: 2026-08-28
 tags: [agent, catalogo, saleor, prodotti, prezzi, danea, money-path, generative-ui]
 ---
 
@@ -15,8 +15,8 @@ chiedere ad Alek: il catalogo si caricava con uno script CLI da 1586 righe
 (`ecommerce/seed/import-danea.ts`) che gira solo sul suo Mac. Un cambio prezzo
 era un ticket.
 
-`/catalogo` e' il modulo che gli da' autonomia: pannello catalogo a sinistra,
-drawer col dettaglio, chat con Nico a destra. Nico legge, crea, modifica,
+`/catalogo` e' il modulo che gli da' autonomia: chat con Nico a sinistra,
+pannello catalogo a destra, drawer col dettaglio. Nico legge, crea, modifica,
 aggiorna giacenze e prezzi su Saleor **produzione**.
 
 ## Il vincolo che guida tutto: il money-path
@@ -61,16 +61,17 @@ senza aspettare che l'utente lo chieda.
 Il `filter: { search }` di Saleor si appoggia a una colonna di ricerca del database
 che su questa installazione e' vuota: `search: "iPad"` tornava zero risultati con
 `Apple iPad A16` in catalogo, mentre `where: { name: { eq } }` lo trovava.
-Per questo `listProducts` scarica la pagina di catalogo e filtra in memoria
-(`matchesSearch`: nome, slug, categoria, SKU delle varianti).
-Ceiling: vale finche' il catalogo sta sotto le 200 righe. Oltre, va ripopolato
-il search vector di Saleor.
+Per questo `listProducts` scarica il catalogo a **pagine da 100** (tetto Saleor:
+`first` > 100 fa cadere la query con "Limit of 100 exceeded") e filtra in
+memoria (`matchesSearch`: nome, slug, categoria, SKU delle varianti).
+`plan_danea_import` arriva a 500 prodotti. Oltre, va ripopolato il search
+vector di Saleor.
 
 ## I tool
 
 | Tool | Cosa fa | `_ui` |
 |---|---|---|
-| `list_products({ search, target })` | catalogo, anche non pubblicato | no (muove il pannello via `onEvent`) |
+| `list_products({ search, channelSlug, target })` | catalogo, anche non pubblicato; `channelSlug` filtra il portale | no (muove il pannello via `onEvent`) |
 | `get_product({ slug })` | dettaglio + varianti + prezzi per canale | no (apre il drawer) |
 | `get_catalog_meta()` | canali, categorie, tipi prodotto, magazzini reali | no |
 | `create_product` / `update_product` / `update_variant` / `set_stock` / `add_product_image` | scritture catalogo, **mai prezzi** | no |
@@ -78,8 +79,9 @@ il search vector di Saleor.
 | `plan_prices` | calcola il piano, non scrive | `PricePlanCard` |
 | `apply_price_plan({ confirm })` | ricalcola, rilegge, scrive | no |
 | `render_danea_uploader` | riquadro di caricamento file | `DaneaUploader` |
-| `plan_danea_import` | diff nuovi / prezzi cambiati / invariati | `DaneaImportPlan` |
-| `apply_danea_import({ confirm, mappings })` | crea solo le cose nuove | no |
+| `plan_danea_import` | diff nuovi / prezzi cambiati / invariati; result slanciato | `DaneaImportPlan` |
+| `apply_danea_import({ confirm })` | crea solo le cose nuove; mapping dalla card, non dal modello | no |
+| `add_to_portals({ confirm })` | append `visibleSlugs` + enable sul portale scelto | no |
 | `run_all_checks()` | Price Guard su tutti i portali, sola lettura | `AnomalyReport` |
 | `check_portal({ query })` | Price Guard su un portale (fuzzy match) | `AnomalyReport` |
 
@@ -101,16 +103,22 @@ crea prodotti e varianti nuove col loro prezzo, non pubblicate, e riporta i
 prezzi diversi senza toccarli.
 
 I gruppi senza mapping (nome, slug, categoria, tipo prodotto) vengono
-**saltati**: il nome commerciale lo propone Nico e lo conferma l'utente, non si
-inventa.
+**saltati**. I mapping stanno sullo store dell'import (TTL 1h), scritti dalla
+card o dal wizard `+` in Catalogo. Nico propone i nomi a pacchetti; non
+inventa un `mappings[]` nel tool.
+
+Foto: non ci sono in Danea. ZIP/file il cui nome e' il Codice, drawer
+"Aggiungi foto" (multipart Saleor), oppure og:image Apple solo per SKU `…/A`
+(fuori dal turno chat). Pubblicazione su un canale, portali a checkbox.
 
 ## Il collegamento agente ↔ UI
 
 Due direzioni, nessun port nuovo:
 
 1. **Tool result → UI**: `CatalogoWorkspace.onEvent` fa switch su `ev.tool` —
-   `list_products` ripopola il pannello e lo marca "selezione dell'agente",
-   `get_product` apre il drawer, i tool di scrittura fanno un refetch.
+   `list_products` ripopola il pannello e lo marca "selezione dell'agente"; se
+   c'e' `channelSlug` i prezzi in lista sono quelli di quel portale, non del
+   main shop. `get_product` apre il drawer, i tool di scrittura fanno un refetch.
 2. **UI → agente**: prop `selectionContext` su `AgentChannel`, appesa al
    messaggio in **uscita** e non alla bolla:
    `[Contesto UI: prodotto selezionato — ...]`. Il prompt dice a Nico di
@@ -144,6 +152,10 @@ diff, righe a prezzo zero saltate.
 
 ## Gotcha
 
+- **Saleor accetta al massimo `first: 100` per pagina.** `plan_danea_import`
+  chiedeva `products(first: 200)` per il catalogo esistente e Saleor rifiutava
+  la query ("Limit of 100 exceeded"). Nico lo traduceva come "il file supera
+  100 record" anche con un XML da 53 righe. Ora `listProducts` pagina a 100.
 - **`productVariantCreate` vuole `attributes: []`** anche se non ne servono.
 - **Le mutation di listing vogliono l'ID del canale, non lo slug** →
   `resolveChannelId`.
@@ -152,6 +164,8 @@ diff, righe a prezzo zero saltate.
 - **`requireAdmin` gatea tutta la chat `/catalogo`**: da qui si scrivono prezzi
   di produzione. Se Kevin e Robbie non sono admin in Studio serve prima un ruolo
   intermedio — **da verificare al primo giro**.
+- **ZIP da Finder (macOS)** spesso usa data-descriptor: lo unzip minimo
+  rifiuta. Si caricano i jpeg sciolti.
 - **Da verificare una volta**: `GrossPrice1` di Danea e' lordo o netto?
   Controllare **una** variante contro la config fiscale del canale prod.
   Sbagliarlo significa essere del 22% fuori su tutto il catalogo.
@@ -203,13 +217,16 @@ il `ProductRow` integrale, `imageUrl` compreso, e il modello lo ricopiava.
 
 Tre difese, in ordine di peso:
 
-1. `commesso/prompt.ts` — "REGOLA FERREA dopo list_products": il pannello si
-   popola da solo, vietato enumerare, massimo 2 frasi, mai immagini markdown.
-   Stessa formula di `vat-relief/prompt.ts` e `onboard-school/prompt.ts`.
+1. `commesso/prompt.ts` — dopo `list_products` il pannello a destra si popola da
+   solo, niente liste in chat, massimo 2 frasi. Eccezione: se l'utente chiede
+   i prezzi, Nico li cita dal risultato (SKU + euro sul canale), max 8 righe.
+   Un nome scuola si risolve con `get_catalog_meta` (substring su slug/nome),
+   non si cerca come prodotto.
 2. `commesso/agent.ts` — `experimental_toToolResultContent` su `list_products` e
    `get_product`: al client va il result **intero** (il pannello ci prende le
    thumbnail via `CatalogoWorkspace.onEvent`), al modello una copia senza
-   `imageUrl`, `description`, `id`. Se non ha l'URL non puo' incollarlo.
+   `imageUrl`, `description`, `id`. Con `channelSlug` i listing verso il modello
+   sono gia' filtrati su quel canale. Se non ha l'URL non puo' incollarlo.
 3. `studio`: `.chat-md img { max-height: 140px }` in `globals.css` — rete di
    sicurezza per tutte le chat, non solo per Nico. `MarkdownContent` di
    studio-core non fa override di `img` e non accetta prop `components`, quindi

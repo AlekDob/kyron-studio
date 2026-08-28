@@ -11,6 +11,7 @@ import { agentNameOf } from "@/components/shell/modules";
 import type { CatalogInsights, Product } from "@/lib/products";
 import { ProductsPanel } from "./ProductsPanel";
 import { ProductDrawer } from "./ProductDrawer";
+import { ImportWizard } from "./ImportWizard";
 import { PortalDrawer } from "@/components/portals/PortalDrawer";
 import { channelNames } from "./catalog-view";
 
@@ -74,6 +75,8 @@ const WRITE_TOOLS = [
   "publish_product",
   "create_product",
   "apply_danea_import",
+  "add_to_portals",
+  "add_product_image",
 ];
 
 export function CatalogoWorkspace({
@@ -86,9 +89,11 @@ export function CatalogoWorkspace({
   // Quando la lista arriva dall'agente non la sovrascriviamo col catalogo
   // intero: l'utente ha appena visto il risultato di una ricerca.
   const [fromAgent, setFromAgent] = useState(false);
+  const [priceChannel, setPriceChannel] = useState<string | null>(null);
   const [insights, setInsights] = useState<CatalogInsights | null>(null);
   // Portale aperto sopra il drawer prodotto (click sul nome in "Portali").
   const [portalSlug, setPortalSlug] = useState<string | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
   const [loading, setLoading] = useState(initialProducts.length === 0);
   const selectedRef = useRef<Product | null>(null);
   const daneaRef = useRef<DaneaContext | null>(null);
@@ -107,6 +112,7 @@ export function CatalogoWorkspace({
 
   const refresh = useCallback(async (): Promise<void> => {
     setFromAgent(false);
+    setPriceChannel(null);
     setProducts(await fetchProducts());
   }, []);
 
@@ -114,10 +120,11 @@ export function CatalogoWorkspace({
   // basta guardare i risultati che passano.
   const onEvent = useCallback((ev: ChatStreamEvent): void => {
     if (ev.type !== "tool-result") return;
-    const r = (ev.result ?? {}) as { products?: Product[]; slug?: string };
+    const r = (ev.result ?? {}) as { products?: Product[]; slug?: string; channelSlug?: string | null };
     if (ev.tool === "list_products" && Array.isArray(r.products)) {
       setProducts(r.products);
       setFromAgent(true);
+      setPriceChannel(typeof r.channelSlug === "string" && r.channelSlug ? r.channelSlug : null);
       return;
     }
     if (ev.tool === "get_product" && r.slug) {
@@ -162,6 +169,8 @@ export function CatalogoWorkspace({
       names={names}
       sales={sales}
       salesUpdatedAt={insights?.sales.updatedAt ?? ""}
+      priceChannel={priceChannel}
+      onImport={() => setImportOpen(true)}
     />
   );
 
@@ -202,6 +211,14 @@ export function CatalogoWorkspace({
         names={names}
         sales={sales}
         onOpenPortal={setPortalSlug}
+        onChanged={refresh}
+      />
+      <ImportWizard
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onDone={() => {
+          void refresh();
+        }}
       />
       <PortalDrawer slug={portalSlug} onClose={() => setPortalSlug(null)} />
     </div>

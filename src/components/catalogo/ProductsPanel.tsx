@@ -1,10 +1,10 @@
 "use client";
 import { useMemo, useState } from "react";
-import { Search } from "lucide-react";
-import { SkeletonRows } from "@/components/ui";
+import { Plus, Search } from "lucide-react";
+import { IconButton, SkeletonRows } from "@/components/ui";
 import type { Product } from "@/lib/products";
 import { ProductRow } from "./ProductRow";
-import { catalogRows, type ChannelNames, type SalesIndex } from "./catalog-view";
+import { catalogRows, portalLabel, type ChannelNames, type SalesIndex } from "./catalog-view";
 
 // Il filtro e' client-side sulla lista gia' caricata: cercare a ogni tasto
 // significherebbe una query admin Saleor per lettera. Match fuzzy (lib/fuzzy):
@@ -18,6 +18,8 @@ export function ProductsPanel({
   names,
   sales,
   salesUpdatedAt,
+  priceChannel,
+  onImport,
 }: {
   products: Product[];
   selectedSlug: string | null;
@@ -27,6 +29,8 @@ export function ProductsPanel({
   names: ChannelNames;
   sales: SalesIndex;
   salesUpdatedAt: string;
+  priceChannel?: string | null;
+  onImport?: () => void;
 }) {
   const [q, setQ] = useState("");
   const rows = useMemo(() => catalogRows(products, sales, q), [products, sales, q]);
@@ -34,16 +38,24 @@ export function ProductsPanel({
   return (
     <>
       <header className="px-5 py-3 border-b border-[var(--studio-glass-line)]">
-        <p className="eyebrow">Catalogo</p>
-        <p className="text-xs text-[var(--color-ink-muted)] mt-1">
-          {products.length} prodott{products.length !== 1 ? "i" : "o"}
-          {fromAgent && " · selezione dell'agente"}
-          {salesUpdatedAt &&
-            ` · vendite alle ${new Date(salesUpdatedAt).toLocaleTimeString("it-IT", {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}`}
-        </p>
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <p className="eyebrow">Catalogo</p>
+            <p className="text-xs text-[var(--color-ink-muted)] mt-1">
+              {products.length} prodott{products.length !== 1 ? "i" : "o"}
+              {fromAgent && " · selezione dell'agente"}
+              {fromAgent && priceChannel && ` · prezzi su ${portalLabel(names, priceChannel)}`}
+              {salesUpdatedAt &&
+                ` · vendite alle ${new Date(salesUpdatedAt).toLocaleTimeString("it-IT", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}`}
+            </p>
+          </div>
+          {onImport && (
+            <IconButton aria-label="Importa prodotti" variant="ghost" size="sm" icon={<Plus className="h-4 w-4" />} onClick={onImport} />
+          )}
+        </div>
         <div className="relative mt-2">
           <Search
             aria-hidden
@@ -74,6 +86,7 @@ export function ProductsPanel({
               names={names}
               sales={sales}
               index={i}
+              priceChannel={priceChannel}
             />
           ))
         )}

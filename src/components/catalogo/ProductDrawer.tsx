@@ -1,4 +1,5 @@
 "use client";
+import { useRef, useState } from "react";
 import { Drawer, DrawerHeader } from "@studiofuturo/studio-core";
 import { Section, InfoRow } from "@/components/orders/drawer-primitives";
 import { Badge } from "@/components/ui";
@@ -20,15 +21,34 @@ export function ProductDrawer({
   names,
   sales,
   onOpenPortal,
+  onChanged,
 }: {
   product: Product | null;
   onClose: () => void;
   names: ChannelNames;
   sales: SalesIndex;
   onOpenPortal?: (slug: string) => void;
+  onChanged?: () => void;
 }) {
   const isMobile = useIsMobile();
   const sold = product ? productSales(product, sales) : 0;
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+
+  async function addPhoto(files: FileList | null): Promise<void> {
+    const file = files?.[0];
+    if (!file || !product) return;
+    setPhotoError(null);
+    const form = new FormData();
+    form.append("file", file);
+    const res = await fetch(`/api/products/${product.slug}/media`, { method: "POST", body: form });
+    if (!res.ok) {
+      const j = (await res.json().catch(() => ({}))) as { error?: string };
+      setPhotoError(j.error ?? `Errore ${res.status}`);
+      return;
+    }
+    onChanged?.();
+  }
 
   return (
     <Drawer
@@ -71,6 +91,25 @@ export function ProductDrawer({
                 <InfoRow label="Tipo" value={product.productType} />
                 <InfoRow label="Codice interno" value={product.slug} />
               </Section>
+              <div className="mt-3">
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={(e) => void addPhoto(e.target.files)}
+                />
+                <button
+                  type="button"
+                  className="text-xs underline text-[var(--color-ink-muted)]"
+                  onClick={() => fileRef.current?.click()}
+                >
+                  Aggiungi foto
+                </button>
+                {photoError && (
+                  <p className="mt-1 text-xs text-[var(--color-ink-soft)]">{photoError}</p>
+                )}
+              </div>
             </div>
 
             <div className="py-5">

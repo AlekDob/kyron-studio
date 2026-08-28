@@ -102,6 +102,7 @@ export const CHANNELS: Record<string, ChannelConfig> = {
       render_danea_uploader: "File Danea",
       plan_danea_import: "Piano import",
       apply_danea_import: "Import prodotti",
+      add_to_portals: "Aggiungi ai portali",
       list_orders: "Ordini",
       get_order: "Ordine",
       set_order_status: "Stato ordine",
