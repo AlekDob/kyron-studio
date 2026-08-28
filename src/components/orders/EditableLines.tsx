@@ -11,6 +11,7 @@ import {
 import { OrderLines } from "./OrderLines";
 import { ColorChangeNote } from "./ColorChangeNote";
 import { FeedbackNote } from "./drawer-primitives";
+import { ProductThumbnail } from "@/components/catalogo/ProductThumbnail";
 
 type EditLine = OrderEditView["lines"][number];
 
@@ -193,10 +194,11 @@ function AnnotateRow({
   );
 }
 
-// Intestazione riga: SKU + nome prodotto (condivisa edit/annotate).
+// Intestazione riga: foto + SKU + nome prodotto (condivisa edit/annotate).
 function LineHeading({ line }: { line: EditLine }) {
   return (
-    <div className="flex items-baseline justify-between gap-3 text-sm">
+    <div className="flex items-center gap-3 text-sm">
+      <ProductThumbnail src={line.imageUrl} className="h-10 w-10 rounded-lg" />
       <span>
         {line.sku && (
           <span className="font-mono text-xs text-[var(--color-ink-muted)]">{line.sku} </span>

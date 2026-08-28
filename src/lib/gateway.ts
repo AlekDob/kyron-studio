@@ -412,6 +412,7 @@ export interface OrderLine {
   name: string;
   quantity: number;
   totalGross: number;
+  imageUrl: string | null;
 }
 
 // Cambio colore annotato su ordini confermati (kyron_line_colors): acquisto

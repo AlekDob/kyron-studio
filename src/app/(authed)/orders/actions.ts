@@ -136,6 +136,7 @@ export interface OrderEditView {
     colorName: string; // colore acquistato (originale)
     colorOptions: Array<{ variantId: string; label: string }>;
     requestedColor: string; // colore richiesto via annotazione, o ""
+    imageUrl: string | null;
   }>;
 }
 
