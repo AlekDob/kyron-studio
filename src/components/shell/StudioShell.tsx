@@ -36,7 +36,7 @@ function isPreviewPath(pathname: string): boolean {
 
 // Workspace: pannello + chat a tutta altezza, lo scroll lo gestisce la pagina.
 // Senza questo la lastra scrolla tutta insieme e il pannello perde la testata.
-const WORKSPACE_PATHS = ["/orders", "/prodotti", "/clienti", "/portals", "/preview"];
+const WORKSPACE_PATHS = ["/orders", "/prodotti", "/clienti", "/portals", "/richieste", "/preview"];
 
 function isWorkspacePath(pathname: string): boolean {
   return WORKSPACE_PATHS.some((p) => pathname.startsWith(p));
