@@ -9,8 +9,9 @@ Hub admin Kyron a `studio.kyronedu.it`. Sotto-progetto di `/Kyron`, registrato i
 - Tailwind v4 CSS-first (token in `src/app/globals.css`, no `tailwind.config.ts`)
 - AI SDK + assistant-ui per la chat di onboarding (proxy SSE verso `studio-server`)
 - Auth Payload via cookie `.kyronedu.it`
-- UI: shell "scrivania grigia + lastra di vetro", accento indaco `#5b67f0`, light-only
-  (feature 014). Il kit di componenti resta il port da Virgilio (feature 001).
+- UI: shell "scrivania grigia + lastra di vetro", accento indaco `#5b67f0` (feature 014)
+  + dark mode con toggle in Impostazioni → Tema (feature 020). Il kit di componenti
+  resta il port da Virgilio (feature 001).
 
 ## Stato corrente
 
@@ -95,11 +96,14 @@ Live su `https://studio.kyronedu.it` (Coolify + Hetzner CCX23).
 - `documentation/features/017-stats-agent.md` — Modulo Statistiche (Ada): agente che scrive HogQL da solo su PostHog in sola lettura e risponde con tabella/barre/grafico in chat. Guard `assertReadOnly` + budget 60 query/ora (la Query API sta a ~120/ora per key, condivisa con `/analytics`)
 - `documentation/features/011-price-guard-module.md` — Price Guard: motore deterministico `runPriceGuard` + report email giornaliero. Dal 27/08/2026 l'agente Bruno e il modulo `/checks` non esistono piu': i tool `run_all_checks`/`check_portal` stanno dentro Nico (Catalogo)
 - `documentation/features/012-vat-relief-module.md` — Modulo Agevolazioni: agente che controlla i documenti 104 (IVA agevolata 4%) caricati dal collega, li confronta con l'ordine e propone approva/rifiuta (decisione sempre umana). Nessun archivio documenti (dati sanitari, TTL 30 min in memoria)
-- `documentation/features/014-studio-shell-design.md` — design della shell: token indaco, scrivania grigia, lastra di vetro, light-only. Gotcha: blur su `::before` (i `fixed` figli), mai scrivere `-webkit-backdrop-filter` a mano, `min-h-full` e non `min-h-screen` dentro la lastra
+- `documentation/features/014-studio-shell-design.md` — design della shell: token indaco, scrivania grigia, lastra di vetro. Gotcha: blur su `::before` (i `fixed` figli), mai scrivere `-webkit-backdrop-filter` a mano, `min-h-full` e non `min-h-screen` dentro la lastra
 - `documentation/features/015-chat-ui-kit.md` — kit chat condiviso: avatar blobatar per agente (hue libera, tone bloccato 0.45), `ChatBubble` con nome+avatar per l'assistente e loader "thinking" a sfere del brand, `ChatComposer` unico per tutte e 6 le chat. Il nome dell'agente e' il seed dell'avatar
 - `documentation/features/016-studio-dashboard-cruscotto.md` — cruscotto home (tile 30gg in streaming Suspense, PostHog in `cache()`) + gli agenti con nome proprio (Livia, Elsa, Ada, Nico, Vera) da `modules.ts`, pagina `/agenti`
 - `documentation/features/018-commesso-module.md` — Modulo Catalogo (Nico): pannello prodotti + drawer + chat che scrive su Saleor prod. Prezzi solo in due passaggi (piano → applica) con guardia kit e drift detection; import listino Danea
 - `documentation/features/019-ddt-comms.md` — Comunicazioni ai clienti dai DDT Danea: Nico legge l'export documenti, scrive la mail dal brief dell'operatore, la mostra in anteprima e la manda a lotti da 50. Idempotenza durevole su Payload (`email-log`, `key` unique = lock), allowlist `DDT_MAIL_ALLOW`. Nico gestisce anche gli ordini in lettura + stato lavorazione
+- `documentation/features/021-customers-module.md` — Modulo Clienti (Bea): il cliente e' chi ha ordinato, derivato dagli ordini Saleor (identita' = email, finestra 365gg). Lista + scheda a 4 tab (anagrafica/ordini/comunicazioni/note), agente Bea con lettura, note interne, segmenti salvati e mail ai clienti con lo STESSO motore di Nico (`core/email/campaign.ts`, env `DDT_MAIL_ENABLED`/`DDT_MAIL_ALLOW`). Note e segmenti su due collection Payload nuove (serve il redeploy CMS: migration `0004-customers.sql`)
+- `documentation/features/022-requests-module.md` — Modulo Richieste (Ivo): i colleghi raccontano cosa gli serve, l'agente fa 2-3 domande, controlla i doppioni e apre il ticket su Linear (progetto Kyron, assegnato ad Alek, label + stato). Aprire e' in due passaggi: `draft_request` mostra la card, `create_request` scrive solo con `confirm: true`. La lista a sinistra e' Linear, non c'e' nessuna copia locale; il filtro si applica in pagina. Env `LINEAR_API_KEY` su studio-server
+- `documentation/features/020-dark-mode.md` — dark mode: token dark in **studio-core >= 0.4.0** (`html[data-theme="dark"]` in theme.css, vetro tokenizzato `--studio-content-glass`), switch senza flash via script inline in `layout.tsx`, tab Tema nei settings (Chiaro/Scuro/Sistema, per-browser). Gotcha: `applyTheme` e `THEME_INIT` fanno lo stesso calcolo, cambiarli insieme; i valori dark si ritoccano nel core + publish
 - `documentation/features/013-risorse-module.md` — Risorse dentro Dati (`/dati/risorse`): CRUD dedicato con upload PDF + copertina, bozza/pubblicata. Andrea non usa piu' `/admin` Payload
 - Cross-progetto: `Kyron/documentation/workstreams/03-studio-standalone.md` — login OTP, preview iframe, review system
 - `documentation/diary/` — changelog locale

@@ -13,6 +13,8 @@ interface SubmissionData {
   // Agevolazioni: documenti 104 caricati.
   names?: string[];
   orderNumber?: string | null;
+  // Richieste: bozza del ticket confermata o rimandata indietro.
+  confirmRequest?: boolean;
   // Catalogo: file XML Danea caricato (listino prodotti o DDT).
   kind?: string;
   filename?: string;
@@ -23,6 +25,11 @@ interface SubmissionData {
 export function describeSubmission(sub: GenerativeSubmission): string {
   const d = (sub.data ?? {}) as SubmissionData;
 
+  if (typeof d.confirmRequest === "boolean") {
+    return d.confirmRequest
+      ? "Confermo, apri la richiesta"
+      : "Aspetta, c'e' da cambiare qualcosa";
+  }
   if (typeof d.filename === "string") {
     const what =
       d.kind === "ddt"

@@ -45,11 +45,12 @@ export const CHANNELS: Record<string, ChannelConfig> = {
   portals: {
     endpoint: "/api/agent/onboard-school",
     intro:
-      "Creo un nuovo portale scuola passo per passo, o ti mostro e sistemo quelli esistenti: catalogo, kit, sconti, logo, pubblicazione.",
+      "Sono Livia: muovo la lista portali qui a fianco e apro le schede — catalogo, kit, sconti, logo, pubblicazione. E se serve creo un portale nuovo passo per passo.",
     suggestions: [
-      "Creiamo un portale nuovo",
-      "Mostrami i portali esistenti",
+      "Mostrami le bozze",
+      "I portali di Bari",
       "Apri il portale massari",
+      "Creiamo un portale nuovo",
     ],
     toolLabels: {
       check_slug_availability: "Verifica slug",
@@ -71,10 +72,12 @@ export const CHANNELS: Record<string, ChannelConfig> = {
       apply_to_saleor: "Pubblicazione su Saleor",
     },
   },
-  catalogo: {
+  // Modulo Prodotti (Teo). Sul filo lo `scope` resta "catalogo": e' il nome
+  // del ramo lato server (prompt + tool), non il nome dell'agente.
+  products: {
     endpoint: "/api/agent/commesso",
     intro:
-      "Gestisco il catalogo: prodotti, giacenze, prezzi, controlli sui portali. I prezzi passano sempre da un piano che ti mostro prima. Per gli ordini vieni a trovarmi in Ordini.",
+      "Sono Teo: muovo la lista prodotti qui a fianco e scrivo sul catalogo — nomi, giacenze, prezzi, pubblicazione sui portali. I prezzi passano sempre da un piano che ti mostro prima. Per gli ordini c'e' Nico, nel modulo Ordini.",
     suggestions: [
       "Mostrami gli iPad",
       "Cambia la descrizione di questo prodotto",
@@ -102,9 +105,9 @@ export const CHANNELS: Record<string, ChannelConfig> = {
       add_to_portals: "Aggiungi ai portali",
     },
   },
-  // Stesso agente del catalogo, stesso endpoint: cambia solo lo `scope` nel
-  // body, che lato server sceglie prompt e tool. Qui Nico vede solo ordini e
-  // comunicazioni ai clienti; il pannello a fianco e' la lista vera.
+  // Stesso endpoint di Teo: cambia solo lo `scope` nel body, che lato server
+  // sceglie prompt e tool. Qui Nico vede solo ordini e comunicazioni ai
+  // clienti; il pannello a fianco e' la lista vera.
   orders: {
     endpoint: "/api/agent/commesso",
     intro:
@@ -124,6 +127,43 @@ export const CHANNELS: Record<string, ChannelConfig> = {
       parse_ddt_summary: "Lettura DDT",
       plan_ddt_mailing: "Piano comunicazione",
       send_ddt_mailing: "Invio comunicazione",
+    },
+  },
+  // Modulo Clienti (Bea). Il pannello a fianco e' la lista vera dei clienti:
+  // qui dentro si filtra e si scrive, non si elenca.
+  customers: {
+    endpoint: "/api/agent/customers",
+    intro:
+      "Sono Bea: filtro la lista clienti qui a fianco e apro le schede. Posso anche scrivere ai clienti, con lo stesso motore di invio di Nico.",
+    suggestions: [
+      "Clienti che hanno ordinato piu' di una volta",
+      "Chi ha speso piu' di 1000 euro",
+      "Apri la scheda di un cliente",
+      "Manda una comunicazione ai clienti del portale massari",
+    ],
+    toolLabels: {
+      list_customers: "Clienti",
+      get_customer: "Cliente",
+      customer_orders: "Ordini del cliente",
+      plan_customer_mailing: "Piano comunicazione",
+      send_customer_test_mail: "Mail di prova",
+      send_customer_mailing: "Invio comunicazione",
+    },
+  },
+  requests: {
+    endpoint: "/api/agent/requests",
+    intro:
+      "Sono Ivo: mi dici cosa ti serve, ti faccio due domande e apro la richiesta ad Alek. Qui a fianco vedi tutte quelle gia' aperte e a che punto sono.",
+    suggestions: [
+      "Ho trovato un problema",
+      "Mi servirebbe una cosa nuova",
+      "A che punto sono le mie richieste",
+      "Cosa c'e' ancora da fare",
+    ],
+    toolLabels: {
+      list_requests: "Richieste",
+      draft_request: "Bozza richiesta",
+      create_request: "Apertura richiesta",
     },
   },
   // Vera ha il suo loop di messaggi (proposte di annotazione): del canale usa
