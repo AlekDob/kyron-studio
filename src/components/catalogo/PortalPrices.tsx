@@ -1,8 +1,10 @@
 "use client";
 import { useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { School, Search, TrendingDown } from "lucide-react";
 import { fuzzyFilter } from "@/lib/fuzzy";
-import type { Product } from "@/lib/products";
+import type { PortalDiscount, Product } from "@/lib/products";
+import { Pill } from "@/components/ui";
+import { SectionIcon } from "@/components/orders/detail-section";
 import {
   eur,
   portalRows,
@@ -22,12 +24,15 @@ export function PortalPrices({
   names,
   sales,
   onOpenPortal,
+  discounts,
 }: {
   product: Product;
   names: ChannelNames;
   sales: SalesIndex;
   /** apre il drawer del portale sopra questo */
   onOpenPortal?: (slug: string) => void;
+  /** Sconto vero per portale, per slug. Il prezzo qui accanto e' il listino. */
+  discounts?: Record<string, PortalDiscount>;
 }) {
   const [q, setQ] = useState("");
   const all = useMemo(() => portalRows(product, names, sales), [product, names, sales]);
@@ -61,19 +66,20 @@ export function PortalPrices({
         {rows.map((r, i) => (
           <li
             key={r.slug}
-            className="studio-row-in flex items-baseline justify-between gap-3 rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-[var(--studio-glass-surface)]"
+            className="studio-row-in flex items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-[var(--studio-glass-surface)]"
             style={{ animationDelay: `${Math.min(i, 8) * 20}ms` }}
           >
+            <SectionIcon icon={School} tone="amber" size={26} />
             {onOpenPortal ? (
               <button
                 type="button"
                 onClick={() => onOpenPortal(r.slug)}
-                className="min-w-0 truncate text-left text-[var(--color-ink)] underline-offset-2 hover:underline"
+                className="min-w-0 flex-1 truncate text-left text-[var(--color-ink)] underline-offset-2 hover:underline"
               >
                 {r.name}
               </button>
             ) : (
-              <span className="min-w-0 truncate text-[var(--color-ink)]">{r.name}</span>
+              <span className="min-w-0 flex-1 truncate text-[var(--color-ink)]">{r.name}</span>
             )}
             <span className="shrink-0 text-right tabular-nums">
               {r.priceFrom ? (
@@ -88,6 +94,7 @@ export function PortalPrices({
                 {r.sales > 0 ? `${r.sales} vend.` : "—"}
               </span>
             </span>
+            <Discount row={discounts?.[r.slug]} />
           </li>
         ))}
         {rows.length === 0 && (
@@ -97,5 +104,20 @@ export function PortalPrices({
         )}
       </ul>
     </div>
+  );
+}
+
+// Lo sconto del portale, se c'e'. Il prezzo a sinistra e' sempre il listino:
+// senza questa pastiglia la riga dice 509 su un portale dove si paga 469.
+function Discount({ row }: { row?: PortalDiscount }) {
+  if (!row || row.maxDiscountEur <= 0) {
+    return <span className="w-24 shrink-0 text-right text-xs text-[var(--color-ink-muted)]">a listino</span>;
+  }
+  return (
+    <span className="flex w-24 shrink-0 justify-end">
+      <Pill size="sm" variant="warning" className="gap-1">
+        <TrendingDown size={12} /> -{eur(row.maxDiscountEur)}
+      </Pill>
+    </span>
   );
 }

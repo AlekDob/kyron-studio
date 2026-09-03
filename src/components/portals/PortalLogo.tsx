@@ -4,19 +4,26 @@
 // rispondere 404: fallback all'iniziale del nome (mai un'icona "immagine
 // rotta" a vista). Riusabile ovunque serva il logo di un portale.
 import { useState } from "react";
+import { Store } from "lucide-react";
+import { SectionIcon, type Tone } from "@/components/orders/detail-section";
 
 interface Props {
   logoUrl: string | null;
   nome: string;
   /** Lato in px (default 32, lista compatta). */
   size?: number;
+  /** Se il logo manca: pastiglia colorata invece dell'iniziale grigia. */
+  tone?: Tone;
 }
 
-export function PortalLogo({ logoUrl, nome, size = 32 }: Props) {
+export function PortalLogo({ logoUrl, nome, size = 32, tone }: Props) {
   const [broken, setBroken] = useState(false);
   const initial = (nome.trim()[0] ?? "?").toUpperCase();
   const box = { width: size, height: size };
 
+  if ((!logoUrl || broken) && tone) {
+    return <SectionIcon icon={Store} tone={tone} size={size} />;
+  }
   if (!logoUrl || broken) {
     return (
       <span

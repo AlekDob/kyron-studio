@@ -5,6 +5,67 @@
    dentro il pacchetto vengono eliminate e la UI arriva senza stile. */
 @source "../../node_modules/@studiofuturo/studio-core/dist";
 
+/* Il tema lo decide `data-theme` su <html> (script inline in layout.tsx +
+   Impostazioni → Tema), non prefers-color-scheme: cosi' le utility `dark:`
+   di shadcn seguono la scelta dell'utente, non solo quella del sistema. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* I token dark (html[data-theme="dark"]) vivono in studio-core >= 0.4.0:
+   qui restano solo i pezzi specifici di quest'app (ring mobile, tile del
+   cruscotto). Lo switch sta in layout.tsx (THEME_INIT) + settings/ThemeSection.
+   Vedi feature 020. */
+
+/* Ring della lastra/sidebar mobile (le regole @media qui sotto): era un rgb()
+   ripetuto sei volte, ora e' un token cosi' il dark lo ribalta in un punto. */
+:root {
+  --studio-inset-ring: rgb(15 18 26 / 7%);
+}
+
+html[data-theme="dark"] {
+  --studio-inset-ring: rgb(255 255 255 / 8%);
+}
+
+/* Gradienti delle StatTile del cruscotto. Vivono in CSS (non nel TSX) perche'
+   sono l'unica parte della tile che cambia col tema: nel dark il colore
+   diventa un alone dentro una base grafite, il testo segue --color-ink da solo. */
+:root {
+  --tile-indaco:
+    radial-gradient(120% 90% at 18% 12%, #c6ccfb 0%, transparent 62%),
+    radial-gradient(110% 100% at 88% 78%, #aeb6f8 0%, transparent 58%),
+    radial-gradient(90% 80% at 60% 40%, #dfe2fd 0%, transparent 70%), #f5f6fe;
+  --tile-menta:
+    radial-gradient(120% 90% at 18% 12%, #b7e8cd 0%, transparent 62%),
+    radial-gradient(110% 100% at 88% 78%, #9fdcc0 0%, transparent 58%),
+    radial-gradient(90% 80% at 60% 40%, #d9f2e4 0%, transparent 70%), #f4faf6;
+  --tile-ambra:
+    radial-gradient(120% 90% at 18% 12%, #fbdcb0 0%, transparent 62%),
+    radial-gradient(110% 100% at 88% 78%, #f6c88f 0%, transparent 58%),
+    radial-gradient(90% 80% at 60% 40%, #fdeacf 0%, transparent 70%), #fdf6ec;
+  --tile-rosa:
+    radial-gradient(120% 90% at 18% 12%, #f8ccd7 0%, transparent 62%),
+    radial-gradient(110% 100% at 88% 78%, #f3aec2 0%, transparent 58%),
+    radial-gradient(90% 80% at 60% 40%, #fbe0e6 0%, transparent 70%), #fdf1f4;
+}
+
+html[data-theme="dark"] {
+  --tile-indaco:
+    radial-gradient(120% 90% at 18% 12%, rgb(91 103 240 / 42%) 0%, transparent 62%),
+    radial-gradient(110% 100% at 88% 78%, rgb(58 69 200 / 34%) 0%, transparent 58%),
+    radial-gradient(90% 80% at 60% 40%, rgb(123 132 243 / 16%) 0%, transparent 70%), #22242f;
+  --tile-menta:
+    radial-gradient(120% 90% at 18% 12%, rgb(52 158 112 / 38%) 0%, transparent 62%),
+    radial-gradient(110% 100% at 88% 78%, rgb(31 116 84 / 32%) 0%, transparent 58%),
+    radial-gradient(90% 80% at 60% 40%, rgb(63 181 134 / 14%) 0%, transparent 70%), #1e2925;
+  --tile-ambra:
+    radial-gradient(120% 90% at 18% 12%, rgb(214 158 58 / 36%) 0%, transparent 62%),
+    radial-gradient(110% 100% at 88% 78%, rgb(163 116 34 / 30%) 0%, transparent 58%),
+    radial-gradient(90% 80% at 60% 40%, rgb(227 166 58 / 13%) 0%, transparent 70%), #2a251c;
+  --tile-rosa:
+    radial-gradient(120% 90% at 18% 12%, rgb(224 122 152 / 36%) 0%, transparent 62%),
+    radial-gradient(110% 100% at 88% 78%, rgb(180 84 116 / 30%) 0%, transparent 58%),
+    radial-gradient(90% 80% at 60% 40%, rgb(242 174 194 / 13%) 0%, transparent 70%), #2a2026;
+}
+
 /* Aurora dello sfondo (studio-core: `hue-rotate` animato su .studio-gradient-layer)
    spenta di proposito: e' un filtro su un layer a schermo pieno, ricalcolato a
    ogni frame per sempre, e sopra c'e' la lastra di vetro col blur che lo ripaga
@@ -55,31 +116,6 @@
   }
 }
 
-/* Lastra di vetro del pannello Catalogo (FUT-82). Il blur sta su ::before e non
-   sul nodo: backdrop-filter sul nodo lo rende containing block per i figli
-   position:fixed (il drawer prodotto si ancorerebbe al pannello invece che alla
-   finestra). Niente -webkit- a mano: Lightning CSS scarterebbe la forma
-   standard e Chromium non applica quella prefissata. */
-.catalog-glass {
-  position: relative;
-  background: var(--studio-glass-surface-strong);
-}
-
-@media (min-width: 1024px) {
-  .catalog-glass {
-    background: transparent;
-  }
-
-  .catalog-glass::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    background: var(--studio-glass-surface);
-    backdrop-filter: blur(20px) saturate(130%);
-  }
-}
-
 /* Un'immagine markdown in chat non ha classi (MarkdownContent non fa override di
    img): senza questo il preflight la fa larga quanto la colonna. */
 .chat-md img {
@@ -108,9 +144,9 @@
        Si rifa' `inset` solo su top/left/right, cosi' il bordo inferiore non
        disegna la linea di chiusura. */
     box-shadow:
-      inset 0 1px 0 rgb(15 18 26 / 7%),
-      inset 1px 0 0 rgb(15 18 26 / 7%),
-      inset -1px 0 0 rgb(15 18 26 / 7%);
+      inset 0 1px 0 var(--studio-inset-ring),
+      inset 1px 0 0 var(--studio-inset-ring),
+      inset -1px 0 0 var(--studio-inset-ring);
   }
 }
 
@@ -125,9 +161,9 @@
     overflow: hidden;
     border-radius: 1.25rem 1.25rem 0 0;
     box-shadow:
-      inset 0 1px 0 rgb(15 18 26 / 7%),
-      inset 1px 0 0 rgb(15 18 26 / 7%),
-      inset -1px 0 0 rgb(15 18 26 / 7%);
+      inset 0 1px 0 var(--studio-inset-ring),
+      inset 1px 0 0 var(--studio-inset-ring),
+      inset -1px 0 0 var(--studio-inset-ring);
   }
 
   /* Chiusa deve uscire tutta: -100% lascerebbe fuori gli 8px dello stacco. */
@@ -158,4 +194,40 @@
    transform torna `none`. Lo stato finale coincide col naturale, niente salto. */
 .page-enter {
   animation-fill-mode: backwards;
+}
+
+/* ---------------------------------------------------------------------------
+   Ponte per i componenti shadcn (prova su Ordini, feature 010).
+   shadcn da' per scontati nomi di token che qui non esistono: --background,
+   --foreground, --border, --primary... I nostri si chiamano --color-paper,
+   --color-ink, --color-line. Invece di importare il set OKLCH della CLI (che
+   porterebbe dentro anche un blocco .dark, tolto apposta con la feature 014),
+   mappiamo i suoi nomi sui nostri: un design system solo.
+   `inline` perche' i valori sono gia' variabili: senza, Tailwind le indirebbe
+   una seconda volta. --------------------------------------------------------- */
+@theme inline {
+  --color-background: var(--color-paper);
+  --color-foreground: var(--color-ink);
+  --color-card: var(--color-paper);
+  --color-card-foreground: var(--color-ink);
+  --color-popover: var(--color-paper);
+  --color-popover-foreground: var(--color-ink);
+  --color-primary: var(--color-action);
+  --color-primary-foreground: var(--color-paper);
+  --color-secondary: var(--color-paper-muted);
+  --color-secondary-foreground: var(--color-ink);
+  --color-muted: var(--color-paper-muted);
+  --color-muted-foreground: var(--color-ink-muted);
+  --color-accent-foreground: var(--color-paper);
+  --color-destructive: var(--color-critical);
+  --color-destructive-foreground: var(--color-paper);
+  --color-border: var(--color-line);
+  --color-input: var(--color-line);
+  --color-ring: var(--color-accent);
+
+  /* shadcn scrive rounded-xl/lg/md/sm: sono i nostri raggi, non una scala nuova. */
+  --radius-xl: var(--radius-card);
+  --radius-lg: var(--radius-input);
+  --radius-md: var(--radius-control);
+  --radius-sm: 0.5rem;
 }

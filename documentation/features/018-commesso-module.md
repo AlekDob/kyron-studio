@@ -2,11 +2,47 @@
 type: feature
 project: studio
 created: 2026-08-26
-last_verified: 2026-08-28
+last_verified: 2026-08-31
 tags: [agent, catalogo, saleor, prodotti, prezzi, danea, money-path, generative-ui]
 ---
 
-# Feature 018 — Nico · Catalogo (prodotti, giacenze, prezzi)
+# Feature 018 — Teo · Prodotti (catalogo, giacenze, prezzi)
+
+> **Update 2026-08-31 — il modulo diventa Prodotti (Teo), con la UI di Ordini**
+>
+> `/catalogo` non esiste piu': la rotta e' **`/prodotti`** (308 dal vecchio
+> indirizzo) e l'agente si chiama **Teo** (`agentId: "products"`, faccia nuova).
+> Nico resta su Ordini con i suoi tool ordini + DDT; i tool catalogo sono tutti
+> di Teo. Sul filo lo `scope` resta `"catalogo"`: e' il nome del ramo lato
+> server (prompt + tool), non il nome dell'agente — `route.ts` e `agent.ts` non
+> sono cambiati.
+>
+> La UI e' quella di Ordini, gemella: lista vera a sinistra (raggruppata per
+> **categoria**), chat in un `aside` da 420px, scheda a **2 tab**
+> (Informazioni · Prezzi e portali) che prende il posto della lista su desktop e
+> diventa bottom sheet su mobile. Quattro tile in testata (Prodotti,
+> Pubblicati, Non pubblicati, Venduti — le due di stato filtrano) e la
+> frase-filtro con i chip (`components/orders/sentence-chips.tsx`, ora
+> condivisa). Il bottone `+` dell'ImportWizard e' in coda alla frase.
+>
+> **I filtri stanno nell'URL** (`q`, `cat`, `portale`, `stato`, `ord`) ma li
+> applica la page, non il BFF: `listProducts()` torna gia' tutto il catalogo
+> (<=500 prodotti). Le funzioni pure stanno in
+> `components/products/products-filter.ts` con un self-check runnable
+> (`products-filter.check.ts`, `npx tsx`): il raggruppamento non riordina la
+> lista e "non pubblicato" != "senza prezzo".
+>
+> **Agente → pannello**: `list_products` e `get_product` emettono un descriptor
+> `_ui` **`ProductsReceipt`** (come `OrdersReceipt`) col canale **gia' risolto**;
+> `get_product` accetta `tab`. Niente `count` nella ricevuta: il tool cerca per
+> sottostringa e il pannello in fuzzy, i due numeri non coinciderebbero. Dopo un
+> tool di scrittura il workspace fa `router.refresh()`.
+>
+> Cancellati: `catalogo/page.tsx`, `CatalogoWorkspace`, `ProductsPanel`,
+> `ProductRow`, `ProductDrawer` (la foto e' `AddPhoto` in `ProductDetail`) e le
+> regole `.catalog-glass`. Restano in `components/catalogo/`: `catalog-view.ts`,
+> `ProductThumbnail`, `PortalPrices`, `VariantPricesPopover`,
+> `use-catalog-index`, `ImportWizard`.
 
 ## Perche'
 
@@ -15,8 +51,8 @@ chiedere ad Alek: il catalogo si caricava con uno script CLI da 1586 righe
 (`ecommerce/seed/import-danea.ts`) che gira solo sul suo Mac. Un cambio prezzo
 era un ticket.
 
-`/catalogo` e' il modulo che gli da' autonomia: chat con Nico a sinistra,
-pannello catalogo a destra, drawer col dettaglio. Nico legge, crea, modifica,
+`/prodotti` e' il modulo che gli da' autonomia: la lista vera a sinistra, la
+chat di Teo a destra, la scheda a tab al posto della lista. Teo legge, crea, modifica,
 aggiorna giacenze e prezzi su Saleor **produzione**.
 
 ## Il vincolo che guida tutto: il money-path
@@ -111,6 +147,37 @@ Foto: non ci sono in Danea. ZIP/file il cui nome e' il Codice, drawer
 "Aggiungi foto" (multipart Saleor), oppure og:image Apple solo per SKU `…/A`
 (fuori dal turno chat). Pubblicazione su un canale, portali a checkbox.
 
+## Storico degli import (2026-09-02)
+
+Lo store dell'import vive in RAM con TTL di un'ora e si azzera a ogni redeploy:
+"qual e' l'ultimo listino caricato?" era una domanda senza risposta.
+
+Collection Payload **`danea-imports`** (migration `cms/db/migrations/0005-danea-imports.sql`).
+`importId` e' UNIQUE ed e' la chiave di **upsert**: ricalcolare il piano sullo stesso
+file aggiorna la riga, non ne aggiunge una. `uploadedAt` non si riscrive.
+
+Due agganci, scelti perche' sono gli unici punti comuni a wizard REST e tool agente:
+
+| Punto | Cosa scrive |
+|---|---|
+| `planDaneaImport` (`danea-service.ts`) | file, data, canale, righe, totali, esito per SKU |
+| `applyDaneaPlan` (`danea-apply.ts`, ora prende `importId`) | `appliedAt` + prodotti/varianti creati |
+
+Regola **opposta** a `email-log`: li' la create e' il lock e se Payload non risponde
+non si invia. Qui e' un'annotazione — gli errori finiscono in un `console.warn` e
+l'import prosegue. Perdere una riga di storico e' meno grave che bloccare un
+caricamento. Le righe salvate sono tetto 1000; quelle a prezzo zero non ci sono,
+`buildDaneaPlan` le scarta prima con un warning.
+
+Lettura: `GET /api/v1/products/import/history?limit=N` (dichiarata **prima** delle
+rotte `/:id/...`, altrimenti `history` viene letto come un id). La pagina
+`/prodotti` la chiama lato server insieme a prodotti e insights, con il suo
+`.catch(() => null)`: se cade, sparisce solo la data sul bottone.
+
+In UI il bottone `+` della testata diventa "Ultimo import 28 ago"; dentro il
+wizard, sopra l'uploader, `LastImport` mostra riepilogo + righe una per codice
+(nuovo / prezzo diverso / invariato).
+
 ## Il collegamento agente ↔ UI
 
 Due direzioni, nessun port nuovo:
@@ -135,6 +202,9 @@ Due direzioni, nessun port nuovo:
 | `studio-server/src/features/catalogo/writes.ts` | scritture catalogo (nessuna tocca un prezzo) |
 | `studio-server/src/features/catalogo/plan-service.ts` | glue letture + piano, usato da `plan_prices` e `apply_price_plan` |
 | `studio-server/src/features/catalogo/danea-*.ts` | parse, plan, uploads (TTL 1h), apply, service |
+| `studio-server/src/features/commesso/danea-log.ts` | storico import su Payload (`rowsFromPlan` e' puro) |
+| `cms/payload/collections/DaneaImports.ts` + `cms/db/migrations/0005-danea-imports.sql` | collection `danea-imports` |
+| `studio/src/components/catalogo/{ImportWizard,LastImport}.tsx` | wizard + riepilogo ultimo import |
 | `studio-server/src/features/catalogo/{prompt,agent,route,rest}.ts` | prompt, 13 tool, SSE `/agents/catalogo`, `/api/v1/products` |
 | `studio/src/app/(authed)/catalogo/page.tsx` | pagina a due pannelli |
 | `studio/src/components/catalogo/{CatalogoWorkspace,ProductsPanel,ProductRow,ProductDrawer}.tsx` | pannello + drawer (cloni di Portali/Ordini) |

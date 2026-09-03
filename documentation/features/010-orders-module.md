@@ -8,6 +8,74 @@ tags: [orders, ordini, commerciali, portali, saleor]
 
 # Feature 010 — Modulo Ordini
 
+> **Update 2026-08-31 — Nico resta qui, il catalogo passa a Teo**
+>
+> Il modulo Catalogo e' diventato **Prodotti** con un agente suo, **Teo**
+> (feature 018): Nico tiene ordini + comunicazioni DDT e nient'altro. In sidebar
+> Ordini e Prodotti sono le due voci in cima (`pinned`), con la nota "Nico" e
+> "Teo" accanto alla label.
+
+> **Update 2026-08-28 (3) — ricerca e filtri lato server, guidati da Nico**
+> I filtri non stanno piu' in memoria nel pannello: sono un **motore di query
+> generico** in studio-server (`src/core/query/spec.ts`) — condizioni JSON validate
+> zod (`all` = AND, `any` = OR, `sort`), valutate su una **mappa campi** per dominio
+> (`src/features/orders/query-fields.ts`, `ORDER_FIELDS`: numero, cliente, totale,
+> data, portale, agente, `metodoPagamento`, `prodotti` = SKU+nomi righe, ecc.).
+> Aggiungere Prodotti domani = scrivere una seconda `FieldMap`, il motore e' gia' li'.
+>
+> - `GET /api/v1/orders` accetta `portal`, `agent`, `status`, `q` **e** `spec` (query
+>   JSON urlencoded, 400 se malformata) e risponde anche con `buckets` (conteggio +
+>   euro per stato, calcolati su tutto tranne lo stato), `portals` e `agents`.
+> - `list_orders` di Nico prende `from`, `to`, `spec`: compone lui la query ("sopra
+>   600 euro non confermati di r.russo", "con un iPad pagati con Carta del Docente").
+>   La spec attiva viaggia nel `[Contesto UI: ...]`, cosi' raffina invece di ricominciare.
+> - **Una sola `statusBucketOf`** (era in tre copie: route, tool, pannello — quando
+>   divergevano i conteggi in chat non tornavano coi KPI in pagina).
+> - Frontend: ogni filtro sta **nell'URL**, `OrdersView` non filtra piu' niente.
+>   Filtro complesso = link condivisibile, indietro/avanti del browser funzionano.
+>   Ricerca con debounce 300ms. Testata: le `StatTile` della dashboard in taglia `sm`
+>   (`OrdersTiles.tsx`), le tre di stato cliccabili come filtro.
+> - Cache di processo 60s su `fetchOrdersForRange` (invalidata dalle scritture):
+>   senza, ogni tocco di filtro riscaricava l'intero range da Saleor.
+
+> **Update 2026-08-28 (2) — scheda a tab, icone di vetro, note scritte da Nico**
+> (stesso branch). La scheda e' divisa in **Cliente / Pagamento / Prodotti / Note**;
+> lo **stato lavorazione** resta fuori dai tab, e' l'azione piu' frequente. Le due
+> colonne con container query spariscono: i tab fanno lo stesso lavoro con meno codice.
+> `ORDER_TABS` sta in `orders-filter.ts` e non nel componente, perche' lo schema della
+> ricevuta lo importa e non deve tirarsi dietro il grafo client.
+> **Icone**: `orders/detail-section.tsx` — pastiglia di vetro colorata (`color-mix`
+> sulla tinta + `backdrop-blur` + molla framer-motion al hover), una tinta per
+> argomento: indaco cliente, verde soldi, ambra prodotti, viola note. Stesso
+> componente in testata di sezione e dentro i tab.
+> **Il tab lo cambia anche l'agente**: vive in `OrdersWorkspace`, scende a
+> `OrdersView` → `OrderDetail`/`OrderDrawer`. `get_order` accetta `tab` e lo mette nel
+> descriptor `_ui`, `applyReceipt` lo applica.
+> **Nuovo tool `add_order_note`** (studio-server, `commesso/order-tools.ts`): ACCODA
+> una riga a `kyron_note`, mai sovrascrive — il campo e' condiviso con l'operatore e
+> finisce nelle FootNotes dell'export Danea. Non manda niente al cliente. La ricevuta
+> ha `refresh: true`, se no il pannello mostrerebbe la nota di prima.
+
+> **Update 2026-08-28 — dettaglio al centro, Nico su mobile, prova shadcn** (branch
+> `feat/orders-detail-center`, non pushato). Con la chat dell'agente fissa a destra il
+> drawer laterale la copriva: l'ordine aperto ora prende la **colonna centrale** al posto
+> della lista (barra "indietro" + `Esc`), cosi' Nico vede l'ordine mentre ci lavora.
+> Nuovo `orders/OrderDetail.tsx` = corpo scorporato da `OrderDrawer.tsx` (che resta il solo
+> guscio bottom-sheet su mobile); due colonne via **container query** (`@container` +
+> `@3xl:`) e non breakpoint di finestra, perche' la larghezza cambia col resize della chat.
+> **Mobile**: `shell/MobileChatOverlay` monta la faccia di Nico in basso a destra sotto i
+> 1024px → bottom sheet con lo stesso `AgentChannel` (nuovo prop `hideHeader`, se no due
+> testate). La **ricevuta in chat e' diventata un bottone**: riapplica filtro/scheda e
+> chiude la sheet (`orders/orders-panel-context.ts` + `useCloseMobileChat`); la logica di
+> applicazione e' estratta in `applyReceipt()`, condivisa con l'evento agente.
+> **Prova shadcn + Animate UI solo qui**: `components.json` scritto a mano (mai
+> `shadcn init` — su Tailwind v4 appende il suo set OKLCH + blocco `.dark`), blocco
+> `@theme inline` in `globals.css` che mappa i nomi shadcn sui nostri token, componenti in
+> `src/components/shadcn/`. Animate UI riportata a `framer-motion` (gia' installato) invece
+> di `motion`, per non avere due copie in bundle. Applicato: `Section` del dettaglio come
+> `Card`, righe lista che entrano a scalare (`Slides`). Non toccati `Pill` e il `Section`
+> condiviso di `drawer-primitives` (li usano anche Portali e Catalogo).
+
 > **Update 2026-07-27 — link al modulo Agevolazioni**: nel drawer, sezione
 > **IVA agevolata** (`VatReliefSection`), nuovo link "Valuta documenti con
 > l'agente" → `/vat-relief?case=<numero>`. Apre il nuovo modulo Agevolazioni
@@ -105,11 +173,13 @@ Danea e — su ordini `UNCONFIRMED` — editing righe (qty/colore).
 
 | File | Ruolo |
 |---|---|
-| `src/app/(authed)/orders/page.tsx` | Server Component: auth, default periodo 30g, `listOrders({from,to})` |
+| `src/app/(authed)/orders/page.tsx` | Server Component: auth, legge **tutti** i filtri dai searchParams → `listOrders(...)` |
 | `src/app/(authed)/orders/loading.tsx` | Skeleton |
 | `src/app/(authed)/orders/actions.ts` | Server action: stato, carta docente, bonifico, **residuo**, **note**, **IVA**, **edit riga** (via BFF) |
-| `src/components/orders/OrdersView.tsx` | Client: filtri portale/agente + **ricerca**, sort **desc**, **grouping per giorno**, stato drawer, KPI |
-| `src/components/orders/OrdersFilters.tsx` | Date (→ URL, refetch) + select portale/agente (→ client state) |
+| `src/components/orders/OrdersView.tsx` | Client: sort **desc**, **grouping per giorno**, override ottimistici, stato drawer (non filtra) |
+| `src/components/orders/OrdersTiles.tsx` | Le 5 tile in testata: `StatTile` della dashboard, taglia `sm`, le 3 di stato cliccabili |
+| `src/lib/query-spec.ts` | Mirror client dello schema query (solo trasporto + chip leggibili) |
+| `src/components/orders/OrdersFilters.tsx` | Preset periodo, date, select portale/agente — tutto → URL |
 | `src/components/orders/OrdersList.tsx` | Gruppi giorno (header data + conteggio) |
 | `src/components/orders/OrderListRow.tsx` | Riga ordine cliccabile responsive → apre drawer |
 | `src/components/orders/OrderDrawer.tsx` | Drawer dettaglio (shell + composizione sezioni): **dx desktop / bottom sheet mobile** |
@@ -126,8 +196,9 @@ Danea e — su ordini `UNCONFIRMED` — editing righe (qty/colore).
 
 ## Pattern
 
-- **Un solo fetch** al BFF per periodo (date nei searchParams → refetch server); portale,
-  agente e **ricerca** filtrano **client-side** sul payload (zero refetch), come Analytics.
+- **Filtri nell'URL, filtraggio sul server** (dal 2026-08-28): periodo, portale, agente,
+  stato, ricerca e `spec` vanno nei searchParams e li applica il BFF col motore di query.
+  Il client non filtra: cache 60s lato server perche' ogni cambio filtro e' un refetch.
 - **Ordine desc per data**, **raggruppato per giorno** (Oggi/Ieri/data, fuso Europe/Rome).
 - **Ricerca** per n° ordine, dati cliente (nome/email/telefono) o transazione Stripe.
 - **Drawer dettaglio** (pattern animato di `AnnotationsDrawer`): scivola da **destra** su
@@ -153,3 +224,10 @@ Danea e — su ordini `UNCONFIRMED` — editing righe (qty/colore).
   meccanografico "—", link al main shop.
 - **Ordini di test esclusi** lato BFF (`ORDERS_REPORT_EXCLUDE_EMAILS`, default alek/gmail).
 - Ricerca Stripe = PaymentIntent `pi_` (non PaymentMethod `pm_`, non salvato da Saleor).
+
+## Aggiornamento 2026-08-31 — la seconda `FieldMap`
+
+Il motore query generico (`core/query/spec.ts`) ha ora il secondo consumatore
+previsto: `CUSTOMER_FIELDS` del modulo Clienti (feature 021). `ORDER_FIELDS` non
+cambia; cambia solo `specChips` in `studio/src/lib/query-spec.ts`, che ora tollera
+una spec senza `all`/`any` (arriva anche da un URL scritto a mano).

@@ -4,7 +4,7 @@
 // (l'utente poi entra da solo via OTP), cambio ruolo, attiva/disattiva, rimozione.
 // L'autorizzazione reale e' lato studio-server: qui la UI assume gia' un admin.
 import { useEffect, useState } from "react";
-import { Button, Input, Select, Pill } from "@/components/ui";
+import { Button, Input, Select, Pill, SkeletonRows } from "@/components/ui";
 import {
   listUsers,
   createUser,
@@ -58,7 +58,7 @@ export function OrganizationSection({ currentEmail }: Props) {
       )}
 
       {loading ? (
-        <p className="text-sm text-[var(--color-ink-muted)]">Caricamento…</p>
+        <SkeletonRows rows={4} rowClassName="h-[52px]" label="Carico gli utenti" />
       ) : (
         <ul className="divide-y divide-[var(--color-line)] rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper)]">
           {users.map((u) => (

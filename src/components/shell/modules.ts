@@ -10,6 +10,8 @@ import {
   LineChart,
   Bot,
   Package,
+  Users,
+  Inbox,
 } from "lucide-react";
 import type { ModuleDefinition } from "@studiofuturo/studio-core";
 
@@ -77,11 +79,41 @@ export const AGENTS: KyronAgent[] = [
     status: "live",
   },
   {
-    id: "catalogo",
-    ...agent("Nico", "Catalogo"),
+    id: "products",
+    ...agent("Teo", "Prodotti"),
     description: "Catalogo, giacenze e prezzi dello shop. Scrive su Saleor e controlla i portali.",
-    href: "/catalogo",
+    href: "/prodotti",
     icon: Package,
+    kind: "agent",
+    status: "live",
+  },
+  // Nico sta anche qui, non solo in MODULES: senza la voce in AGENTS
+  // scomparirebbe da /agenti e dal carosello della dashboard. In sidebar non
+  // si duplica perche' StudioShell scarta gli AGENTS che sono anche MODULES.
+  {
+    id: "orders",
+    ...agent("Nico", "Ordini"),
+    description: "Ordini dei portali: filtri, stato lavorazione, comunicazioni ai clienti.",
+    href: "/orders",
+    icon: ShoppingBag,
+    kind: "agent",
+    status: "live",
+  },
+  {
+    id: "customers",
+    ...agent("Bea", "Clienti"),
+    description: "I clienti dei portali: storico ordini, comunicazioni, segmenti.",
+    href: "/clienti",
+    icon: Users,
+    kind: "agent",
+    status: "live",
+  },
+  {
+    id: "requests",
+    ...agent("Ivo", "Richieste"),
+    description: "Raccoglie quello che serve al team e apre la richiesta su Linear.",
+    href: "/richieste",
+    icon: Inbox,
     kind: "agent",
     status: "live",
   },
@@ -123,9 +155,68 @@ export const MODULES: KyronModule[] = [
   {
     id: "orders",
     label: "Ordini",
+    // Seconda voce, subito sotto la Dashboard: e' la pagina piu' usata.
+    pinned: true,
+    // La lista e' lo strumento, Nico e' la chat che la pilota: resta kind "tool".
+    agentName: "Nico",
+    meta: "Nico",
     description: "Tutti gli ordini dei portali: filtra per scuola e data, vedi agente e stato.",
     href: "/orders",
     icon: ShoppingBag,
+    kind: "tool",
+    status: "live",
+  },
+  {
+    id: "products",
+    label: "Prodotti",
+    // Terza voce, sotto Ordini: le due sezioni operative stanno in cima.
+    pinned: true,
+    // La lista e' lo strumento, Teo e' la chat che la pilota: kind "tool".
+    agentName: "Teo",
+    meta: "Teo",
+    description: "Catalogo dello shop: prezzi per portale, giacenze, pubblicazione.",
+    href: "/prodotti",
+    icon: Package,
+    kind: "tool",
+    status: "live",
+  },
+  {
+    id: "customers",
+    label: "Clienti",
+    // Quarta voce, sotto Prodotti: chi ha comprato sta accanto a cosa vende.
+    pinned: true,
+    // La lista e' lo strumento, Bea e' la chat che la pilota: kind "tool".
+    agentName: "Bea",
+    meta: "Bea",
+    description: "Chi ha ordinato: storico, quanto ha speso, cosa gli abbiamo scritto.",
+    href: "/clienti",
+    icon: Users,
+    kind: "tool",
+    status: "live",
+  },
+  {
+    id: "portals",
+    label: "Portali",
+    // Quarta voce, sotto Prodotti: le tre sezioni operative stanno in cima.
+    pinned: true,
+    // La lista e' lo strumento, Livia e' la chat che la pilota: kind "tool".
+    agentName: "Livia",
+    meta: "Livia",
+    description: "Portali scuola: catalogo, kit, sconti, logo, pubblicazione.",
+    href: "/portals",
+    icon: Store,
+    kind: "tool",
+    status: "live",
+  },
+  {
+    id: "requests",
+    label: "Richieste",
+    // La lista e' lo strumento, Ivo e' la chat che la pilota: kind "tool".
+    agentName: "Ivo",
+    meta: "Ivo",
+    description: "Quello che il team ha chiesto: a che punto e', chi l'ha chiesto, di che tipo e'.",
+    href: "/richieste",
+    icon: Inbox,
     kind: "tool",
     status: "live",
   },

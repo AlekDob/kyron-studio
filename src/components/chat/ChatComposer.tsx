@@ -35,6 +35,9 @@ export function ChatComposer({
         e.preventDefault();
         onSubmit();
       }}
+      // Marcatore per chi vuole portare qui il cursore da fuori (vedi
+      // focusAgentChat): l'input non ha un id stabile, il form si'.
+      data-chat-composer=""
       className={cn("shrink-0 px-4 pb-4 pt-2", className)}
     >
       <div className="flex items-center gap-2 rounded-[20px] border border-[var(--color-line)] bg-[var(--color-paper)] py-2 pl-4 pr-2 shadow-[var(--shadow-card)] transition-colors focus-within:border-[var(--color-line-strong)]">

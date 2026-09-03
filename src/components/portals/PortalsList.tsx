@@ -1,236 +1,100 @@
 "use client";
-
-import { useState, type ReactNode } from "react";
-import { Copy, MapPin, Package, ShoppingBag, Trash2, User } from "lucide-react";
-import { PortalLogo } from "./PortalLogo";
-import { DuplicatePortalModal } from "./DuplicatePortalModal";
+import { ChevronRight, MapPin, Package, ShoppingBag, Store } from "lucide-react";
+import { Pill } from "@/components/ui";
+import { SectionIcon } from "@/components/orders/detail-section";
+import { Slides } from "@/components/animate-ui/primitives/effects/slide";
 import type { PortalSummary } from "@/lib/gateway";
-
-// Per ora solo 2 stati operativi: Bozza (draft) e Live (onboarded).
-const STATUS_OPTIONS: Array<{ value: string; label: string }> = [
-  { value: "draft", label: "Bozza" },
-  { value: "onboarded", label: "Live" },
-];
-
-// Normalizza qualunque stato legacy (review/approved) al modello a 2 stati:
-// solo "draft" resta Bozza, tutto il resto e' considerato Live.
-function normStatus(status: string): "draft" | "onboarded" {
-  return status === "draft" ? "draft" : "onboarded";
-}
+import { PortalLogo } from "./PortalLogo";
+import { isDraft, type PortalGroup } from "./portals-filter";
 
 interface Props {
-  portals: PortalSummary[];
-  onSelect?: (slug: string) => void;
-  onChangeStatus?: (slug: string, status: string) => Promise<void> | void;
-  onDelete?: (slug: string) => Promise<void> | void;
-  onDuplicate?: (
-    sourceSlug: string,
-    body: { newSlug: string; newNome: string },
-  ) => Promise<void>;
+  groups: PortalGroup[];
+  onSelect: (portal: PortalSummary) => void;
 }
 
-export function PortalsList({
-  portals,
-  onSelect,
-  onChangeStatus,
-  onDelete,
-  onDuplicate,
-}: Props) {
-  const [query, setQuery] = useState("");
-  const [busySlug, setBusySlug] = useState<string | null>(null);
-  const [confirmSlug, setConfirmSlug] = useState<string | null>(null);
-  const [duplicateSource, setDuplicateSource] = useState<PortalSummary | null>(null);
-
-  async function handleStatus(slug: string, status: string): Promise<void> {
-    setBusySlug(slug);
-    try {
-      await onChangeStatus?.(slug, status);
-    } finally {
-      setBusySlug(null);
-    }
-  }
-
-  async function handleDelete(slug: string): Promise<void> {
-    if (confirmSlug !== slug) {
-      setConfirmSlug(slug);
-      return;
-    }
-    setBusySlug(slug);
-    try {
-      await onDelete?.(slug);
-    } finally {
-      setBusySlug(null);
-      setConfirmSlug(null);
-    }
-  }
-
-  const filtered = query.trim()
-    ? portals.filter((p) => {
-        const q = query.toLowerCase();
-        return (
-          p.nome.toLowerCase().includes(q) ||
-          p.slug.toLowerCase().includes(q) ||
-          p.city.toLowerCase().includes(q)
-        );
-      })
-    : portals;
-
-  // Grouping a 2 stati: Bozze in cima, Live sotto.
-  const drafts = filtered.filter((p) => normStatus(p.status) === "draft");
-  const live = filtered.filter((p) => normStatus(p.status) !== "draft");
-
-  if (portals.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
-        <p className="text-sm text-[var(--color-ink-soft)] mb-1">
-          Nessun portale configurato
-        </p>
-        <p className="text-xs text-[var(--color-ink-muted)]">
-          Chiedi all&apos;agente di crearne uno nuovo
-        </p>
-      </div>
-    );
-  }
-
+// Lista portali raggruppata per stato: Bozze in cima (il lavoro da finire),
+// Live sotto. Niente azioni sulla riga: stato, duplica ed elimina stanno nella
+// scheda, cosi' la lista resta leggibile come quella di Ordini e Prodotti.
+export function PortalsList({ groups, onSelect }: Props) {
   return (
-    <div className="flex flex-col gap-3">
-      {portals.length > 3 ? (
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Cerca portale..."
-          className="w-full rounded-[var(--radius-control)] border border-[var(--color-line)] bg-[var(--color-paper)] px-3 py-1.5 text-xs text-[var(--color-ink)] placeholder:text-[var(--color-ink-muted)] focus:border-[var(--color-line-strong)] focus:outline-none"
-        />
-      ) : null}
-
-      <PortalGroup label="Bozze" items={drafts} render={renderRow} />
-      <PortalGroup label="Live" items={live} render={renderRow} />
-
-      {duplicateSource && onDuplicate ? (
-        <DuplicatePortalModal
-          sourceSlug={duplicateSource.slug}
-          sourceNome={duplicateSource.nome}
-          onClose={() => setDuplicateSource(null)}
-          onConfirm={async (body) => {
-            await onDuplicate(duplicateSource.slug, body);
-            setDuplicateSource(null);
-          }}
-        />
-      ) : null}
+    <div className="flex flex-col gap-5">
+      {groups.map((g, gi) => (
+        <section key={g.key}>
+          {/* Riga di stacco tra un gruppo e l'altro: altrimenti si toccherebbero. */}
+          {gi > 0 && <div className="mb-5 h-px bg-[var(--color-line)]" />}
+          <div className="mb-2 flex items-center gap-2 px-1">
+            <SectionIcon icon={Store} tone={g.key === "bozze" ? "amber" : "emerald"} size={26} />
+            <h2 className="text-base font-semibold tracking-tight text-[var(--color-ink)]">
+              {g.label}
+            </h2>
+            <span className="ml-auto text-xs text-[var(--color-ink-muted)]">
+              {g.portals.length} portal{g.portals.length === 1 ? "e" : "i"}
+            </span>
+          </div>
+          <ul className="overflow-hidden rounded-2xl border border-[var(--color-line)] divide-y divide-[var(--color-line)]">
+            {/* Le righe entrano a scalare: quando Livia cambia il filtro si vede
+                che la lista si e' rifatta. `asChild` per non infilare un div
+                tra <ul> e <li>. */}
+            <Slides asChild direction="up" offset={10} holdDelay={28}>
+              {g.portals.map((p) => (
+                <li key={p.slug}>
+                  <PortalListRow portal={p} onSelect={onSelect} />
+                </li>
+              ))}
+            </Slides>
+          </ul>
+        </section>
+      ))}
     </div>
   );
-
-  function renderRow(p: PortalSummary) {
-    return (
-      <div
-        key={p.slug}
-        className="rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper)] p-3 transition-colors hover:border-[var(--color-line-strong)]"
-      >
-        <div className="flex items-start justify-between gap-2 mb-1.5">
-          <button
-            type="button"
-            onClick={() => onSelect?.(p.slug)}
-            className="flex items-center gap-2 text-left text-xs font-medium text-[var(--color-ink)] leading-tight hover:underline"
-          >
-            <PortalLogo logoUrl={p.logoUrl} nome={p.nome} size={28} />
-            {p.nome}
-          </button>
-          <div className="flex items-center gap-1.5 shrink-0">
-            <select
-              value={normStatus(p.status)}
-              disabled={busySlug === p.slug || !onChangeStatus}
-              onChange={(e) => void handleStatus(p.slug, e.target.value)}
-              aria-label={`Stato ${p.nome}`}
-              className="rounded-[var(--radius-control)] border border-[var(--color-line)] bg-[var(--color-paper-muted)] px-1.5 py-0.5 text-[10px] text-[var(--color-ink)] focus:border-[var(--color-line-strong)] focus:outline-none disabled:opacity-50"
-            >
-              {STATUS_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-            {onDuplicate ? (
-              <button
-                type="button"
-                onClick={() => setDuplicateSource(p)}
-                disabled={busySlug === p.slug}
-                aria-label={`Duplica ${p.nome}`}
-                title="Duplica portale"
-                className="rounded-[var(--radius-control)] border border-[var(--color-line)] px-1.5 py-0.5 text-[var(--color-ink-muted)] hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink)] disabled:opacity-50"
-              >
-                <Copy className="h-3 w-3" />
-              </button>
-            ) : null}
-            {onDelete ? (
-              <button
-                type="button"
-                onClick={() => void handleDelete(p.slug)}
-                disabled={busySlug === p.slug}
-                aria-label={`Elimina ${p.nome}`}
-                title={confirmSlug === p.slug ? "Conferma eliminazione" : "Elimina"}
-                className={`rounded-[var(--radius-control)] border px-1.5 py-0.5 disabled:opacity-50 ${
-                  confirmSlug === p.slug
-                    ? "border-red-500 bg-red-500 text-white"
-                    : "border-[var(--color-line)] text-[var(--color-ink-muted)] hover:border-red-400 hover:text-red-500"
-                }`}
-              >
-                <Trash2 className="h-3 w-3" />
-              </button>
-            ) : null}
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={() => onSelect?.(p.slug)}
-          className="block w-full text-left"
-        >
-          <p className="font-mono text-[10px] text-[var(--color-ink-muted)] mb-1.5">
-            {p.slug}
-          </p>
-          <div className="flex gap-3 text-[10px] text-[var(--color-ink-soft)]">
-            <span className="flex items-center gap-1">
-              <MapPin className="h-2.5 w-2.5" />
-              {p.city}
-            </span>
-            <span className="flex items-center gap-1">
-              <ShoppingBag className="h-2.5 w-2.5" />
-              {p.productCount}
-            </span>
-            <span className="flex items-center gap-1">
-              <Package className="h-2.5 w-2.5" />
-              {p.bundleCount}
-            </span>
-          </div>
-          {p.requestedBy ? (
-            <div className="mt-1.5 flex items-center gap-1 text-[10px] text-[var(--color-ink-muted)]">
-              <User className="h-2.5 w-2.5" />
-              <span className="truncate">{p.requestedBy}</span>
-            </div>
-          ) : null}
-        </button>
-      </div>
-    );
-  }
 }
 
-// Gruppo con intestazione; render nascosto se vuoto. Bozze prima, Live dopo.
-function PortalGroup({
-  label,
-  items,
-  render,
+function PortalListRow({
+  portal,
+  onSelect,
 }: {
-  label: string;
-  items: PortalSummary[];
-  render: (p: PortalSummary) => ReactNode;
+  portal: PortalSummary;
+  onSelect: (portal: PortalSummary) => void;
 }) {
-  if (items.length === 0) return null;
+  const draft = isDraft(portal);
   return (
-    <div className="flex flex-col gap-2">
-      <p className="eyebrow px-1">
-        {label} ({items.length})
-      </p>
-      {items.map(render)}
-    </div>
+    <button
+      type="button"
+      onClick={() => onSelect(portal)}
+      className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-[var(--color-paper-soft)]"
+    >
+      <PortalLogo
+        logoUrl={portal.logoUrl}
+        nome={portal.nome}
+        size={40}
+        tone={draft ? "amber" : "emerald"}
+      />
+
+      <div className="min-w-0 flex-1">
+        <p className="truncate font-medium">{portal.nome}</p>
+        <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm text-[var(--color-ink-soft)]">
+          {portal.city && (
+            <span className="inline-flex items-center gap-1">
+              <MapPin size={12} aria-hidden="true" />
+              {portal.city}
+            </span>
+          )}
+          <span className="inline-flex items-center gap-1">
+            <ShoppingBag size={12} aria-hidden="true" />
+            {portal.productCount} prodotti
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <Package size={12} aria-hidden="true" />
+            {portal.bundleCount} kit
+          </span>
+        </p>
+      </div>
+
+      <Pill size="sm" variant={draft ? "neutral" : "tertiary"}>
+        {draft ? "Bozza" : "Live"}
+      </Pill>
+
+      <ChevronRight size={16} className="shrink-0 text-[var(--color-ink-muted)]" />
+    </button>
   );
 }

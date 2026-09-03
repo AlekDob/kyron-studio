@@ -55,6 +55,29 @@ const DaneaImportPlan = lazy(() =>
 const DdtMailPlan = lazy(() =>
   import("./DdtMailPlan").then((m) => ({ default: m.DdtMailPlan })),
 );
+// Modulo Ordini (Nico): ricevuta di cosa ha filtrato o aperto nel pannello
+const OrdersReceipt = lazy(() =>
+  import("./OrdersReceipt").then((m) => ({ default: m.OrdersReceipt })),
+);
+// Modulo Prodotti (Teo): ricevuta di cosa ha filtrato o aperto nel pannello
+const ProductsReceipt = lazy(() =>
+  import("./ProductsReceipt").then((m) => ({ default: m.ProductsReceipt })),
+);
+// Modulo Portali (Livia): ricevuta di cosa ha filtrato o aperto nel pannello
+// Modulo Clienti (Bea): ricevuta di cosa ha filtrato o aperto nel pannello
+const CustomersReceipt = lazy(() =>
+  import("./CustomersReceipt").then((m) => ({ default: m.CustomersReceipt })),
+);
+// Modulo Richieste (Ivo): ricevuta del pannello + bozza del ticket da confermare
+const RequestsReceipt = lazy(() =>
+  import("./RequestsReceipt").then((m) => ({ default: m.RequestsReceipt })),
+);
+const RequestDraft = lazy(() =>
+  import("./RequestDraft").then((m) => ({ default: m.RequestDraft })),
+);
+const PortalsReceipt = lazy(() =>
+  import("./PortalsReceipt").then((m) => ({ default: m.PortalsReceipt })),
+);
 const AnomalyReport = lazy(() =>
   import("./AnomalyReport").then((m) => ({ default: m.AnomalyReport })),
 );
@@ -101,6 +124,24 @@ const COMPONENT_REGISTRY: Record<
     Record<string, unknown>
   >,
   DdtMailPlan: DdtMailPlan as unknown as React.ComponentType<
+    Record<string, unknown>
+  >,
+  OrdersReceipt: OrdersReceipt as unknown as React.ComponentType<
+    Record<string, unknown>
+  >,
+  ProductsReceipt: ProductsReceipt as unknown as React.ComponentType<
+    Record<string, unknown>
+  >,
+  PortalsReceipt: PortalsReceipt as unknown as React.ComponentType<
+    Record<string, unknown>
+  >,
+  CustomersReceipt: CustomersReceipt as unknown as React.ComponentType<
+    Record<string, unknown>
+  >,
+  RequestsReceipt: RequestsReceipt as unknown as React.ComponentType<
+    Record<string, unknown>
+  >,
+  RequestDraft: RequestDraft as unknown as React.ComponentType<
     Record<string, unknown>
   >,
 };

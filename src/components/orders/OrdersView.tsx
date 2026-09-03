@@ -1,18 +1,29 @@
 "use client";
 import { useMemo, useState } from "react";
-import { Search } from "lucide-react";
 import type { OrdersResponse, OrderRow } from "@/lib/gateway";
-import { Card, Input } from "@/components/ui";
-import { OrdersFilters, type PortalOption } from "./OrdersFilters";
+import { OrdersHeader } from "./OrdersHeader";
 import { OrdersList } from "./OrdersList";
 import { OrderDrawer } from "./OrderDrawer";
+import { OrderDetail, type OrderDetailHandlers, type OrderTab } from "./OrderDetail";
+import { SkeletonRows } from "@/components/ui";
 import { OrdersEmptyState } from "./OrdersEmptyState";
-import { agentName, dayKey, dayLabel, formatEur } from "./format";
+import { dayKey, dayLabel } from "./format";
+import { useIsMobile } from "@/lib/use-is-mobile";
+import type { OrdersFilter } from "./orders-filter";
 
 interface OrdersViewProps {
   data: OrdersResponse;
-  from: string;
-  to: string;
+  /** Filtro condiviso: lo muove l'umano dalla testata, lo scrive Nico dalla chat. */
+  filter: OrdersFilter;
+  onFilterChange: (patch: Partial<OrdersFilter>) => void;
+  /** Nuova lista in arrivo dal server dopo un cambio filtro. */
+  loading?: boolean;
+  /** Ordine aperto nel drawer. Vive nel workspace: lo apre anche l'agente. */
+  selectedId: string | null;
+  onSelectId: (id: string | null) => void;
+  /** Tab della scheda: sta nel workspace perche' lo cambia anche l'agente. */
+  tab: OrderTab;
+  onTabChange: (tab: OrderTab) => void;
 }
 
 // true se il buono Carta del Docente copre l'intero totale ordine (tolleranza
@@ -59,40 +70,6 @@ function applyOverrides(o: OrderRow, ov: OrderOverrides): OrderRow {
   return next;
 }
 
-// Opzioni portale uniche dal payload del periodo (channelSlug -> nome).
-function portalOptions(orders: OrderRow[]): PortalOption[] {
-  const map = new Map<string, string>();
-  for (const o of orders) map.set(o.channelSlug, o.portalName);
-  return Array.from(map, ([slug, name]) => ({ slug, name })).sort((a, b) =>
-    a.name.localeCompare(b.name),
-  );
-}
-
-function agentOptions(orders: OrderRow[]): string[] {
-  const set = new Set<string>();
-  for (const o of orders) if (o.agent) set.add(agentName(o.agent));
-  return Array.from(set).sort();
-}
-
-// Ricerca su numero ordine, dati cliente (nome/email/telefono) e Stripe.
-function matchesQuery(o: OrderRow, q: string): boolean {
-  if (!q) return true;
-  const hay = [
-    o.number,
-    o.customerName,
-    o.companyName,
-    o.userEmail,
-    o.customerPhone,
-    o.fiscalCode,
-    o.vatNumber,
-    o.sdiCode,
-    o.pspReference,
-  ]
-    .join(" ")
-    .toLowerCase();
-  return hay.includes(q.toLowerCase());
-}
-
 export interface DayGroup {
   key: string;
   label: string;
@@ -111,37 +88,32 @@ function groupByDay(orders: OrderRow[]): DayGroup[] {
   return groups;
 }
 
-export function OrdersView({ data, from, to }: OrdersViewProps) {
-  const [portal, setPortal] = useState("all");
-  const [agent, setAgent] = useState("all");
-  const [query, setQuery] = useState("");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+export function OrdersView({
+  data,
+  filter,
+  onFilterChange,
+  loading = false,
+  selectedId,
+  onSelectId,
+  tab,
+  onTabChange,
+}: OrdersViewProps) {
   // Override ottimistici per ordine (id -> override) dopo un'azione nel drawer.
   const [overrides, setOverrides] = useState<Record<string, OrderOverrides>>({});
+  const isMobile = useIsMobile();
 
   // Merge di un override parziale sull'ordine (helper per gli handler del drawer).
   const patch = (id: string, delta: OrderOverrides) =>
     setOverrides((prev) => ({ ...prev, [id]: { ...prev[id], ...delta } }));
 
+  // Le righe arrivano gia' filtrate dal server: qui si applicano solo gli
+  // override ottimistici e l'ordinamento per data.
   const orders = useMemo(
-    () => data.orders.map((o) => applyOverrides(o, overrides[o.id] ?? {})),
-    [data.orders, overrides],
-  );
-
-  const portals = useMemo(() => portalOptions(orders), [orders]);
-  const agents = useMemo(() => agentOptions(orders), [orders]);
-
-  const filtered = useMemo(
     () =>
-      orders
-        .filter(
-          (o) =>
-            (portal === "all" || o.channelSlug === portal) &&
-            (agent === "all" || agentName(o.agent) === agent) &&
-            matchesQuery(o, query),
-        )
+      data.orders
+        .map((o) => applyOverrides(o, overrides[o.id] ?? {}))
         .sort((a, b) => b.created.localeCompare(a.created)),
-    [orders, portal, agent, query],
+    [data.orders, overrides],
   );
 
   const selected = useMemo(
@@ -149,123 +121,66 @@ export function OrdersView({ data, from, to }: OrdersViewProps) {
     [orders, selectedId],
   );
 
-  const total = useMemo(
-    () => filtered.reduce((sum, o) => sum + o.totalGross, 0),
-    [filtered],
-  );
-  const groups = useMemo(() => groupByDay(filtered), [filtered]);
+  const groups = useMemo(() => groupByDay(orders), [orders]);
 
-  // Conteggi per stato: annullato = workflow interno o evasione Saleor CANCELED;
-  // da confermare = bozza Saleor (UNCONFIRMED/DRAFT); il resto e' confermato.
-  const counts = useMemo(() => {
-    let canceled = 0;
-    let canceledEur = 0;
-    let toConfirm = 0;
-    let toConfirmEur = 0;
-    for (const o of filtered) {
-      if (o.workflowStatus === "annullato" || o.status === "CANCELED") {
-        canceled++;
-        canceledEur += o.totalGross;
-      } else if (o.status === "UNCONFIRMED" || o.status === "DRAFT") {
-        toConfirm++;
-        toConfirmEur += o.totalGross;
-      }
-    }
-    return {
-      canceled,
-      canceledEur,
-      toConfirm,
-      toConfirmEur,
-      confirmed: filtered.length - canceled - toConfirm,
-      confirmedEur: total - canceledEur - toConfirmEur,
-    };
-  }, [filtered, total]);
+  // Gli otto handler ottimistici sono gli stessi per la scheda al centro e per
+  // la bottom sheet: un oggetto solo, niente elenco ripetuto due volte.
+  const handlers: OrderDetailHandlers = {
+    onStatusChange: (id, status) => patch(id, { workflow: status }),
+    onTeacherCardAcquired: (id) => patch(id, { acquired: true }),
+    onBankTransferPaid: (id) => patch(id, { paid: true }),
+    onResidualPaid: (id) => patch(id, { residualPaid: true }),
+    onNoteSaved: (id, note) => patch(id, { note }),
+    onVatSaved: (id, vatOverride) => patch(id, { vatOverride }),
+    onPaymentTotalSaved: (id, paymentAmountOverride) =>
+      patch(id, { paymentAmountOverride }),
+    onVatReliefValidated: (id, vatReliefStatus) => patch(id, { vatReliefStatus }),
+  };
+
+  // Desktop: la scheda prende tutta la colonna centrale al posto della lista.
+  // La chat resta a destra, cosi' l'agente vede l'ordine mentre e' aperto.
+  if (selected && !isMobile) {
+    return (
+      <OrderDetail
+        order={selected}
+        onBack={() => onSelectId(null)}
+        tab={tab}
+        onTabChange={onTabChange}
+        {...handlers}
+      />
+    );
+  }
 
   return (
-    <div className="flex flex-col gap-5">
-      <div className="grid grid-cols-2 gap-3">
-        <Kpi label="Ordini" value={String(filtered.length)} />
-        <Kpi label="Totale" value={formatEur(total)} />
-      </div>
-      <div className="grid grid-cols-3 gap-3">
-        <Kpi
-          label="Confermati"
-          value={String(counts.confirmed)}
-          sub={formatEur(counts.confirmedEur)}
-        />
-        <Kpi
-          label="Da confermare"
-          value={String(counts.toConfirm)}
-          sub={formatEur(counts.toConfirmEur)}
-        />
-        <Kpi
-          label="Annullati"
-          value={String(counts.canceled)}
-          sub={formatEur(counts.canceledEur)}
-        />
-      </div>
-
-      <Input
-        size="sm"
-        placeholder="Cerca per n° ordine, cliente o transazione Stripe…"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        iconLeft={<Search size={15} />}
+    <div className="flex h-full min-h-0 flex-col">
+      {/* Testata ferma: KPI, ricerca e filtri restano a vista mentre la lista scorre. */}
+      <OrdersHeader
+        buckets={data.buckets}
+        filter={filter}
+        onChange={onFilterChange}
+        portals={data.portals}
+        agents={data.agents}
       />
 
-      <OrdersFilters
-        from={from}
-        to={to}
-        portal={portal}
-        agent={agent}
-        portals={portals}
-        agents={agents}
-        onPortalChange={setPortal}
-        onAgentChange={setAgent}
-      />
+      <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-8">
+        {loading ? (
+          <SkeletonRows rows={8} rowClassName="h-[74px]" label="Carico gli ordini" />
+        ) : orders.length === 0 ? (
+          <OrdersEmptyState variant="no-data" />
+        ) : (
+          <OrdersList groups={groups} onSelect={(o) => onSelectId(o.id)} />
+        )}
+      </div>
 
-      {filtered.length === 0 ? (
-        <OrdersEmptyState variant="no-data" />
-      ) : (
-        <OrdersList groups={groups} onSelect={(o) => setSelectedId(o.id)} />
-      )}
-
+      {/* Mobile: la stessa scheda dentro una bottom sheet. */}
       <OrderDrawer
         order={selected}
-        onClose={() => setSelectedId(null)}
-        onStatusChange={(id, status) => patch(id, { workflow: status })}
-        onTeacherCardAcquired={(id) => patch(id, { acquired: true })}
-        onBankTransferPaid={(id) => patch(id, { paid: true })}
-        onResidualPaid={(id) => patch(id, { residualPaid: true })}
-        onNoteSaved={(id, note) => patch(id, { note })}
-        onVatSaved={(id, vatOverride) => patch(id, { vatOverride })}
-        onPaymentTotalSaved={(id, paymentAmountOverride) =>
-          patch(id, { paymentAmountOverride })
-        }
-        onVatReliefValidated={(id, vatReliefStatus) => patch(id, { vatReliefStatus })}
+        onClose={() => onSelectId(null)}
+        tab={tab}
+        onTabChange={onTabChange}
+        {...handlers}
       />
-    </div>
-  );
-}
 
-function Kpi({
-  label,
-  value,
-  sub,
-}: {
-  label: string;
-  value: string;
-  sub?: string; // valore economico sotto il conteggio
-}) {
-  return (
-    <Card padding="md">
-      <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-ink-muted)]">
-        {label}
-      </p>
-      <p className="mt-1 text-2xl font-medium tracking-tight">{value}</p>
-      {sub && (
-        <p className="mt-0.5 text-sm text-[var(--color-ink-muted)]">{sub}</p>
-      )}
-    </Card>
+    </div>
   );
 }

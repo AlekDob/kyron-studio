@@ -23,7 +23,7 @@ const LABELS: Record<string, string> = {
   "kit-double-discount": "Doppio sconto (cliente paga meno)",
   "kit-overcharge": "Cliente paga di più",
   "voucher-missing": "Voucher mancante",
-  "component-missing": "Componente kit non trovato",
+  "component-missing": "Kit con codici prodotto sbagliati",
   "discount-vanished": "Sconto sparito su Saleor",
   "channel-orphan": "Channel orfano / ordini a rischio",
   "stale-variant-buyable": "Taglio nascosto ancora acquistabile",

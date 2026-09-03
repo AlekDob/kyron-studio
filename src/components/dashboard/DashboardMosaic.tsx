@@ -7,27 +7,31 @@ import { SkeletonChart } from "@/components/ui";
 import { AgentsGrid } from "@/components/agents/AgentsGrid";
 import { OrdersTiles, PortalsTile, VisitsTile } from "./tiles";
 import { StatTileSkeleton } from "./StatTile";
+import { TileRail } from "./TileRail";
 import { TrafficSection } from "./TrafficSection";
 
 export function DashboardMosaic() {
   return (
     <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-12">
-      <Suspense
-        fallback={
-          <>
-            <StatTileSkeleton className="lg:col-span-3" />
-            <StatTileSkeleton className="lg:col-span-3" />
-          </>
-        }
-      >
-        <OrdersTiles />
-      </Suspense>
-      <Suspense fallback={<StatTileSkeleton className="lg:col-span-3" />}>
-        <PortalsTile />
-      </Suspense>
-      <Suspense fallback={<StatTileSkeleton className="lg:col-span-3" />}>
-        <VisitsTile />
-      </Suspense>
+      {/* Le 4 tile: carosello su schermo stretto, griglia da @3xl in su. */}
+      <TileRail cols="@3xl:grid-cols-4" className="sm:col-span-2 lg:col-span-12">
+        <Suspense
+          fallback={
+            <>
+              <StatTileSkeleton />
+              <StatTileSkeleton />
+            </>
+          }
+        >
+          <OrdersTiles />
+        </Suspense>
+        <Suspense fallback={<StatTileSkeleton />}>
+          <PortalsTile />
+        </Suspense>
+        <Suspense fallback={<StatTileSkeleton />}>
+          <VisitsTile />
+        </Suspense>
+      </TileRail>
 
       <div className="sm:col-span-2 lg:col-span-12">
         <Suspense fallback={<SkeletonChart className="h-[220px] sm:h-[280px]" />}>

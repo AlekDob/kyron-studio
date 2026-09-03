@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useRef, useState } from "react";
 import { Plus, Trash2, X } from "lucide-react";
-import { Badge, Popover } from "@/components/ui";
+import { Badge, Popover, SkeletonRows } from "@/components/ui";
 import { eur } from "@/components/catalogo/catalog-view";
 import type { Product } from "@/lib/products";
 import type { PortalDetail, SaleorProduct } from "@/lib/gateway";
@@ -242,7 +242,7 @@ export function PortalKitRow({
           {adding && (
             <div className="mt-2 max-h-40 overflow-y-auto rounded-[var(--radius-control)] border border-[var(--color-line)] bg-[var(--color-paper-soft)]">
               {available === null ? (
-                <p className="p-2 text-xs text-[var(--color-ink-muted)]">Caricamento...</p>
+                <SkeletonRows rows={3} rowClassName="h-[32px]" label="Carico i prodotti" />
               ) : candidates.length === 0 ? (
                 <p className="p-2 text-xs text-[var(--color-ink-muted)]">
                   Nessun altro prodotto disponibile.

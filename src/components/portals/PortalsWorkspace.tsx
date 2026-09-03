@@ -1,26 +1,39 @@
 "use client";
 
+// Workspace Portali: la lista vera a sinistra, Livia a destra. Stesso guscio di
+// Ordini e Prodotti. Il filtro vive nell'URL: lo muovono i chip dell'operatore
+// e le ricevute di Livia, e in chat resta solo una riga, mai una lista.
 import {
-  memo,
   useCallback,
   useEffect,
+  useRef,
   useState,
+  useTransition,
   type ReactElement,
 } from "react";
+import { useRouter } from "next/navigation";
+import type { ChatStreamEvent } from "@studiofuturo/studio-core";
 import { AgentChannel } from "@/components/chat/AgentChannel";
+import { AgentFace } from "@/components/chat/AgentFace";
 import { CHANNELS } from "@/components/chat/agent-channels";
-import { usePortalDraftSync } from "./use-portal-draft-sync";
-import { LivePortalCard } from "./LivePortalCard";
-import { PortalsList } from "./PortalsList";
-import { PortalDetail as PortalDetailView } from "./PortalDetail";
-import { LayoutList } from "lucide-react";
+import { extractGenerativeDescriptor, type GenerativeSubmission } from "@/components/chat/generative/types";
 import { MobileChatOverlay } from "@/components/shell/MobileChatOverlay";
-import type { PortalSummary, PortalDetail } from "@/lib/gateway";
 import { agentNameOf } from "@/components/shell/modules";
+import { LivePortalCard } from "./LivePortalCard";
+import { PortalsPanelContext } from "./portals-panel-context";
+import { PortalsView } from "./PortalsView";
+import { usePortalDraftSync } from "./use-portal-draft-sync";
+import {
+  filterChips,
+  portalsReceiptSchema,
+  toSearchParams,
+  type PortalsData,
+  type PortalsFilter,
+  type PortalsReceiptProps,
+  type PortalTab,
+} from "./portals-filter";
 
-// Nome proprio dell'agente: unica fonte il registry dei moduli.
-const AGENT = agentNameOf("portals");
-
+// La bozza in costruzione: la riempie `usePortalDraftSync` guardando lo stream.
 export interface PortalDraft {
   nome?: string;
   slug?: string;
@@ -39,276 +52,238 @@ export interface PortalDraft {
   saved?: boolean;
 }
 
-export type SidePanelMode =
-  | { kind: "list" }
-  | { kind: "creating" }
-  | { kind: "detail"; portal: PortalDetail };
+// Dopo una scrittura di Livia la lista in pagina e' vecchia: si rilegge dal
+// server (router.refresh), non si rifa' una fetch a mano.
+const WRITE_TOOLS = [
+  "save_pending_school",
+  "set_portal_status",
+  "update_portal",
+  "delete_portal",
+  "add_bundle_to_portal",
+  "update_bundle",
+  "remove_bundle",
+  "update_catalog",
+  "update_discounts",
+  "apply_to_saleor",
+];
 
-interface Props {
-  initialPortals: PortalSummary[];
-  initialDetailSlug?: string;
+// La ricevuta e' l'unica fonte: stesso descriptor che la chat renderizza, letto
+// qui per muovere il pannello.
+function parseReceipt(ev: ChatStreamEvent): PortalsReceiptProps | null {
+  if (ev.type !== "tool-result") return null;
+  const d = extractGenerativeDescriptor(ev.result);
+  if (!d || d.component !== "PortalsReceipt") return null;
+  const parsed = portalsReceiptSchema.safeParse(d.props);
+  return parsed.success ? parsed.data : null;
 }
 
-async function fetchPortals(): Promise<PortalSummary[]> {
-  const res = await fetch("/api/portals", { cache: "no-store" });
-  if (!res.ok) return [];
-  return (await res.json()) as PortalSummary[];
-}
-
-async function fetchPortalDetail(slug: string): Promise<PortalDetail | null> {
-  const res = await fetch(`/api/portals/${slug}`, { cache: "no-store" });
-  if (!res.ok) return null;
-  return (await res.json()) as PortalDetail;
-}
-
-export function PortalsWorkspace({ initialPortals, initialDetailSlug }: Props): ReactElement {
-  const [portals, setPortals] = useState<PortalSummary[]>(initialPortals);
+export function PortalsWorkspace({
+  data,
+  filter: serverFilter,
+  initialSlug = null,
+}: {
+  data: PortalsData;
+  /** Filtro risolto dall'URL: e' quello che il server ha gia' applicato. */
+  filter: PortalsFilter;
+  /** Scheda da aprire subito: arriva dal deep link `?detail=<slug>`. */
+  initialSlug?: string | null;
+}): ReactElement {
+  const router = useRouter();
+  // `pending` = la nuova lista e' in volo: al suo posto va lo skeleton.
+  const [pending, startTransition] = useTransition();
+  const [selectedSlug, setSelectedSlug] = useState<string | null>(initialSlug);
+  // Specchio locale del filtro: i chip si accendono subito. La verita' e' l'URL.
+  const [filter, setFilter] = useState<PortalsFilter>(serverFilter);
+  const filterRef = useRef(filter);
+  filterRef.current = filter;
+  // Tab della scheda: sta qui perche' lo cambia anche Livia (`get_portal`).
+  const [tab, setTab] = useState<PortalTab>("informazioni");
   const [draft, setDraft] = useState<PortalDraft>({});
-  const [panel, setPanel] = useState<SidePanelMode>({ kind: "list" });
+  const [creating, setCreating] = useState(false);
 
-  useEffect(() => {
-    if (!initialDetailSlug) return;
-    fetchPortalDetail(initialDetailSlug).then((portal) => {
-      if (portal) setPanel({ kind: "detail", portal });
-    });
-  }, [initialDetailSlug]);
+  useEffect(() => setFilter(serverFilter), [serverFilter]);
 
+  const refresh = useCallback(() => {
+    startTransition(() => router.refresh());
+  }, [router]);
+
+  // Portale salvato: la lista si rilegge e la card di bozza esce di scena.
   useEffect(() => {
     if (!draft.saved) return;
-    fetchPortals().then(setPortals);
-    setPanel({ kind: "list" });
-  }, [draft.saved]);
+    setCreating(false);
+    refresh();
+  }, [draft.saved, refresh]);
 
-  const handleStartCreating = useCallback((): void => {
-    setDraft({});
-    setPanel({ kind: "creating" });
-  }, []);
+  // Unico punto di scrittura del filtro: chip, tile e ricevuta dell'agente.
+  const pushFilter = useCallback(
+    (patch: Partial<PortalsFilter>) => {
+      const next = { ...filterRef.current, ...patch };
+      filterRef.current = next;
+      setFilter(next);
+      const params = toSearchParams(next);
+      if (next.source === "agent") params.set("agente", "1");
+      startTransition(() => router.push(`/portals?${params.toString()}`));
+    },
+    [router],
+  );
 
-  const handleViewPortal = useCallback((portal: PortalDetail): void => {
-    setPanel({ kind: "detail", portal });
-  }, []);
+  // Un punto solo: la chiama l'evento in arrivo e il click su una ricevuta
+  // vecchia, cosi' riaprire un risultato di ieri fa la stessa cosa.
+  const applyReceipt = useCallback(
+    (receipt: PortalsReceiptProps): void => {
+      if (receipt.kind === "portal") {
+        if (receipt.tab) setTab(receipt.tab);
+        if (receipt.refresh) refresh();
+        setSelectedSlug(receipt.slug);
+        return;
+      }
+      pushFilter({ ...receipt.filter, source: "agent" });
+    },
+    [pushFilter, refresh],
+  );
 
-  const handleSelectPortal = useCallback((slug: string): void => {
-    fetchPortalDetail(slug).then((portal) => {
-      if (portal) setPanel({ kind: "detail", portal });
-    });
-  }, []);
+  // La chat guida anche la creazione: la card di bozza vive nella colonna chat,
+  // il pannello resta sulla lista finche' il portale non e' salvato.
+  const draftSync = usePortalDraftSync(
+    setDraft,
+    useCallback(() => {
+      setDraft({});
+      setCreating(true);
+    }, []),
+    useCallback((portal) => setSelectedSlug(portal.slug), []),
+  );
 
-  const handleBackToList = useCallback((): void => {
-    setPanel({ kind: "list" });
-  }, []);
+  const onEvent = useCallback(
+    (ev: ChatStreamEvent): void => {
+      draftSync.onEvent(ev);
+      const receipt = parseReceipt(ev);
+      if (receipt) {
+        applyReceipt(receipt);
+        return;
+      }
+      if (ev.type === "tool-result" && WRITE_TOOLS.includes(ev.tool)) refresh();
+    },
+    [applyReceipt, draftSync, refresh],
+  );
 
-  const detailSlug = panel.kind === "detail" ? panel.portal.slug : null;
-  const handleRefreshDetail = useCallback(async (): Promise<void> => {
-    if (!detailSlug) return;
-    const refreshed = await fetchPortalDetail(detailSlug);
-    if (refreshed) setPanel({ kind: "detail", portal: refreshed });
-    fetchPortals().then(setPortals);
-  }, [detailSlug]);
-
-  // Cambio stato manuale dalla lista → PUT + refresh (e detail se aperto).
-  const handleChangeStatus = useCallback(
-    async (slug: string, status: string): Promise<void> => {
+  // Scritture dalla scheda: passano dal BFF e poi rileggono la lista.
+  const changeStatus = useCallback(
+    async (slug: string, status: string) => {
       await fetch(`/api/portals/${slug}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
       });
-      setPortals(await fetchPortals());
-      if (detailSlug === slug) {
-        const refreshed = await fetchPortalDetail(slug);
-        if (refreshed) setPanel({ kind: "detail", portal: refreshed });
-      }
+      refresh();
     },
-    [detailSlug],
+    [refresh],
   );
 
-  // Eliminazione portale → DELETE + refresh (torna alla lista se era aperto).
-  const handleDeletePortal = useCallback(
-    async (slug: string): Promise<void> => {
+  const deletePortal = useCallback(
+    async (slug: string) => {
       await fetch(`/api/portals/${slug}`, { method: "DELETE" });
-      setPortals(await fetchPortals());
-      if (detailSlug === slug) setPanel({ kind: "list" });
+      setSelectedSlug(null);
+      refresh();
     },
-    [detailSlug],
+    [refresh],
   );
 
-  // Duplica portale → POST + refresh, poi apre il dettaglio della nuova Bozza
-  // cosi' il commerciale aggiusta subito indirizzo/cod. meccanografico/logo.
-  // Su errore (es. slug esistente) rilancia: il modal mostra il messaggio.
-  const handleDuplicatePortal = useCallback(
-    async (
-      sourceSlug: string,
-      body: { newSlug: string; newNome: string },
-    ): Promise<void> => {
+  // Su errore (es. slug esistente) rilancia: il messaggio lo mostra il modal.
+  const duplicatePortal = useCallback(
+    async (sourceSlug: string, body: { newSlug: string; newNome: string }) => {
       const res = await fetch(`/api/portals/${sourceSlug}/duplicate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
       if (!res.ok) {
-        const data = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(data.error ?? "duplicazione fallita");
+        const j = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(j.error ?? "duplicazione fallita");
       }
-      setPortals(await fetchPortals());
-      const detail = await fetchPortalDetail(body.newSlug);
-      if (detail) setPanel({ kind: "detail", portal: detail });
+      // La copia e' una bozza da sistemare subito: si apre al posto della lista.
+      setSelectedSlug(body.newSlug);
+      refresh();
     },
-    [],
+    [refresh],
   );
 
-  // Il pannello destro segue lo stream dell'agente.
-  const draftSync = usePortalDraftSync(setDraft, handleStartCreating, handleViewPortal);
+  // Il contesto viaggia col messaggio: Livia sa filtri, portali a video e
+  // scheda aperta senza rileggere tutto con un tool.
+  const ctxRef = useRef({ data, filter, slug: selectedSlug });
+  ctxRef.current = { data, filter, slug: selectedSlug };
 
-  const isDetail = panel.kind === "detail";
+  const selectionContext = useCallback((): string => {
+    const { data: d, filter: f, slug } = ctxRef.current;
+    const chips = filterChips(f);
+    const open = slug ? d.portals.find((p) => p.slug === slug) : null;
+    return [
+      `Pannello Portali: ${d.portals.length} portali a video su ${d.buckets.total}${
+        chips.length ? ` (filtri: ${chips.join(", ")})` : ""
+      }.`,
+      d.portals.length ? `Primi: ${d.portals.slice(0, 10).map((p) => p.nome).join(", ")}.` : "",
+      open ? `Scheda aperta: "${open.nome}" (slug ${open.slug}).` : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+  }, []);
 
-  return (
-    <div className="flex flex-col lg:flex-row h-full overflow-hidden">
-      <div className="flex-1 min-w-0 min-h-0 flex flex-col border-r border-[var(--color-line)] lg:h-full overflow-hidden">
+  // Stesso canale in due gusci: colonna a destra su desktop, bottom sheet
+  // dietro la faccia di Livia su mobile. Il montaggio e' esclusivo.
+  const channel = (hideHeader: boolean) => (
+    <>
+      <div className="flex min-h-0 flex-1 flex-col">
         <AgentChannel
           agentId="portals"
           {...CHANNELS.portals}
           interactive
-          onEvent={draftSync.onEvent}
+          hideHeader={hideHeader}
+          onEvent={onEvent}
           onSubmission={draftSync.onSubmission}
+          selectionContext={selectionContext}
         />
       </div>
-      <aside
-        className={`hidden lg:flex flex-col bg-[var(--color-paper-soft)] sticky top-0 h-full overflow-hidden transition-[width] duration-500 ease-out ${
-          isDetail ? "w-[560px]" : "w-[420px]"
-        }`}
-      >
-        <MemoSidePanel
-          mode={panel}
-          draft={draft}
-          portals={portals}
-          onBackToList={handleBackToList}
-          onSelectPortal={handleSelectPortal}
-          onDetailChanged={handleRefreshDetail}
-          onChangeStatus={handleChangeStatus}
-          onDeletePortal={handleDeletePortal}
-          onDuplicatePortal={handleDuplicatePortal}
-        />
-      </aside>
-      <MobileChatOverlay
-        label={AGENT}
-        icon={<LayoutList className="h-5 w-5" />}
-        position="top-right"
-      >
-        <MemoSidePanel
-          mode={panel}
-          draft={draft}
-          portals={portals}
-          onBackToList={handleBackToList}
-          onSelectPortal={handleSelectPortal}
-          onDetailChanged={handleRefreshDetail}
-          onChangeStatus={handleChangeStatus}
-          onDeletePortal={handleDeletePortal}
-          onDuplicatePortal={handleDuplicatePortal}
-        />
-      </MobileChatOverlay>
-    </div>
-  );
-}
-
-const MemoSidePanel = memo(SidePanel);
-
-function SidePanel({
-  mode,
-  draft,
-  portals,
-  onBackToList,
-  onSelectPortal,
-  onDetailChanged,
-  onChangeStatus,
-  onDeletePortal,
-  onDuplicatePortal,
-}: {
-  mode: SidePanelMode;
-  draft: PortalDraft;
-  portals: PortalSummary[];
-  onBackToList: () => void;
-  onSelectPortal: (slug: string) => void;
-  onDetailChanged?: () => void;
-  onChangeStatus?: (slug: string, status: string) => Promise<void> | void;
-  onDeletePortal?: (slug: string) => Promise<void> | void;
-  onDuplicatePortal?: (
-    sourceSlug: string,
-    body: { newSlug: string; newNome: string },
-  ) => Promise<void>;
-}) {
-  if (mode.kind === "creating") {
-    return (
-      <>
-        <header className="px-5 py-3 border-b border-[var(--color-line)] flex items-center justify-between">
-          <div>
-            <p className="eyebrow">Nuovo portale</p>
-            <p className="text-xs text-[var(--color-ink-muted)] mt-1">
-              {draft.nome ?? "In attesa dei dati..."}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onBackToList}
-            className="text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
-          >
-            Lista
-          </button>
-        </header>
-        <div className="flex-1 overflow-y-auto px-5 py-4">
+      {/* Portale nuovo: la bozza cresce qui sotto la chat, dove Livia sta
+          raccogliendo i dati. Il pannello non si muove finche' non e' salvata. */}
+      {creating && (
+        <div className="max-h-[45%] shrink-0 overflow-y-auto border-t border-[var(--color-line)] bg-[var(--color-paper-soft)] px-4 py-3">
+          <p className="eyebrow mb-2">Nuovo portale</p>
           <LivePortalCard draft={draft} />
         </div>
-      </>
-    );
-  }
-
-  if (mode.kind === "detail") {
-    const p = mode.portal;
-    return (
-      <>
-        <header className="px-5 py-3 border-b border-[var(--color-line)] flex items-center justify-between">
-          <div className="min-w-0">
-            <p className="eyebrow">Dettaglio</p>
-            <p className="text-sm font-medium text-[var(--color-ink)] mt-0.5 truncate">
-              {p.nome}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onBackToList}
-            className="text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] shrink-0 ml-3"
-          >
-            Lista
-          </button>
-        </header>
-        <div
-          key={p.slug}
-          className="flex-1 overflow-y-auto px-5 py-4 motion-safe:animate-[fadeIn_280ms_ease-out]"
-        >
-          <PortalDetailView portal={p} onChanged={onDetailChanged} />
-        </div>
-      </>
-    );
-  }
-
-  return (
-    <>
-      <header className="px-5 py-3 border-b border-[var(--color-line)]">
-        <p className="eyebrow">Portali</p>
-        <p className="text-xs text-[var(--color-ink-muted)] mt-1">
-          {portals.length} configurat{portals.length !== 1 ? "i" : "o"}
-        </p>
-      </header>
-      <div className="flex-1 overflow-y-auto px-5 py-4">
-        <PortalsList
-          portals={portals}
-          onSelect={onSelectPortal}
-          onChangeStatus={onChangeStatus}
-          onDelete={onDeletePortal}
-          onDuplicate={onDuplicatePortal}
-        />
-      </div>
+      )}
     </>
   );
-}
 
+  const agent = agentNameOf("portals");
+
+  return (
+    <PortalsPanelContext.Provider value={applyReceipt}>
+      <div className="flex h-full min-h-0 flex-col overflow-hidden lg:flex-row">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          <PortalsView
+            data={data}
+            filter={filter}
+            onFilterChange={pushFilter}
+            loading={pending}
+            selectedSlug={selectedSlug}
+            onSelectSlug={setSelectedSlug}
+            tab={tab}
+            onTabChange={setTab}
+            onChanged={refresh}
+            onChangeStatus={changeStatus}
+            onDelete={deletePortal}
+            onDuplicate={duplicatePortal}
+          />
+        </div>
+        <aside className="hidden min-h-0 w-[420px] shrink-0 flex-col border-l border-[var(--color-line)] lg:flex">
+          {channel(false)}
+        </aside>
+        <MobileChatOverlay
+          label={agent}
+          icon={<AgentFace seed="portals" label={agent} size={36} />}
+        >
+          {channel(true)}
+        </MobileChatOverlay>
+      </div>
+    </PortalsPanelContext.Provider>
+  );
+}

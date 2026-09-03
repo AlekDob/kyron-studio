@@ -9,9 +9,11 @@ import { ModelRoutingSection } from "./ModelRoutingSection";
 import { ComingSoonSection } from "./ComingSoonSection";
 import { OrganizationSection } from "./OrganizationSection";
 import { EcommerceSection } from "./EcommerceSection";
+import { ThemeSection } from "./ThemeSection";
 
 type Tab =
   | "profile"
+  | "theme"
   | "connections"
   | "models"
   | "org"
@@ -19,8 +21,8 @@ type Tab =
   | "mcp";
 
 // Brain: feature-008 — adminOnly: connessioni AI, modelli, MCP e organizzazione
-// (gestione utenti) sono riservate agli admin. Gli editor vedono solo Profilo
-// (la tab Tema e' sparita col dark mode: lo Studio e' light-only).
+// (gestione utenti) sono riservate agli admin. Tema (feature 020) e' per tutti:
+// preferenza personale, salvata per-browser.
 const TABS: Array<{
   id: Tab;
   label: string;
@@ -28,6 +30,7 @@ const TABS: Array<{
   adminOnly?: boolean;
 }> = [
   { id: "profile", label: "Profilo", disabled: true },
+  { id: "theme", label: "Tema" },
   { id: "connections", label: "Connessioni", adminOnly: true },
   { id: "models", label: "Modelli AI", adminOnly: true },
   { id: "org", label: "Organizzazione", adminOnly: true },
@@ -42,7 +45,7 @@ interface Props {
 
 export function SettingsLayout({ userEmail, isAdmin }: Props) {
   const tabs = TABS.filter((t) => isAdmin || !t.adminOnly);
-  const [active, setActive] = useState<Tab>(isAdmin ? "connections" : "profile");
+  const [active, setActive] = useState<Tab>(isAdmin ? "connections" : "theme");
 
   return (
     <div className="flex h-full min-h-full flex-col lg:flex-row">
@@ -82,6 +85,7 @@ export function SettingsLayout({ userEmail, isAdmin }: Props) {
 
       <div className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-3xl px-5 py-6 lg:px-12 lg:py-10">
+          {active === "theme" && <ThemeSection />}
           {active === "connections" && <ProviderConnectionsSection />}
           {active === "models" && <ModelRoutingSection />}
           {active === "profile" && (

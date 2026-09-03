@@ -11,6 +11,10 @@ import {
 import { OrderLines } from "./OrderLines";
 import { ColorChangeNote } from "./ColorChangeNote";
 import { FeedbackNote } from "./drawer-primitives";
+import { ProductThumbnail } from "@/components/catalogo/ProductThumbnail";
+import { Button } from "@/components/shadcn/button";
+import { ColorPicker } from "./ColorPicker";
+import { SkeletonRows } from "@/components/ui";
 
 type EditLine = OrderEditView["lines"][number];
 
@@ -21,17 +25,25 @@ type EditLine = OrderEditView["lines"][number];
 // - "locked" / caricamento fallito: righe in sola lettura (con eventuali annotazioni)
 export function EditableLines({ order }: { order: OrderRow }) {
   const [view, setView] = useState<OrderEditView | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let alive = true;
+    setLoading(true);
     fetchOrderEditAction(order.id)
       .then((v) => alive && setView(v))
-      .catch(() => alive && setView(null));
+      .catch(() => alive && setView(null))
+      .finally(() => alive && setLoading(false));
     return () => {
       alive = false;
     };
   }, [order.id]);
 
+  // Righe sola lettura come skeleton: senza, si vedono per un istante le righe
+  // non editabili e poi saltano nella versione con le azioni.
+  if (loading) {
+    return <SkeletonRows rows={3} rowClassName="h-[76px]" label="Carico le righe" />;
+  }
   if (!view || view.mode === "locked") return <OrderLines order={order} />;
   if (view.mode === "annotate") {
     return <AnnotateLines order={order} view={view} onView={setView} />;
@@ -135,7 +147,7 @@ function AnnotateLines({
   );
 }
 
-// Riga in modalita' annotazione: prodotto originale + tendina colore + esito.
+// Riga in modalita' annotazione: prodotto + icona colore (solo dove serve).
 function AnnotateRow({
   line,
   saving,
@@ -145,69 +157,51 @@ function AnnotateRow({
   saving: boolean;
   onApply: (line: EditLine, to: string) => void;
 }) {
-  const hasChange = Boolean(line.requestedColor);
   return (
     <div className="flex flex-col gap-2 rounded-[var(--radius-md)] border border-[var(--color-line)] p-3">
-      <LineHeading line={line} />
-      {line.colorName && (
-        <span className="text-xs text-[var(--color-ink-muted)]">
-          Acquistato: <span className="text-[var(--color-ink-soft)]">{line.colorName}</span>
-        </span>
-      )}
-      {line.colorOptions.length > 0 ? (
-        <div className="flex flex-wrap items-center gap-2">
-          <select
+      <LineHeading line={line}>
+        {saving && <span className="text-xs text-[var(--color-ink-muted)]">Salvataggio…</span>}
+        {line.colorOptions.length > 0 && (
+          <ColorPicker
+            bought={line.colorName}
+            requested={line.requestedColor}
+            options={line.colorOptions}
             disabled={saving}
-            value=""
-            onChange={(e) => e.target.value && onApply(line, e.target.value)}
-            className="rounded-[var(--radius-md)] border border-[var(--color-line)] bg-[var(--color-paper-soft)] px-2 py-1.5 text-sm outline-none focus:border-[var(--color-line-strong)] disabled:opacity-50"
-          >
-            <option value="">Cambia colore…</option>
-            {line.colorOptions.map((o) => (
-              <option key={o.variantId} value={o.label}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-          {saving && <span className="text-xs text-[var(--color-ink-muted)]">Salvataggio…</span>}
-        </div>
+            onPick={(v) => onApply(line, v)}
+            valueOf={(o) => o.label}
+          />
+        )}
+      </LineHeading>
+      {line.requestedColor ? (
+        <ColorChangeNote from={line.colorName} to={line.requestedColor} />
       ) : (
-        <span className="text-xs text-[var(--color-ink-muted)]">
-          Nessun altro colore disponibile.
-        </span>
-      )}
-      {hasChange && (
-        <div className="flex items-center gap-3">
-          <ColorChangeNote from={line.colorName} to={line.requestedColor} />
-          <button
-            type="button"
-            disabled={saving}
-            onClick={() => onApply(line, "")}
-            className="text-xs text-[var(--color-ink-muted)] underline hover:text-[var(--color-ink)] disabled:opacity-50"
-          >
-            Annulla
-          </button>
-        </div>
+        line.colorName && (
+          <span className="text-xs text-[var(--color-ink-muted)]">
+            Colore: <span className="text-[var(--color-ink-soft)]">{line.colorName}</span>
+          </span>
+        )
       )}
     </div>
   );
 }
 
-// Intestazione riga: SKU + nome prodotto (condivisa edit/annotate).
-function LineHeading({ line }: { line: EditLine }) {
+// Intestazione riga: foto + SKU + nome prodotto, con slot azioni a destra.
+function LineHeading({ line, children }: { line: EditLine; children?: React.ReactNode }) {
   return (
-    <div className="flex items-baseline justify-between gap-3 text-sm">
+    <div className="flex items-center gap-3 text-sm">
+      <ProductThumbnail src={line.imageUrl} className="h-10 w-10 rounded-lg" />
       <span>
         {line.sku && (
           <span className="font-mono text-xs text-[var(--color-ink-muted)]">{line.sku} </span>
         )}
-        {line.productName}
+        <span className="font-medium">{line.productName}</span>
       </span>
+      <span className="ml-auto flex items-center gap-2">{children}</span>
     </div>
   );
 }
 
-// Riga in modalita' edit reale: stepper quantita' + select colore (cambia variante).
+// Riga in modalita' edit reale: stepper quantita' + icona colore (cambia variante).
 function EditRow({
   line,
   saving,
@@ -219,33 +213,24 @@ function EditRow({
 }) {
   return (
     <div className="flex flex-col gap-2 rounded-[var(--radius-md)] border border-[var(--color-line)] p-3">
-      <LineHeading line={line} />
-      <div className="flex flex-wrap items-center gap-2">
-        <QtyStepper
-          value={line.quantity}
-          disabled={saving}
-          onChange={(q) => onApply(line.id, { quantity: q })}
-        />
-        {line.colorOptions.length > 0 && (
-          <select
-            disabled={saving}
-            defaultValue=""
-            onChange={(e) =>
-              e.target.value &&
-              onApply(line.id, { variantId: e.target.value, quantity: line.quantity })
-            }
-            className="rounded-[var(--radius-md)] border border-[var(--color-line)] bg-[var(--color-paper-soft)] px-2 py-1.5 text-sm outline-none focus:border-[var(--color-line-strong)] disabled:opacity-50"
-          >
-            <option value="">Cambia colore…</option>
-            {line.colorOptions.map((o) => (
-              <option key={o.variantId} value={o.variantId}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        )}
+      <LineHeading line={line}>
         {saving && <span className="text-xs text-[var(--color-ink-muted)]">Salvataggio…</span>}
-      </div>
+        {line.colorOptions.length > 0 && (
+          <ColorPicker
+            bought={line.colorName}
+            requested=""
+            options={line.colorOptions}
+            disabled={saving}
+            onPick={(v) => onApply(line.id, { variantId: v, quantity: line.quantity })}
+            valueOf={(o) => o.variantId}
+          />
+        )}
+      </LineHeading>
+      <QtyStepper
+        value={line.quantity}
+        disabled={saving}
+        onChange={(q) => onApply(line.id, { quantity: q })}
+      />
     </div>
   );
 }
@@ -269,14 +254,9 @@ function QtyStepper({
       <span className="min-w-6 text-center text-sm tabular-nums">{q}</span>
       <StepBtn label="+" disabled={disabled} onClick={() => step(1)} />
       {q !== value && (
-        <button
-          type="button"
-          disabled={disabled}
-          onClick={() => onChange(q)}
-          className="ml-1 rounded-[var(--radius-pill)] border border-[var(--color-ink)] bg-[var(--color-ink)] px-2 py-1 text-xs font-medium text-[var(--color-paper)] disabled:opacity-50"
-        >
+        <Button type="button" size="xs" className="ml-1" disabled={disabled} onClick={() => onChange(q)}>
           Applica
-        </button>
+        </Button>
       )}
     </span>
   );
@@ -292,13 +272,15 @@ function StepBtn({
   onClick: () => void;
 }) {
   return (
-    <button
+    <Button
       type="button"
+      variant="outline"
+      size="icon-sm"
+      className="rounded-full"
       disabled={disabled}
       onClick={onClick}
-      className="h-7 w-7 rounded-full border border-[var(--color-line)] text-sm leading-none disabled:opacity-40 hover:border-[var(--color-line-strong)]"
     >
       {label}
-    </button>
+    </Button>
   );
 }

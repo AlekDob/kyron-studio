@@ -1,6 +1,13 @@
 "use client";
 
-import { useState, useCallback, type ReactNode, type ReactElement } from "react";
+import {
+  useState,
+  useCallback,
+  useContext,
+  createContext,
+  type ReactNode,
+  type ReactElement,
+} from "react";
 import { createPortal } from "react-dom";
 import { Drawer, DrawerHeader } from "@studiofuturo/studio-core";
 import { MessageCircle } from "lucide-react";
@@ -11,6 +18,15 @@ interface Props {
   label?: string;
   icon?: ReactElement;
   position?: "bottom-right" | "top-right";
+}
+
+// Chiudere la sheet spetta a chi ci sta dentro: una ricevuta cliccata deve
+// far vedere quello che ha applicato, non restare coperta dalla chat. Su
+// desktop l'overlay non monta e il contesto e' null.
+const CloseContext = createContext<(() => void) | null>(null);
+
+export function useCloseMobileChat(): (() => void) | null {
+  return useContext(CloseContext);
 }
 
 /**
@@ -37,7 +53,8 @@ export function MobileChatOverlay({
   const fabStyle =
     position === "top-right"
       ? { top: "calc(env(safe-area-inset-top) + 60px)", right: "16px" }
-      : { bottom: "calc(env(safe-area-inset-bottom) + 88px)", right: "16px" };
+      // In basso a destra davvero: 88px lo lasciavano a mezz'aria sopra la lista.
+      : { bottom: "calc(env(safe-area-inset-bottom) + 20px)", right: "20px" };
 
   return (
     <>
@@ -51,12 +68,12 @@ export function MobileChatOverlay({
             style={{
               position: "fixed",
               zIndex: 50,
-              width: "48px",
-              height: "48px",
+              width: "60px",
+              height: "60px",
               ...fabStyle,
             }}
           >
-            {icon ?? <MessageCircle className="h-5 w-5" />}
+            {icon ?? <MessageCircle className="h-7 w-7" />}
           </button>,
           document.body,
         )}
@@ -64,7 +81,7 @@ export function MobileChatOverlay({
       <Drawer open={open} onClose={close} side="bottom">
         <DrawerHeader title={label} onClose={close} closeLabel="Chiudi" />
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          {children}
+          <CloseContext.Provider value={close}>{children}</CloseContext.Provider>
         </div>
       </Drawer>
     </>

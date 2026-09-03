@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { OrderRow } from "@/lib/gateway";
 import { cn } from "@/lib/cn";
 import {
@@ -14,6 +14,16 @@ import {
 } from "@/app/(authed)/orders/actions";
 import { formatEur, WORKFLOW_STATUSES } from "./format";
 import { InfoRow, ActionButton, FeedbackNote } from "./drawer-primitives";
+import { Button } from "@/components/shadcn/button";
+import { Input } from "@/components/shadcn/input";
+import { Textarea } from "@/components/shadcn/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/shadcn/select";
 
 // Selettore stato lavorazione: bottoni segmentati. Al click salva via server
 // action, aggiorna ottimisticamente (onStatusChange) e mostra feedback (incluso
@@ -58,20 +68,16 @@ export function StatusSelector({
         {WORKFLOW_STATUSES.map((s) => {
           const active = order.workflowStatus === s.value;
           return (
-            <button
+            <Button
               key={s.value}
               type="button"
+              size="sm"
+              variant={active ? "default" : "outline"}
               disabled={!!saving}
               onClick={() => pick(s.value)}
-              className={cn(
-                "rounded-[var(--radius-pill)] border px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50",
-                active
-                  ? "border-[var(--color-ink)] bg-[var(--color-ink)] text-[var(--color-paper)]"
-                  : "border-[var(--color-line)] bg-[var(--color-paper-soft)] text-[var(--color-ink-soft)] hover:border-[var(--color-line-strong)]",
-              )}
             >
               {saving === s.value ? "…" : s.label}
-            </button>
+            </Button>
           );
         })}
       </div>
@@ -243,10 +249,21 @@ export function NoteSection({
   order: OrderRow;
   onSaved: (id: string, note: string) => void;
 }) {
-  const [value, setValue] = useState(order.note ?? "");
+  const saved = order.note ?? "";
+  const [value, setValue] = useState(saved);
   const [saving, setSaving] = useState(false);
   const [note, setNote] = useState("");
-  const dirty = value.trim() !== (order.note ?? "").trim();
+  const dirty = value.trim() !== saved.trim();
+
+  // La nota puo' cambiare sotto di noi: la scrive anche Nico dalla chat. Riallinea
+  // il campo solo quando il valore salvato cambia davvero, cosi' non cancella
+  // quello che l'operatore sta scrivendo a ogni refresh della pagina.
+  const seen = useRef(saved);
+  useEffect(() => {
+    if (seen.current === saved) return;
+    seen.current = saved;
+    setValue(saved);
+  }, [saved]);
 
   async function save() {
     if (!dirty || saving) return;
@@ -266,12 +283,12 @@ export function NoteSection({
 
   return (
     <div className="flex flex-col gap-2">
-      <textarea
+      <Textarea
         value={value}
         onChange={(e) => setValue(e.target.value)}
         rows={3}
         placeholder="Annotazioni sull'ordine (es. cambio colore concordato, IVA 4%)…"
-        className="w-full resize-y rounded-[var(--radius-md)] border border-[var(--color-line)] bg-[var(--color-paper-soft)] px-3 py-2 text-sm outline-none focus:border-[var(--color-line-strong)]"
+        className="resize-y"
       />
       <div className="flex items-center gap-3">
         <ActionButton label="Salva nota" saving={saving} onClick={save} />
@@ -280,6 +297,8 @@ export function NoteSection({
     </div>
   );
 }
+
+const DEFAULT_VAT = "default";
 
 // Aliquote IVA selezionabili per l'override Danea (Parte C1). "" = predefinita.
 const VAT_OPTIONS = [
@@ -322,17 +341,23 @@ export function VatOverrideSection({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2">
-        <select
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          className="rounded-[var(--radius-md)] border border-[var(--color-line)] bg-[var(--color-paper-soft)] px-3 py-2 text-sm outline-none focus:border-[var(--color-line-strong)]"
+        {/* Radix rifiuta un item con value="": la voce "Predefinita" viaggia
+            come sentinella DEFAULT_VAT e torna "" prima del salvataggio. */}
+        <Select
+          value={value || DEFAULT_VAT}
+          onValueChange={(v) => setValue(v === DEFAULT_VAT ? "" : v)}
         >
-          {VAT_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger className="w-40">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {VAT_OPTIONS.map((o) => (
+              <SelectItem key={o.value || DEFAULT_VAT} value={o.value || DEFAULT_VAT}>
+                {o.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <ActionButton label="Salva IVA" saving={saving} onClick={save} />
       </div>
       <FeedbackNote note={note} />
@@ -383,13 +408,13 @@ export function PaymentTotalSection({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2">
-        <input
+        <Input
           type="text"
           inputMode="decimal"
           value={value}
           onChange={(e) => setValue(e.target.value)}
           placeholder="Importo €"
-          className="w-32 rounded-[var(--radius-md)] border border-[var(--color-line)] bg-[var(--color-paper-soft)] px-3 py-2 text-sm tabular-nums outline-none focus:border-[var(--color-line-strong)]"
+          className="w-32 tabular-nums"
         />
         <ActionButton label="Allinea importo" saving={saving} onClick={save} />
       </div>
@@ -496,14 +521,9 @@ export function VatReliefSection({
       {status === "requested" && (
         <div className="flex gap-2">
           <ActionButton label="Approva agevolazione" saving={approving} onClick={approve} />
-          <button
-            type="button"
-            onClick={reject}
-            disabled={approving}
-            className="rounded-[var(--radius-pill)] border border-[var(--color-line)] bg-[var(--color-paper-soft)] px-3 py-1.5 text-sm font-medium text-[var(--color-ink-soft)] transition-colors hover:border-[var(--color-line-strong)] disabled:opacity-50"
-          >
+          <Button type="button" variant="outline" onClick={reject} disabled={approving}>
             Rifiuta
-          </button>
+          </Button>
         </div>
       )}
 
@@ -514,12 +534,12 @@ export function VatReliefSection({
             Importo proposto a IVA 4% (da 22%): modificalo se serve, poi conferma.
           </span>
           <div className="flex items-center gap-2">
-            <input
+            <Input
               type="text"
               inputMode="decimal"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="w-32 rounded-[var(--radius-md)] border border-[var(--color-line)] bg-[var(--color-paper-soft)] px-3 py-2 text-sm tabular-nums outline-none focus:border-[var(--color-line-strong)]"
+              className="w-32 tabular-nums"
             />
             <ActionButton label="Conferma importo" saving={saving} onClick={confirmAmount} />
           </div>

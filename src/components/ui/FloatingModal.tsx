@@ -13,7 +13,9 @@ import { IconButton } from "@studiofuturo/studio-core";
 
 const contentVariants = cva(
   cn(
-    "fixed bg-[var(--color-paper)] rounded-[var(--radius-card)] shadow-[var(--shadow-modal)] outline-none",
+    // z-[80]: stessa scala del Drawer del core. Senza, il modale finisce sotto
+    // il workspace (DesktopShell arriva a z-50) e sembra aprirsi dietro la pagina.
+    "fixed z-[80] bg-[var(--color-paper)] rounded-[var(--radius-card)] shadow-[var(--shadow-modal)] outline-none",
   ),
   {
     variants: {
@@ -52,7 +54,7 @@ const Root = ({
   <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
     <DialogPrimitive.Portal>
       <DialogPrimitive.Overlay
-        className="fixed inset-0 bg-[color-mix(in_srgb,var(--color-ink)_40%,transparent)] backdrop-blur-sm"
+        className="fixed inset-0 z-[70] bg-[color-mix(in_srgb,var(--color-ink)_40%,transparent)] backdrop-blur-sm"
         onClick={dismissOnOverlay ? undefined : (e) => e.preventDefault()}
       />
       <DialogPrimitive.Content

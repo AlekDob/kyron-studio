@@ -1,6 +1,7 @@
 import type { OrderRow } from "@/lib/gateway";
 import { formatEur } from "./format";
 import { ColorChangeNote } from "./ColorChangeNote";
+import { ProductThumbnail } from "@/components/catalogo/ProductThumbnail";
 
 // Righe prodotto di un ordine: cod SKU + descrizione x qty + prezzo.
 // Brain: le mutation di editing riga Saleor operano SOLO su ordini UNCONFIRMED
@@ -16,13 +17,15 @@ export function OrderLines({ order }: { order: OrderRow }) {
     );
   }
   return (
-    <ul className="flex flex-col gap-1.5">
+    <ul className="flex flex-col gap-2.5">
       {lines.map((l, i) => {
         const change = order.colorChanges.find(
           (c) => (l.sku && c.sku === l.sku) || c.product === l.name,
         );
         return (
-          <li key={`${l.sku}-${i}`} className="flex flex-col gap-1">
+          <li key={`${l.sku}-${i}`} className="flex items-center gap-3">
+            <ProductThumbnail src={l.imageUrl} className="h-10 w-10 rounded-lg" />
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
             <div className="flex items-baseline justify-between gap-3 text-sm">
               <span className="text-[var(--color-ink)]">
                 {l.sku && (
@@ -30,12 +33,13 @@ export function OrderLines({ order }: { order: OrderRow }) {
                     {l.sku}{" "}
                   </span>
                 )}
-                {l.name}
+                <span className="font-medium">{l.name}</span>
                 <span className="text-[var(--color-ink-muted)]"> × {l.quantity}</span>
               </span>
               <span className="shrink-0 tabular-nums">{formatEur(l.totalGross)}</span>
             </div>
             {change && <ColorChangeNote from={change.from} to={change.to} />}
+            </div>
           </li>
         );
       })}

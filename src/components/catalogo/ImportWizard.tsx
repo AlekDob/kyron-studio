@@ -4,15 +4,20 @@ import { useState, type ReactElement } from "react";
 import { FloatingModal } from "@/components/ui";
 import { DaneaUploader } from "@/components/chat/generative/DaneaUploader";
 import { DaneaImportPlan, type DaneaPlanData } from "@/components/chat/generative/DaneaImportPlan";
+import { LastImport } from "./LastImport";
+import type { DaneaImportLog } from "@/lib/products";
 
 export function ImportWizard({
   open,
   onClose,
   onDone,
+  lastImport,
 }: {
   open: boolean;
   onClose: () => void;
   onDone: () => void;
+  /** Ultimo import fatto, mostrato prima di caricare un file nuovo. */
+  lastImport: DaneaImportLog | null;
 }): ReactElement {
   const [importId, setImportId] = useState<string | null>(null);
   const [plan, setPlan] = useState<DaneaPlanData | null>(null);
@@ -38,6 +43,7 @@ export function ImportWizard({
           XML listino, poi nomi, foto, negozio, portali.
         </p>
         <div className="mt-4 min-h-0 flex-1 overflow-y-auto">
+          {!importId && <LastImport log={lastImport} />}
           {!importId && (
             <DaneaUploader
               onSubmit={(data) => {
