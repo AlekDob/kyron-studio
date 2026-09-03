@@ -24,6 +24,7 @@ const row = (p: Partial<RequestRow>): RequestRow => ({
   stateColor: "#000",
   group: p.group ?? "todo",
   labels: p.labels ?? [],
+  urgency: p.urgency ?? "media",
   requestedBy: p.requestedBy ?? "",
   createdAt: "2026-09-01",
   updatedAt: "2026-09-01",

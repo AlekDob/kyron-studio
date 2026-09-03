@@ -3,7 +3,7 @@ type: feature
 project: studio
 created: 2026-09-03
 last_verified: 2026-09-03
-tags: [richieste, agente, ivo, linear, ticket, generative-ui]
+tags: [richieste, agente, ivo, linear, ticket, generative-ui, resend, urgenza]
 ---
 
 # Feature 022 — Modulo Richieste (Ivo)
@@ -62,6 +62,40 @@ Tutti gli id stanno in **un solo posto**: la costante `LINEAR` in
   `RequestDraft`, che il client rende come card con Conferma / Modifica.
 - **`create_request`** — crea davvero, e solo con `confirm: true`. Stessa regola
   del money-path di Nico: proporre e scrivere sono due passaggi separati.
+  All'apertura setta l'urgenza e manda la mail (sotto).
+
+## Urgenza
+
+L'ultima domanda di Ivo e' sempre l'urgenza, e la fa con parole normali ("ti
+blocca adesso o puo' aspettare?"). Non la decide da solo: e' l'unica cosa che sa
+solo chi chiede.
+
+| Parola | `priority` Linear |
+|---|---|
+| bloccante | 1 (Urgent) |
+| alta | 2 (High) |
+| media | 3 (Medium) |
+| bassa | 4 (Low) |
+
+La traduzione sta in un posto solo: `URGENCY` in
+`studio-server/src/core/linear/client.ts`. Lato Studio le stesse parole stanno
+in `components/requests/requests-filter-ui.ts` (non in `lib/requests.ts`: quello
+importa `gatewayFetch`, che e' solo-server, e un componente client non puo'
+tirarselo dietro per due etichette).
+
+Nella lista l'urgenza si mostra **solo quando blocca**: una pastiglia su ogni
+riga smetterebbe di significare qualcosa. Nella scheda c'e' sempre.
+
+## Mail a ogni richiesta
+
+`requests/notify.ts` — quando il ticket si apre parte una mail ad Alek con
+numero, oggetto, descrizione, tipo, stato e urgenza, piu' il bottone "Apri su
+Linear". Riusa `sendKyronEmail` (mittente `Kyron <web@kyronedu.it>`, logo cid):
+stessa impaginazione dei report ordini/analytics.
+
+E' **best-effort**: se Resend e' giu' il ticket resta aperto lo stesso e il
+collega non vede un errore che non lo riguarda. Destinatari da
+`REQUESTS_NOTIFY_TO` (CSV, default `gmail@alekdob.com`).
 
 Verificato: se il collega scrive "aprilo e basta, non chiedermi conferma", Ivo
 si rifiuta e propone comunque la bozza.
@@ -93,6 +127,8 @@ aperto) e `RequestDraft` (la bozza con i due bottoni), registrate in
 | Var | Scopo |
 |---|---|
 | `LINEAR_API_KEY` | personal API key Linear. Va in **env Coolify**, mai nella UI Impostazioni: `data/settings.json` si azzera a ogni redeploy |
+| `REQUESTS_NOTIFY_TO` | CSV di chi riceve la mail a ogni richiesta aperta. Default `gmail@alekdob.com` |
+| `RESEND_API_KEY` | gia' in uso dai report: la mail riusa lo stesso mittente |
 
 ## Gotcha
 

@@ -9,7 +9,7 @@ import { InfoRow } from "@/components/orders/drawer-primitives";
 import { formatDate } from "@/components/orders/format";
 import { Slide } from "@/components/animate-ui/primitives/effects/slide";
 import type { RequestRow } from "@/lib/requests";
-import { LABEL_TONES } from "./requests-filter-ui";
+import { LABEL_TONES, URGENCY_LABELS } from "./requests-filter-ui";
 
 /**
  * La riga "Richiesto da:" e' gia' un campo qui sotto: nel testo sarebbe un
@@ -82,6 +82,17 @@ export function RequestDetail({
                 ) : (
                   "—"
                 )
+              }
+            />
+            <InfoRow
+              label="Urgenza"
+              value={
+                <Pill
+                  size="sm"
+                  variant={request.urgency === "bloccante" ? "critical" : "neutral"}
+                >
+                  {URGENCY_LABELS[request.urgency]}
+                </Pill>
               }
             />
             <InfoRow label="Richiesto da" value={request.requestedBy || "—"} />

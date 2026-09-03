@@ -13,6 +13,9 @@ interface Props {
   description: string;
   label: string;
   state: "todo" | "backlog";
+  /** Urgenza gia' in italiano: la traduce il server, unica fonte. */
+  urgencyLabel: string;
+  urgency: string;
   requestedBy: string;
   readOnly?: boolean;
   disabled?: boolean;
@@ -29,6 +32,8 @@ export function RequestDraft({
   description,
   label,
   state,
+  urgencyLabel,
+  urgency,
   requestedBy,
   readOnly,
   disabled,
@@ -58,6 +63,9 @@ export function RequestDraft({
         </Pill>
         <Pill size="sm" variant="neutral">
           {STATE_LABEL[state]}
+        </Pill>
+        <Pill size="sm" variant={urgency === "bloccante" ? "critical" : "neutral"}>
+          {urgencyLabel}
         </Pill>
         <span className="text-xs text-[var(--color-ink-muted)]">per {requestedBy}</span>
       </div>

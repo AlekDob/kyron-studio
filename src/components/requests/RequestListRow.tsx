@@ -44,6 +44,13 @@ export function RequestListRow({
       </div>
 
       <span className="hidden shrink-0 flex-wrap justify-end gap-1.5 sm:inline-flex">
+        {/* L'urgenza si mostra SOLO quando blocca: se la vedessi su ogni riga
+            smetteresti di notarla. */}
+        {request.urgency === "bloccante" && (
+          <Pill size="sm" variant="critical">
+            Blocca
+          </Pill>
+        )}
         {request.labels.map((l) => (
           <Pill key={l} size="sm" variant={LABEL_TONES[l] ?? "tertiary"}>
             {l}
