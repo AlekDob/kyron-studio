@@ -6,11 +6,9 @@
 // La frase e' lo specchio del filtro corrente, non una copia: quando Nico
 // filtra dalla chat scrive lo stesso `filter` (via URL), quindi i chip si
 // aggiornano da soli e si legge a parole cosa sta guardando l'agente.
-import { Sparkles } from "lucide-react";
 import { Input, Popover } from "@/components/ui";
-import { agentNameOf } from "@/components/shell/modules";
-import { focusAgentChat } from "@/lib/focus-agent-chat";
 import { Chip, Options } from "./sentence-chips";
+import { SearchChip } from "./search-chip";
 import { PeriodPresets, periodPhrase } from "./orders-period";
 import { agentName } from "./format";
 import { isEmptySpec, specChips } from "@/lib/query-spec";
@@ -37,7 +35,6 @@ function periodText(filter: OrdersFilter): string {
 }
 
 export function OrdersSentence({ filter, portals, agents, onChange }: Props) {
-  const agent = agentNameOf("orders");
   const portalLabel =
     filter.portal === "all"
       ? "tutti i portali"
@@ -143,30 +140,9 @@ export function OrdersSentence({ filter, portals, agents, onChange }: Props) {
         </>
       )}
 
-      {/* Cercato da Nico: si vede nella frase, altrimenti la lista sarebbe
-          filtrata e non si capirebbe da cosa. Cliccandolo si azzera. */}
-      {filter.query && (
-        <>
-          <span>che contengono</span>
-          <button type="button" onClick={() => onChange({ query: "", source: "browse" })}>
-            <Chip tone="indigo">{`“${filter.query}” ×`}</Chip>
-          </button>
-        </>
-      )}
-
-      <span>·</span>
-
-      {/* La ricerca libera non e' piu' un campo: la fa l'agente, che sa cercare
-          per numero, cliente o transazione Stripe. Il link porta il cursore
-          nella sua chat, cosi' si scrive subito invece di cercare dove farlo. */}
-      <button
-        type="button"
-        onClick={focusAgentChat}
-        className="inline-flex items-center gap-1 text-sm text-[var(--color-ink-muted)] underline decoration-dotted underline-offset-4 hover:text-[var(--color-ink)]"
-      >
-        <Sparkles size={13} aria-hidden="true" />
-        oppure chiedi una ricerca a {agent}
-      </button>
+      {/* Ricerca libera: a mano dal chip, o scritta da Nico dalla chat. In
+          entrambi i casi finisce in `filter.query`, quindi il chip e' uno. */}
+      <SearchChip query={filter.query} onChange={onChange} hint="n° ordine, cliente o Stripe" />
     </div>
   );
 }

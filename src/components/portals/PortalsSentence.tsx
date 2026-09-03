@@ -5,11 +5,9 @@
 //
 // La frase e' lo specchio del filtro corrente: quando Livia filtra dalla chat
 // scrive lo stesso `filter` (via URL), quindi i chip si aggiornano da soli.
-import { Sparkles } from "lucide-react";
 import { Popover } from "@/components/ui";
-import { agentNameOf } from "@/components/shell/modules";
-import { focusAgentChat } from "@/lib/focus-agent-chat";
 import { Chip, Options } from "@/components/orders/sentence-chips";
+import { SearchChip } from "@/components/orders/search-chip";
 import { ORDER_LABELS, STATUS_LABELS, type PortalsFilter } from "./portals-filter";
 
 interface Props {
@@ -19,8 +17,6 @@ interface Props {
 }
 
 export function PortalsSentence({ filter, cities, onChange }: Props) {
-  const agent = agentNameOf("portals");
-
   return (
     <div className="flex flex-wrap items-center gap-x-1.5 gap-y-2 text-sm text-[var(--color-ink-soft)]">
       <span>Ecco i portali di</span>
@@ -72,16 +68,9 @@ export function PortalsSentence({ filter, cities, onChange }: Props) {
         )}
       </Popover>
 
-      {/* Cercato da Livia: si vede nella frase, altrimenti la lista sarebbe
-          filtrata e non si capirebbe da cosa. Cliccandolo si azzera. */}
-      {filter.query && (
-        <>
-          <span>che contengono</span>
-          <button type="button" onClick={() => onChange({ query: "", source: "browse" })}>
-            <Chip tone="indigo">{`“${filter.query}” ×`}</Chip>
-          </button>
-        </>
-      )}
+      {/* Ricerca libera: a mano dal chip, o scritta da Livia dalla chat. In
+          entrambi i casi finisce in `filter.query`, quindi il chip e' uno. */}
+      <SearchChip query={filter.query} onChange={onChange} hint="nome, citta' o codice" />
 
       <span>, ordinati per</span>
 
@@ -105,18 +94,6 @@ export function PortalsSentence({ filter, cities, onChange }: Props) {
         )}
       </Popover>
 
-      <span>·</span>
-
-      {/* La ricerca libera non e' un campo: la fa Livia, che sa cercare per nome,
-          citta' o codice. Il link porta il cursore nella sua chat. */}
-      <button
-        type="button"
-        onClick={focusAgentChat}
-        className="inline-flex items-center gap-1 text-sm text-[var(--color-ink-muted)] underline decoration-dotted underline-offset-4 hover:text-[var(--color-ink)]"
-      >
-        <Sparkles size={13} aria-hidden="true" />
-        oppure chiedi una ricerca a {agent}
-      </button>
     </div>
   );
 }

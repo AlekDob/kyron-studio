@@ -3,8 +3,8 @@
 // <tipo>". Stessi chip di Ordini e Clienti (sentence-chips + Popover): si
 // cambiano a mano, e quando li scrive Ivo dalla chat la frase si aggiorna da
 // sola perche' legge lo stesso `filter`.
-import { Input } from "@/components/ui";
 import { Chip, Options } from "@/components/orders/sentence-chips";
+import { SearchChip } from "@/components/orders/search-chip";
 import { Popover } from "@/components/ui";
 import { GROUP_LABELS, REQUEST_LABELS, type RequestsFilter } from "./requests-filter";
 
@@ -78,14 +78,9 @@ export function RequestsSentence({ filter, onChange }: Props) {
         )}
       </Popover>
 
-      <Input
-        size="sm"
-        aria-label="Cerca nelle richieste"
-        placeholder="Cerca…"
-        className="w-40"
-        value={filter.query}
-        onChange={(e) => onChange({ query: e.target.value, source: "browse" })}
-      />
+      {/* Ricerca libera: stesso chip delle altre sezioni, cosi' il campo non
+          resta l'unico controllo diverso della frase. */}
+      <SearchChip query={filter.query} onChange={onChange} hint="titolo o testo" />
     </div>
   );
 }

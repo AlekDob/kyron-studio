@@ -3,11 +3,9 @@
 // su <portale>". Stessi chip della testata Ordini (sentence-chips + Popover):
 // il periodo e i filtri si cambiano a mano, e quando li scrive Bea dalla chat
 // la frase si aggiorna da sola perche' legge lo stesso `filter`.
-import { Sparkles } from "lucide-react";
 import { Input, Popover } from "@/components/ui";
-import { agentNameOf } from "@/components/shell/modules";
-import { focusAgentChat } from "@/lib/focus-agent-chat";
 import { Chip, Options } from "@/components/orders/sentence-chips";
+import { SearchChip } from "@/components/orders/search-chip";
 import { PeriodPresets, periodPhrase } from "@/components/orders/orders-period";
 import { agentName } from "@/components/orders/format";
 import { isEmptySpec, specChips } from "@/lib/query-spec";
@@ -33,7 +31,6 @@ function periodText(f: CustomersFilter): string {
 }
 
 export function CustomersSentence({ filter, portals, agents, onChange }: Props) {
-  const agent = agentNameOf("customers");
   const portalLabel =
     filter.portal === "all"
       ? "tutti i portali"
@@ -132,25 +129,9 @@ export function CustomersSentence({ filter, portals, agents, onChange }: Props) 
         </>
       )}
 
-      {filter.query && (
-        <>
-          <span>che contengono</span>
-          <button type="button" onClick={() => onChange({ query: "", source: "browse" })}>
-            <Chip tone="indigo">{`“${filter.query}” ×`}</Chip>
-          </button>
-        </>
-      )}
-
-      <span>·</span>
-
-      <button
-        type="button"
-        onClick={focusAgentChat}
-        className="inline-flex items-center gap-1 text-sm text-[var(--color-ink-muted)] underline decoration-dotted underline-offset-4 hover:text-[var(--color-ink)]"
-      >
-        <Sparkles size={13} aria-hidden="true" />
-        oppure chiedi una ricerca a {agent}
-      </button>
+      {/* Ricerca libera: a mano dal chip, o scritta da Bea dalla chat. In
+          entrambi i casi finisce in `filter.query`, quindi il chip e' uno. */}
+      <SearchChip query={filter.query} onChange={onChange} hint="nome, email o telefono" />
     </div>
   );
 }

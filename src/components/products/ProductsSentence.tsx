@@ -6,11 +6,10 @@
 // La frase e' lo specchio del filtro corrente: quando Teo filtra dalla chat
 // scrive lo stesso `filter` (via URL), quindi i chip si aggiornano da soli e si
 // legge a parole cosa sta guardando l'agente.
-import { Plus, Sparkles } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Popover } from "@/components/ui";
-import { agentNameOf } from "@/components/shell/modules";
-import { focusAgentChat } from "@/lib/focus-agent-chat";
 import { Chip, Options } from "@/components/orders/sentence-chips";
+import { SearchChip } from "@/components/orders/search-chip";
 import { ORDER_LABELS, type ProductsFilter } from "./products-filter";
 import type { DaneaImportLog } from "@/lib/products";
 
@@ -31,7 +30,6 @@ function shortDate(iso: string): string {
 }
 
 export function ProductsSentence({ filter, categories, portals, onChange, onImport, lastImport }: Props) {
-  const agent = agentNameOf("products");
   const portalLabel =
     filter.portal === "all"
       ? "tutti i portali"
@@ -82,16 +80,9 @@ export function ProductsSentence({ filter, categories, portals, onChange, onImpo
         )}
       </Popover>
 
-      {/* Cercato da Teo: si vede nella frase, altrimenti la lista sarebbe
-          filtrata e non si capirebbe da cosa. Cliccandolo si azzera. */}
-      {filter.query && (
-        <>
-          <span>che contengono</span>
-          <button type="button" onClick={() => onChange({ query: "", source: "browse" })}>
-            <Chip tone="indigo">{`“${filter.query}” ×`}</Chip>
-          </button>
-        </>
-      )}
+      {/* Ricerca libera: a mano dal chip, o scritta da Teo dalla chat. In
+          entrambi i casi finisce in `filter.query`, quindi il chip e' uno. */}
+      <SearchChip query={filter.query} onChange={onChange} hint="nome, SKU o categoria" />
 
       <span>, ordinati per</span>
 
@@ -111,19 +102,6 @@ export function ProductsSentence({ filter, categories, portals, onChange, onImpo
           />
         )}
       </Popover>
-
-      <span>·</span>
-
-      {/* La ricerca libera non e' un campo: la fa l'agente, che sa cercare per
-          nome, SKU o categoria. Il link porta il cursore nella sua chat. */}
-      <button
-        type="button"
-        onClick={focusAgentChat}
-        className="inline-flex items-center gap-1 text-sm text-[var(--color-ink-muted)] underline decoration-dotted underline-offset-4 hover:text-[var(--color-ink)]"
-      >
-        <Sparkles size={13} aria-hidden="true" />
-        oppure chiedi una ricerca a {agent}
-      </button>
 
       {/* Import listino Danea: sta in coda alla frase perche' e' l'unica azione
           di scrittura della testata, non un filtro. La data dell'ultimo import

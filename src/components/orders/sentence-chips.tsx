@@ -8,7 +8,16 @@ import { TONES, type Tone } from "./detail-section";
 
 // Chip colorato: stessa tinta delle pastiglie della scheda, cosi' la frase
 // parla la lingua del resto del modulo.
-export function Chip({ tone, children }: { tone: Tone; children: ReactNode }) {
+export function Chip({
+  tone,
+  icon,
+  children,
+}: {
+  tone: Tone;
+  /** Icona prima del testo: la lente del chip ricerca. */
+  icon?: ReactNode;
+  children: ReactNode;
+}) {
   const c = TONES[tone];
   return (
     <span
@@ -19,6 +28,7 @@ export function Chip({ tone, children }: { tone: Tone; children: ReactNode }) {
       }}
       className="inline-flex max-w-[220px] items-center gap-1 rounded-[var(--radius-pill)] px-2.5 py-1 text-sm font-medium transition-[filter] hover:brightness-95"
     >
+      {icon && <span className="shrink-0 opacity-80">{icon}</span>}
       <span className="truncate">{children}</span>
       <ChevronDown size={13} className="shrink-0 opacity-70" aria-hidden="true" />
     </span>
