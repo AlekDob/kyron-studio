@@ -50,7 +50,9 @@ export function OrdersWorkspace({
   filter: OrdersFilter;
 }): ReactElement {
   const router = useRouter();
-  const [, startTransition] = useTransition();
+  // `pending` = la nuova lista e' in volo: al suo posto va lo skeleton, o si
+  // resterebbe a guardare i risultati del filtro precedente credendoli nuovi.
+  const [pending, startTransition] = useTransition();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // Specchio locale del filtro: i select si accendono subito, senza aspettare
   // il giro sul server. La verita' resta l'URL.
@@ -89,6 +91,8 @@ export function OrdersWorkspace({
         if (hit) setSelectedId(hit.id);
         return;
       }
+      // La ricevuta arriva gia' normalizzata dal tool (splitSimpleFilters):
+      // portale, agente e stato sono chip, nella spec resta solo il resto.
       pushFilter({ ...receipt.filter, source: "agent" });
     },
     [data.orders, pushFilter, router],
@@ -158,6 +162,7 @@ export function OrdersWorkspace({
             data={data}
             filter={filter}
             onFilterChange={pushFilter}
+            loading={pending}
             selectedId={selectedId}
             onSelectId={setSelectedId}
             tab={tab}
@@ -169,7 +174,7 @@ export function OrdersWorkspace({
         </aside>
         <MobileChatOverlay
           label={agent}
-          icon={<AgentFace seed="orders" label={agent} size={28} />}
+          icon={<AgentFace seed="orders" label={agent} size={36} />}
         >
           {channel(true)}
         </MobileChatOverlay>

@@ -55,18 +55,40 @@ const OP_LABEL: Record<Condition["op"], string> = {
   notEmpty: "valorizzato",
 };
 
+// I nomi dei campi arrivano dal linguaggio dei tool (camelCase). In pagina
+// finiscono dentro una frase letta da una persona: qui diventano italiano.
+const FIELD_LABEL: Record<string, string> = {
+  portaleNome: "portale",
+  agenteEmail: "agente",
+  statoLavorazione: "stato lavorazione",
+  statoPagamento: "pagamento",
+  statoSaleor: "stato Saleor",
+  metodoPagamento: "metodo di pagamento",
+  codiceMeccanografico: "codice meccanografico",
+  ivaAgevolata: "IVA agevolata",
+  cartaDocente: "Carta del Docente",
+  cartaDocenteAcquisita: "buono acquisito",
+  bonificoIncassato: "bonifico incassato",
+  citta: "citta",
+};
+
+const fieldLabel = (field: string): string => FIELD_LABEL[field] ?? field;
+
 /** Condizione a parole, per il chip in pagina e nella ricevuta di chat. */
 export function conditionLabel(c: Condition): string {
-  if (c.op === "empty" || c.op === "notEmpty") return `${c.field} ${OP_LABEL[c.op]}`;
+  if (c.op === "empty" || c.op === "notEmpty")
+    return `${fieldLabel(c.field)} ${OP_LABEL[c.op]}`;
   const value = Array.isArray(c.value) ? c.value.join("–") : String(c.value ?? "");
-  return `${c.field} ${OP_LABEL[c.op]} ${value}`;
+  return `${fieldLabel(c.field)} ${OP_LABEL[c.op]} ${value}`;
 }
 
 /** Tutte le condizioni di una spec come etichette. L'OR si segna come tale. */
 export function specChips(spec: QuerySpec | null | undefined): string[] {
   if (!spec) return [];
-  const chips = spec.all.map(conditionLabel);
-  if (spec.any.length) chips.push(`uno tra: ${spec.any.map(conditionLabel).join(" / ")}`);
+  // `all`/`any` hanno un default nello schema, ma una spec puo' arrivare da una
+  // ricevuta o da un URL scritti a mano: qui si legge, non si valida.
+  const chips = (spec.all ?? []).map(conditionLabel);
+  if (spec.any?.length) chips.push(`uno tra: ${spec.any!.map(conditionLabel).join(" / ")}`);
   return chips;
 }
 

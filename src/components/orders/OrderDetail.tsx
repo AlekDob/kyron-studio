@@ -3,6 +3,7 @@ import { useEffect, type ComponentType } from "react";
 import {
   ChevronLeft,
   ClipboardList,
+  Mail,
   Package,
   StickyNote,
   User,
@@ -41,6 +42,7 @@ const TAB_META: Record<
   pagamento: { label: "Pagamento", icon: Wallet, tone: "emerald" },
   prodotti: { label: "Prodotti", icon: Package, tone: "amber" },
   note: { label: "Note", icon: StickyNote, tone: "violet" },
+  comunicazioni: { label: "Comunicazioni", icon: Mail, tone: "sky" },
 };
 
 interface Props extends OrderDetailHandlers {
@@ -125,9 +127,13 @@ export function OrderDetail({ order, onBack, tab, onTabChange, ...h }: Props) {
             <Section title="Note" icon={StickyNote} tone="violet">
               <NoteSection order={order} onSaved={h.onNoteSaved} />
             </Section>
-            {/* Parte B: FootNotes Danea + mail gia' partite per questo ordine. */}
-            <Section title="Comunicazioni inviate" icon={ClipboardList} tone="violet">
-              <OrderComms orderNumber={order.number} />
+          </TabsContent>
+
+          {/* Tutte le mail partite per questo ordine (registro email-log su
+              Payload): transazionali al cliente, notifiche interne, campagne. */}
+          <TabsContent value="comunicazioni" className="flex flex-col gap-6">
+            <Section title="Comunicazioni inviate" icon={Mail} tone="sky">
+              <OrderComms orderNumber={order.number} customerEmail={order.userEmail} />
             </Section>
           </TabsContent>
         </div>

@@ -15,19 +15,38 @@ export async function updateOrderStatusAction(
   });
 }
 
-// Comunicazioni gia' inviate al cliente di un ordine (registro email-log).
+// Mail inviate per un ordine: storico Resend (con stato di consegna) unito al
+// registro email-log su Payload. L'email del cliente serve al match lato server:
+// prende anche le mail che nell'oggetto non citano il numero d'ordine.
 export interface OrderComm {
+  /** id Resend: presente solo per le mail che stanno ancora nel suo archivio. */
+  id?: string;
   campaign?: string;
   subject?: string;
   body?: string;
   sentAt?: string;
-  status?: string;
+  to?: string;
+  /** last_event Resend: delivered, opened, bounced... Vuoto = non su Resend. */
+  delivery?: string;
+  /** A chi e' andata: al cliente dell'ordine o al team Kyron. */
+  audience?: "cliente" | "interna";
 }
 
-export async function fetchOrderCommsAction(number: string): Promise<OrderComm[]> {
-  const res = await gatewayFetch<{ comms: OrderComm[] }>(
-    `/api/v1/orders/comms?number=${encodeURIComponent(number)}`,
+// Testo della mail, caricato solo quando l'operatore apre la riga.
+export async function fetchCommBodyAction(id: string): Promise<string> {
+  const res = await gatewayFetch<{ body: string }>(
+    `/api/v1/orders/comms/${encodeURIComponent(id)}`,
   );
+  return res.body ?? "";
+}
+
+export async function fetchOrderCommsAction(
+  number: string,
+  email?: string,
+): Promise<OrderComm[]> {
+  const q = new URLSearchParams({ number });
+  if (email) q.set("email", email);
+  const res = await gatewayFetch<{ comms: OrderComm[] }>(`/api/v1/orders/comms?${q}`);
   return res.comms ?? [];
 }
 

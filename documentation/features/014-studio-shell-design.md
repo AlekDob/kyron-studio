@@ -3,7 +3,7 @@ type: feature
 project: kyron-studio
 created: 2026-08-19
 last_verified: 2026-08-19
-tags: [ui, design-system, tokens, shell, tailwind-v4, light-only]
+tags: [ui, design-system, tokens, shell, tailwind-v4]
 ---
 
 # 014 — Design della shell: scrivania grigia, lastra di vetro, accento indaco

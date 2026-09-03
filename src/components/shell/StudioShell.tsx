@@ -36,7 +36,7 @@ function isPreviewPath(pathname: string): boolean {
 
 // Workspace: pannello + chat a tutta altezza, lo scroll lo gestisce la pagina.
 // Senza questo la lastra scrolla tutta insieme e il pannello perde la testata.
-const WORKSPACE_PATHS = ["/orders", "/catalogo", "/portals", "/preview"];
+const WORKSPACE_PATHS = ["/orders", "/prodotti", "/clienti", "/portals", "/preview"];
 
 function isWorkspacePath(pathname: string): boolean {
   return WORKSPACE_PATHS.some((p) => pathname.startsWith(p));
@@ -47,7 +47,10 @@ function agentChannels(m: ModuleDefinition): ReactNode {
   if (m.id !== "agents") return null;
   return (
     <SubChannels
-      channels={AGENTS.map((a) => ({
+      // Gli agenti che hanno gia' una voce di primo livello (Nico su Ordini,
+      // Teo su Prodotti) non si ripetono qui: sarebbero due righe per lo
+      // stesso posto.
+      channels={AGENTS.filter((a) => !MODULES.some((m) => m.id === a.id)).map((a) => ({
         href: a.href,
         label: a.agentName,
         meta: a.agentRole,

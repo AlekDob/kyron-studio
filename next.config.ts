@@ -8,6 +8,11 @@ const nextConfig: NextConfig = {
   // Senza root esplicito, con i lockfile sparsi qui intorno Next inferisce
   // $HOME come radice del progetto e ogni route va in 404.
   turbopack: { root: import.meta.dirname },
+  // /catalogo e' diventato /prodotti (modulo Teo): 308 perche' il vecchio
+  // indirizzo gira nei link salvati e nella cronologia dei colleghi.
+  async redirects() {
+    return [{ source: "/catalogo", destination: "/prodotti", permanent: true }];
+  },
   env: {
     STUDIO_SERVER_URL: process.env.STUDIO_SERVER_URL ?? "http://localhost:8790",
     PAYLOAD_API_URL: process.env.PAYLOAD_API_URL ?? "https://kyronedu.it/api",

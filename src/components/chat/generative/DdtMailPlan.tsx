@@ -10,17 +10,18 @@ function previewHtml(html: string): string {
   return html.replaceAll("cid:kyron-logo", KYRON_LOGO_URL);
 }
 
-// Piano di invio della comunicazione ai clienti dei DDT caricati. Non manda
-// niente: mostra chi riceve, cosa riceve e cosa e' gia' partito. L'invio vero
-// lo chiede l'operatore in chat.
+// Piano di invio di una comunicazione ai clienti. La usano sia Nico (destinatari
+// dai DDT caricati) sia Bea (destinatari dalla lista clienti filtrata): non manda
+// niente, mostra chi riceve, cosa riceve e cosa e' gia' partito. L'invio vero lo
+// chiede l'operatore in chat.
 
 interface Recipient {
-  docKey: string;
+  key: string;
   email: string;
-  customerName: string;
-  portalSlug: string;
-  orderNumber: string;
-  matched: boolean;
+  name: string;
+  orderNumber?: string;
+  group?: string;
+  matched?: boolean;
 }
 
 export interface DdtMailPlanProps {
@@ -29,7 +30,8 @@ export interface DdtMailPlanProps {
   /** Serve al server per ri-renderizzare la mail di prova. */
   importId?: string;
   plan: {
-    filename: string;
+    /** Da dove arrivano i destinatari: file DDT, o descrizione del filtro clienti. */
+    source: string;
     campaignId: string;
     campaign: { subject: string; heading: string; paragraphs: string[] };
     total: number;
@@ -77,8 +79,8 @@ export function DdtMailPlan({ plan, testTo, importId }: DdtMailPlanProps): React
       </Card.Header>
 
       <p className="mt-2 text-xs text-[var(--color-ink-soft)]">
-        {plan.filename} · {plan.total} DDT · {plan.eligible} da inviare ·{" "}
-        {plan.alreadySent} gia' inviate · {plan.matched} agganciate a un ordine
+        {plan.source} · {plan.eligible} da inviare · {plan.alreadySent} gia' inviate ·{" "}
+        {plan.matched} agganciate a un ordine
       </p>
 
       {(plan.excluded > 0 || plan.blockedByAllowlist > 0) && (
@@ -174,11 +176,11 @@ export function DdtMailPlan({ plan, testTo, importId }: DdtMailPlanProps): React
           <div className="mt-2 max-h-56 overflow-auto rounded-[var(--radius-card)] border border-[var(--color-line)]">
             {plan.recipients.map((r) => (
               <div
-                key={r.docKey}
+                key={r.key}
                 className="flex items-center gap-3 border-b border-[var(--color-line)] px-3 py-1.5 text-xs last:border-b-0"
               >
                 <span className="w-40 shrink-0 truncate text-[var(--color-ink)]">
-                  {r.customerName || "—"}
+                  {r.name || "—"}
                 </span>
                 <span className="min-w-0 flex-1 truncate text-[var(--color-ink-soft)]">
                   {r.email}
@@ -187,7 +189,7 @@ export function DdtMailPlan({ plan, testTo, importId }: DdtMailPlanProps): React
                   {r.orderNumber ? `Ordine ${r.orderNumber}` : "nessun ordine"}
                 </span>
                 <span className="w-24 shrink-0 truncate text-[var(--color-ink-muted)]">
-                  {r.portalSlug}
+                  {r.group}
                 </span>
               </div>
             ))}

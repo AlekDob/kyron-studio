@@ -4,6 +4,7 @@
 // Le tre di stato sono anche il filtro stato: secondo click torna a tutti.
 import type { ReactElement } from "react";
 import { StatTile } from "@/components/dashboard/StatTile";
+import { TileRail } from "@/components/dashboard/TileRail";
 import type { OrdersBucket, OrdersResponse } from "@/lib/gateway";
 import { formatEur } from "./format";
 import { STATUS_LABELS, type StatusBucket } from "./orders-filter";
@@ -26,7 +27,7 @@ export function OrdersTiles({
   const b = (key: keyof OrdersResponse["buckets"]): OrdersBucket => buckets[key];
 
   return (
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+    <TileRail cols="@3xl:grid-cols-3 @5xl:grid-cols-5">
       <StatTile
         tone="indaco"
         size="sm"
@@ -57,6 +58,6 @@ export function OrdersTiles({
           onClick={() => onStatus(status === key ? "all" : key)}
         />
       ))}
-    </div>
+    </TileRail>
   );
 }

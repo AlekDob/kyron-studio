@@ -5,6 +5,12 @@
 import { z } from "zod";
 import { querySpecSchema, specChips, type QuerySpec } from "@/lib/query-spec";
 
+/** Portale scelto nel filtro: slug + nome leggibile. */
+export interface PortalOption {
+  slug: string;
+  name: string;
+}
+
 export type StatusBucket = "all" | "da-confermare" | "confermati" | "annullati";
 
 export interface OrdersFilter {
@@ -67,7 +73,7 @@ export function toSearchParams(f: OrdersFilter): URLSearchParams {
 // visibile, non una card muta.
 
 /** Le quattro sezioni della scheda ordine. Anche l'agente le nomina cosi'. */
-export const ORDER_TABS = ["cliente", "pagamento", "prodotti", "note"] as const;
+export const ORDER_TABS = ["cliente", "pagamento", "prodotti", "note", "comunicazioni"] as const;
 export type OrderTab = (typeof ORDER_TABS)[number];
 
 export const filterSpecSchema = z.object({

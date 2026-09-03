@@ -33,7 +33,7 @@ function AgentTile({
             label={agentName}
             size={88}
             gaze={gaze}
-            className="rounded-full border-[3px] border-white shadow-md"
+            className="rounded-full border-[3px] border-[var(--color-paper)] shadow-md"
           />
         }
       />

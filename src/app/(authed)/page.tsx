@@ -8,7 +8,8 @@ export const metadata = { title: "Dashboard — Studio" };
 export default function HomePage() {
   return (
     <div className="h-full overflow-y-auto">
-      <div className="mx-auto w-full max-w-6xl px-4 py-10 md:px-8 md:py-14 xl:px-12">
+      {/* Full width come Ordini: niente max-w, respira coi soli padding. */}
+      <div className="w-full px-4 py-10 md:px-8 md:py-14 xl:px-12">
         <DashboardShell>
           <DashboardMosaic />
         </DashboardShell>

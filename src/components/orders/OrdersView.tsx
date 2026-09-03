@@ -5,17 +5,19 @@ import { OrdersHeader } from "./OrdersHeader";
 import { OrdersList } from "./OrdersList";
 import { OrderDrawer } from "./OrderDrawer";
 import { OrderDetail, type OrderDetailHandlers, type OrderTab } from "./OrderDetail";
+import { SkeletonRows } from "@/components/ui";
 import { OrdersEmptyState } from "./OrdersEmptyState";
 import { dayKey, dayLabel } from "./format";
-import { agentNameOf } from "@/components/shell/modules";
 import { useIsMobile } from "@/lib/use-is-mobile";
-import { emptyFilter, type OrdersFilter } from "./orders-filter";
+import type { OrdersFilter } from "./orders-filter";
 
 interface OrdersViewProps {
   data: OrdersResponse;
   /** Filtro condiviso: lo muove l'umano dalla testata, lo scrive Nico dalla chat. */
   filter: OrdersFilter;
   onFilterChange: (patch: Partial<OrdersFilter>) => void;
+  /** Nuova lista in arrivo dal server dopo un cambio filtro. */
+  loading?: boolean;
   /** Ordine aperto nel drawer. Vive nel workspace: lo apre anche l'agente. */
   selectedId: string | null;
   onSelectId: (id: string | null) => void;
@@ -90,6 +92,7 @@ export function OrdersView({
   data,
   filter,
   onFilterChange,
+  loading = false,
   selectedId,
   onSelectId,
   tab,
@@ -160,18 +163,9 @@ export function OrdersView({
       />
 
       <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-8">
-        {/* Il pannello e' in mano all'agente: si vede da dove arriva la lista
-            e si torna a tutti gli ordini con un click. */}
-        {filter.source === "agent" && (
-          <button
-            type="button"
-            onClick={() => onFilterChange(emptyFilter(filter.from, filter.to))}
-            className="mb-3 rounded-full border border-[var(--color-line)] px-3 py-1.5 text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
-          >
-            Filtrato da {agentNameOf("orders")} · mostra tutto
-          </button>
-        )}
-        {orders.length === 0 ? (
+        {loading ? (
+          <SkeletonRows rows={8} rowClassName="h-[74px]" label="Carico gli ordini" />
+        ) : orders.length === 0 ? (
           <OrdersEmptyState variant="no-data" />
         ) : (
           <OrdersList groups={groups} onSelect={(o) => onSelectId(o.id)} />

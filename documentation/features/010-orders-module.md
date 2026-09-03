@@ -8,6 +8,13 @@ tags: [orders, ordini, commerciali, portali, saleor]
 
 # Feature 010 — Modulo Ordini
 
+> **Update 2026-08-31 — Nico resta qui, il catalogo passa a Teo**
+>
+> Il modulo Catalogo e' diventato **Prodotti** con un agente suo, **Teo**
+> (feature 018): Nico tiene ordini + comunicazioni DDT e nient'altro. In sidebar
+> Ordini e Prodotti sono le due voci in cima (`pinned`), con la nota "Nico" e
+> "Teo" accanto alla label.
+
 > **Update 2026-08-28 (3) — ricerca e filtri lato server, guidati da Nico**
 > I filtri non stanno piu' in memoria nel pannello: sono un **motore di query
 > generico** in studio-server (`src/core/query/spec.ts`) — condizioni JSON validate
@@ -217,3 +224,10 @@ Danea e — su ordini `UNCONFIRMED` — editing righe (qty/colore).
   meccanografico "—", link al main shop.
 - **Ordini di test esclusi** lato BFF (`ORDERS_REPORT_EXCLUDE_EMAILS`, default alek/gmail).
 - Ricerca Stripe = PaymentIntent `pi_` (non PaymentMethod `pm_`, non salvato da Saleor).
+
+## Aggiornamento 2026-08-31 — la seconda `FieldMap`
+
+Il motore query generico (`core/query/spec.ts`) ha ora il secondo consumatore
+previsto: `CUSTOMER_FIELDS` del modulo Clienti (feature 021). `ORDER_FIELDS` non
+cambia; cambia solo `specChips` in `studio/src/lib/query-spec.ts`, che ora tollera
+una spec senza `all`/`any` (arriva anche da un URL scritto a mano).

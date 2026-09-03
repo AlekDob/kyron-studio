@@ -2,7 +2,7 @@
 type: feature
 project: kyron-studio
 created: 2026-05-27
-last_verified: 2026-08-27
+last_verified: 2026-08-31
 tags: [portals, onboarding, crud, logo-upload, workstream-04, requested-by, capacita, varianti, outside-bundle, duplicate]
 ---
 
@@ -13,9 +13,12 @@ tags: [portals, onboarding, crud, logo-upload, workstream-04, requested-by, capa
 Modulo unificato "Portali" nella sidebar. Split-pane: chat agente a sinistra,
 pannello contestuale a destra (lista portali / scheda live onboarding / dettaglio).
 
+> **Rifatto il 2026-08-31** con la stessa UX di Ordini e Prodotti — vedi
+> "Pannello a filtri URL" in fondo. La descrizione qui sopra vale per lo storico.
+
 | Route | Scopo |
 |---|---|
-| `/portals` | Workspace split-pane (chat + side panel) |
+| `/portals` | Workspace: lista a sinistra, chat di Livia in un aside da 420px |
 | `/portals?detail=<slug>` | Apre workspace con dettaglio nel side panel |
 | `/portals/[slug]` | Redirect 307 → `/portals?detail=<slug>` (deep link compat) |
 
@@ -311,3 +314,39 @@ cd ~/Desktop/Dev/Personal/Kyron/studio-server && npm run dev
 cd ~/Desktop/Dev/Personal/Kyron/studio && STUDIO_DEV_USER=tua@email npm run dev
 # http://localhost:3010/portals → workspace
 ```
+
+## Pannello a filtri URL (2026-08-31)
+
+Il modulo e' passato al pattern di Ordini/Prodotti. La lista sta al centro, la
+chat di Livia in un `aside` da 420px; sotto i 1024px la chat torna un FAB.
+
+| Pezzo | File |
+|---|---|
+| Filtro, buckets, raggruppamento, schema ricevuta | `portals/portals-filter.ts` (+ `.check.ts`) |
+| Testata: tile + frase coi chip | `portals/PortalsTiles.tsx`, `PortalsSentence.tsx`, `PortalsHeader.tsx` |
+| Lista raggruppata Bozze/Live | `portals/PortalsList.tsx` |
+| Scheda a 3 tab + azioni | `portals/PortalDetail.tsx`, `PortalActions.tsx` |
+| Fetch della scheda per slug (desktop + bottom sheet) | `portals/PortalCard.tsx` |
+| Guscio | `portals/PortalsView.tsx`, `PortalsWorkspace.tsx` |
+| Ricevuta in chat | `chat/generative/PortalsReceipt.tsx`, `portals/portals-panel-context.ts` |
+
+**URL**: `q` (fuzzy su nome/slug/citta'), `stato` (`all|live|bozze`), `citta`,
+`ord` (`nome|prodotti|recenti`), `agente=1` quando il filtro l'ha scritto Livia.
+`?detail=<slug>` apre la scheda (il deep link `/portals/<slug>` ci reindirizza).
+I filtri li applica la page, non il BFF: `listPortals()` torna gia' tutti i
+portali. Solo `draft` e' Bozza — `review`/`approved`/`onboarded` contano come Live.
+
+**Tab della scheda**: Informazioni (anagrafica, indirizzo, spedizione, logo),
+Catalogo (`PortalCatalogSections only="products"`), Kit (`only="kit"`). Il prop
+`only` evita di spezzare il componente: senza, il drawer read-only dentro
+Prodotti resta identico a prima. Sopra i tab, fissi: Abilita + stato, duplica,
+elimina (due click). Le azioni non stanno piu' sulla riga della lista.
+
+**Livia → pannello**: `list_portals` (con `search`/`status`/`city` nullable, mai `.optional()`: OpenAI strict) e
+`get_portal` (con `tab`) emettono `_ui: { component: "PortalsReceipt" }`. In chat
+va solo una riga; cliccarla riapplica filtro o scheda anche a distanza di
+messaggi. I tool di scrittura fanno `router.refresh()`.
+
+**Creazione guidata**: la `LivePortalCard` cresce in fondo alla colonna chat
+mentre Livia raccoglie i dati; il pannello resta sulla lista e si rilegge quando
+il portale e' salvato.

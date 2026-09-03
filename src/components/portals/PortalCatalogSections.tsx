@@ -2,7 +2,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { Plus, Search, X } from "lucide-react";
 import { Section, InfoRow } from "@/components/orders/drawer-primitives";
-import { Badge } from "@/components/ui";
+import { Badge, SkeletonRows } from "@/components/ui";
 import { formatDiscount } from "@/components/chat/generative/ProductPickerRow";
 import { ProductThumbnail } from "@/components/catalogo/ProductThumbnail";
 import { VariantPricesPopover } from "@/components/catalogo/VariantPricesPopover";
@@ -22,11 +22,15 @@ type Discount = NonNullable<PortalDetail["catalog"]["productDiscounts"]>[number]
 
 export function PortalCatalogSections({
   portal,
+  only,
   onSaveCatalog,
   onSaveDiscounts,
   onChanged,
 }: {
   portal: PortalDetail;
+  /** Nel pannello Portali catalogo e kit sono due tab: qui si rende una parte
+      sola. Senza `only` (drawer del catalogo) restano insieme come prima. */
+  only?: "products" | "kit";
   /** presente = catalogo modificabile (X + Aggiungi). Assente = sola lettura. */
   onSaveCatalog?: (visibleSlugs: string[]) => Promise<void>;
   /** presente = prezzo finale per prodotto modificabile in riga. */
@@ -55,17 +59,23 @@ export function PortalCatalogSections({
     cuts.set(v.productSlug, [...(cuts.get(v.productSlug) ?? []), v.value]);
   }
 
+  const showProducts = only !== "kit";
+  const showKits = only !== "products";
+  const count =
+    (showProducts ? slugs.length : 0) + (showKits ? portal.bundles.length : 0);
+  const title = only === "kit" ? "Kit" : only === "products" ? "Prodotti" : "Prodotti e kit";
+
   return (
     <>
       <div className="py-5">
-        <Section title={`Prodotti e kit (${slugs.length + portal.bundles.length})`}>
-          {slugs.length === 0 && portal.bundles.length === 0 && (
+        <Section title={`${title} (${count})`}>
+          {count === 0 && (
             <p className="text-sm text-[var(--color-ink-muted)]">
-              Nessun prodotto nel catalogo.
+              {only === "kit" ? "Nessun kit configurato." : "Nessun prodotto nel catalogo."}
             </p>
           )}
           <ul className="flex flex-col gap-0.5">
-            {portal.bundles.map((b, i) => (
+            {(showKits ? portal.bundles : []).map((b, i) => (
               <PortalKitRow
                 key={b.slug}
                 index={i}
@@ -75,7 +85,7 @@ export function PortalCatalogSections({
                 onChanged={onChanged}
               />
             ))}
-            {slugs.map((slug, i) => (
+            {(showProducts ? slugs : []).map((slug, i) => (
               <PortalProductRow
                 key={slug}
                 index={i}
@@ -92,7 +102,7 @@ export function PortalCatalogSections({
               />
             ))}
           </ul>
-          {onSaveCatalog && <AddProduct slugs={slugs} onSave={onSaveCatalog} />}
+          {onSaveCatalog && showProducts && <AddProduct slugs={slugs} onSave={onSaveCatalog} />}
           {onSaveCatalog && (
             // Il buco che frega tutti: qui si scrive il descrittore, i prezzi su
             // Saleor cambiano solo quando premi "Abilita su Saleor".
@@ -104,18 +114,20 @@ export function PortalCatalogSections({
         </Section>
       </div>
 
-      <div className="py-5">
-        <Section title="Vendita fuori dal kit">
-          <InfoRow
-            label="Prodotti hero"
-            value={portal.catalog.heroOutsideBundle ? "Sì" : "No"}
-          />
-          <InfoRow
-            label="Accessori"
-            value={portal.catalog.accessoriesOutsideBundle ? "Sì" : "No"}
-          />
-        </Section>
-      </div>
+      {showKits && (
+        <div className="py-5">
+          <Section title="Vendita fuori dal kit">
+            <InfoRow
+              label="Prodotti hero"
+              value={portal.catalog.heroOutsideBundle ? "Sì" : "No"}
+            />
+            <InfoRow
+              label="Accessori"
+              value={portal.catalog.accessoriesOutsideBundle ? "Sì" : "No"}
+            />
+          </Section>
+        </div>
+      )}
     </>
   );
 }
@@ -347,7 +359,7 @@ function AddProduct({
           </div>
           <div className="max-h-56 overflow-y-auto overscroll-contain rounded-[var(--radius-control)] border border-[var(--color-line)] bg-[var(--color-paper-soft)]">
             {available === null ? (
-              <p className="p-2 text-xs text-[var(--color-ink-muted)]">Caricamento...</p>
+              <SkeletonRows rows={4} rowClassName="h-[32px]" label="Carico i prodotti" />
             ) : candidates.length === 0 ? (
               <p className="p-2 text-xs text-[var(--color-ink-muted)]">
                 {q ? `Nessun prodotto per \u201c${q}\u201d.` : "Tutti i prodotti sono gia' nel catalogo."}

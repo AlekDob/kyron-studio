@@ -15,6 +15,8 @@ export interface ProductVariant {
   name: string;
   stock: number;
   attributes: Array<{ name: string; value: string }>;
+  /** Foto legate alla variante (il colore giusto), non a tutto il prodotto. */
+  images: string[];
   channels: VariantChannelPrice[];
 }
 
@@ -26,6 +28,8 @@ export interface Product {
   productType: string;
   description: string;
   imageUrl: string | null;
+  /** Gallery completa dal media Saleor. Vuota se il prodotto non ha foto. */
+  images: string[];
   channels: string[];
   variants: ProductVariant[];
 }
@@ -50,4 +54,54 @@ export interface CatalogInsights {
 
 export async function listCatalogInsights(): Promise<CatalogInsights> {
   return gatewayFetch<CatalogInsights>("/api/v1/products/insights");
+}
+
+// Sconto per portale di un prodotto (promotion CATALOGUE Saleor). Il channel
+// listing mostra sempre il listino: qui c'e' quanto si paga davvero.
+export interface PortalDiscount {
+  channelSlug: string;
+  fromEur: number | null;
+  fromListEur: number | null;
+  maxDiscountEur: number;
+  onSale: number;
+  listed: number;
+}
+
+// Storico degli import del listino Danea (collection Payload `danea-imports`).
+// Lo legge la pagina lato server: il dato cambia solo quando qualcuno importa,
+// e dopo un import il workspace fa gia' `router.refresh()`.
+export type DaneaImportStatus = "new" | "changed" | "unchanged";
+
+export interface DaneaImportRow {
+  sku: string;
+  name: string;
+  priceEur: number | null;
+  currentPriceEur: number | null;
+  productSlug: string;
+  status: DaneaImportStatus;
+}
+
+export interface DaneaImportLog {
+  importId: string;
+  filename: string;
+  uploadedAt: string;
+  appliedAt?: string | null;
+  channelSlug?: string;
+  target?: string;
+  recordCount?: number;
+  totals?: { newProducts: number; newVariants: number; priceChanges: number; unchanged: number };
+  rows?: DaneaImportRow[];
+  applied?: {
+    createdProducts: string[];
+    createdVariants: Array<{ sku: string; priceEur: number }>;
+    skipped: Array<{ aggregator: string; reason: string }>;
+  };
+}
+
+/** L'ultimo listino Danea caricato, o `null` se non ne risulta nessuno. */
+export async function lastDaneaImport(): Promise<DaneaImportLog | null> {
+  const body = await gatewayFetch<{ imports: DaneaImportLog[] }>(
+    "/api/v1/products/import/history?limit=1",
+  );
+  return body.imports[0] ?? null;
 }

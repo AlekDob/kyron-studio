@@ -5,12 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/ca
 
 // Tinte delle sezioni della scheda ordine. Una tinta = un argomento: chi ha
 // ordinato (indaco), i soldi (verde), la roba (ambra), quello che scriviamo
-// (viola). Servono a far riconoscere la sezione prima di leggerla.
+// (viola), quello che gli abbiamo mandato (blu). Servono a far riconoscere la
+// sezione prima di leggerla.
 export const TONES = {
   indigo: "#5b67f0",
   emerald: "#0f9d6a",
   amber: "#d08700",
   violet: "#8b5cf6",
+  sky: "#0284c7",
   slate: "#64748b",
 } as const;
 

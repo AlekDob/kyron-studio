@@ -1,5 +1,7 @@
 "use client";
+import { CalendarDays } from "lucide-react";
 import type { OrderRow } from "@/lib/gateway";
+import { SectionIcon } from "./detail-section";
 import type { DayGroup } from "./OrdersView";
 import { OrderListRow } from "./OrderListRow";
 import { Slides } from "@/components/animate-ui/primitives/effects/slide";
@@ -14,13 +16,19 @@ interface OrdersListProps {
 export function OrdersList({ groups, onSelect }: OrdersListProps) {
   return (
     <div className="flex flex-col gap-5">
-      {groups.map((g) => (
+      {groups.map((g, gi) => (
         <section key={g.key}>
-          <div className="mb-2 flex items-baseline justify-between px-1">
-            <h2 className="text-sm font-medium text-[var(--color-ink)]">
+          {/* Riga di stacco tra un giorno e l'altro: nella lista lunga i gruppi
+              si toccavano e sembravano un blocco solo. Non sopra il primo. */}
+          {gi > 0 && <div className="mb-5 h-px bg-[var(--color-line)]" />}
+          {/* Il giorno e' l'appiglio per orientarsi in una lista lunga: sta
+              sopra le righe con la sua pastiglia, non confuso col resto. */}
+          <div className="mb-2 flex items-center gap-2 px-1">
+            <SectionIcon icon={CalendarDays} tone="indigo" size={26} />
+            <h2 className="text-base font-semibold tracking-tight text-[var(--color-ink)]">
               {g.label}
             </h2>
-            <span className="text-xs text-[var(--color-ink-muted)]">
+            <span className="ml-auto text-xs text-[var(--color-ink-muted)]">
               {g.orders.length} {g.orders.length === 1 ? "ordine" : "ordini"}
             </span>
           </div>

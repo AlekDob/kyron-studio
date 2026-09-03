@@ -63,7 +63,7 @@ export function RangePicker<K extends string>({
     <Popover
       label={label}
       trigger={
-        <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-ink)] px-2.5 py-1 text-[11px] font-medium text-white">
+        <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-ink)] px-2.5 py-1 text-[11px] font-medium text-[var(--color-paper)]">
           {options.find((o) => o.key === value)?.label}
           <ChevronDown size={12} />
         </span>

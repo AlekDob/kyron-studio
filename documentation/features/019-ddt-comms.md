@@ -141,3 +141,72 @@ La tabella arriva quindi da una migration SQL idempotente:
 Ordine di deploy: **prima il CMS** (che crea la tabella al boot), poi studio-server,
 poi studio — mai due deploy insieme, il CCX23 va in OOM. Senza la tabella,
 `claimSend` fallisce e il lotto si ferma: nessuna mail parte senza claim.
+
+## 2026-08-31 — il registro copre TUTTE le mail dell'ordine
+
+`email-log` nasce come lock anti-doppio-invio delle campagne DDT, ma la scheda
+ordine lo mostra come registro comunicazioni: su un ordine normale restava vuoto.
+Ora ogni mail legata a un ordine scrive la sua riga.
+
+| Mail | Da dove parte | `campaign` |
+|---|---|---|
+| Conferma ordine al cliente | storefront `api/orders/confirmation-email` | `conferma-ordine` |
+| Riepilogo interno al team | storefront `api/orders/confirmation-email` | `riepilogo-interno` |
+| Buono Carta del Docente (interna) | storefront `api/checkout/teacher-card-buono` | `buono-carta-docente` |
+| Documenti IVA 4% (interna) | storefront `api/checkout/vat-relief-docs` | `documenti-iva-4` |
+| Ordine spedito | studio-server `orders/status.ts` | `ordine-spedito` |
+| Bonifico ricevuto (anche residuo) | studio-server `orders/bank-transfer.ts` | `bonifico-ricevuto` |
+| Buono acquisito | studio-server `orders/teacher-card.ts` | `carta-docente-acquisita` |
+| Nuovo importo IVA 4% | studio-server `orders/vat-relief-notify.ts` | `iva-4-importo-aggiornato` |
+| Campagne DDT | studio-server `orders/ddt-mailing.ts` | slug campagna |
+
+- studio-server: `sendAndLog()` in `email-log.ts` (manda + registra). `docKey` col
+  timestamp, niente lock: l'anti-doppio-invio di queste mail sta gia' sui metadata
+  dell'ordine Saleor.
+- storefront: `src/lib/email/log.ts` scrive su Payload con `PAYLOAD_API_KEY` (che
+  ha gia' per i portali runtime). Nessun giro via studio-server.
+- Il log e' sempre **best-effort**: Payload giu' non deve far fallire una mail
+  riuscita (al contrario di `claimSend`, che invece fallisce chiuso).
+- Il `body` si salva come testo (`htmlToText`): l'HTML della mail nel drawer e'
+  illeggibile.
+- UI: la sezione ha un tab suo, **Comunicazioni** (prima stava in coda a Note).
+- Non retroattivo: gli ordini precedenti al deploy restano senza righe.
+
+## 2026-08-31 (2) — storico da Resend
+
+Il registro nostro parte da oggi; lo storico degli ordini gia' fatti sta su Resend,
+che e' anche l'unico a sapere se una mail e' stata **consegnata**.
+
+- `studio-server/src/features/orders/resend-log.ts` — `GET https://api.resend.com/emails`
+  (100/pagina, cursore `after=<id>`, ~30 giorni di retention = 5 pagine per l'account
+  Kyron). Si scarica tutto e si tiene in cache **in memoria 5 minuti**: l'API non
+  filtra per destinatario (`?to=` viene ignorato), quindi il filtro e' nostro.
+- `matchesOrder()` — `#504` nell'oggetto con confine a destra (`#504` != `#5041`),
+  oppure destinatario uguale all'email del cliente (prende le mail senza numero).
+- `GET /api/v1/orders/comms?number=&email=` unisce Resend + `email-log` con
+  `Promise.allSettled` (una fonte giu' non azzera l'altra) e deduplica per oggetto.
+- `GET /api/v1/orders/comms/:id` — testo della mail, caricato solo quando
+  l'operatore apre la riga. Si mostra `text`, non l'HTML: niente
+  `dangerouslySetInnerHTML` su contenuto che arriva da un'API.
+- UI: badge di consegna per riga (Consegnata / Aperta / Non consegnata / In ritardo /
+  Segnalata spam) da `last_event`. Riga senza badge = fuori dalla finestra Resend.
+
+### Cliente vs interna
+
+`audienceOf(to, customerEmail)` in `resend-log.ts`: destinatario che contiene l'email
+dell'ordine = `cliente`, altrimenti `interna`. Senza email d'ordine il fallback e' il
+dominio (`@kyronedu.it` su TUTTI i destinatari = interna; basta un indirizzo esterno,
+es. l'agente in copia, per considerarla in uscita). In UI: icona persona accent vs
+icona edificio grigia, oggetto attenuato per le interne.
+
+## Aggiornamento 2026-08-31 — il motore d'invio e' condiviso
+
+Con il modulo Clienti (feature 021) l'invio e' stato sfilato dal file DDT: piano,
+lotti da 50, claim-before-send su Payload, allowlist e kill switch vivono ora in
+`core/email/campaign.ts` + `core/email/campaign-template.ts`. `ddt-mailing.ts` e
+`ddt-mail-template.ts` restano, ma solo per costruire i destinatari e il riquadro
+dal DDT. I nomi dei tool di Nico e la sua card non cambiano.
+
+Bea (Clienti) usa lo stesso motore con i propri tool `*_customer_*` e le **stesse**
+env `DDT_MAIL_ENABLED` / `DDT_MAIL_ALLOW`: un solo interruttore per fermare tutte
+le mail di massa.

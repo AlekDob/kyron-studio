@@ -1,8 +1,37 @@
 "use client";
-import { ChevronRight } from "lucide-react";
+import {
+  Ban,
+  ChevronRight,
+  PackageCheck,
+  PackageOpen,
+  ShoppingBag,
+  Truck,
+  type LucideIcon,
+} from "lucide-react";
 import type { OrderRow } from "@/lib/gateway";
 import { Pill } from "@/components/ui";
+import { SectionIcon, type Tone } from "./detail-section";
 import { agentName, formatEur, formatTime, paymentBadge, workflowBadge } from "./format";
+
+// L'icona della riga dice due cose insieme: la FORMA e' a che punto e' la
+// lavorazione, il COLORE e' come sta il pagamento. Scorrendo la lista si vede
+// dove serve intervenire senza leggere le pastiglie una per una.
+const WORKFLOW_ICONS: Record<string, LucideIcon> = {
+  nuovo: ShoppingBag,
+  in_preparazione: PackageOpen,
+  spedito: Truck,
+  consegnato: PackageCheck,
+  annullato: Ban,
+};
+
+function orderTone(order: OrderRow): Tone {
+  if (order.workflowStatus === "annullato") return "slate";
+  const { variant } = paymentBadge(order.paymentStatus);
+  if (variant === "tertiary") return "emerald";
+  if (variant === "warning") return "amber";
+  if (variant === "critical") return "violet";
+  return "slate";
+}
 
 interface OrderListRowProps {
   order: OrderRow;
@@ -18,6 +47,12 @@ export function OrderListRow({ order, onSelect }: OrderListRowProps) {
       onClick={() => onSelect(order)}
       className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-[var(--color-paper-soft)]"
     >
+      <SectionIcon
+        icon={WORKFLOW_ICONS[order.workflowStatus] ?? ShoppingBag}
+        tone={orderTone(order)}
+        size={32}
+      />
+
       <div className="min-w-0 flex-1">
         <div className="flex min-w-0 items-center gap-2">
           <span className="shrink-0 font-medium tabular-nums">#{order.number}</span>

@@ -53,7 +53,8 @@ export function MobileChatOverlay({
   const fabStyle =
     position === "top-right"
       ? { top: "calc(env(safe-area-inset-top) + 60px)", right: "16px" }
-      : { bottom: "calc(env(safe-area-inset-bottom) + 88px)", right: "16px" };
+      // In basso a destra davvero: 88px lo lasciavano a mezz'aria sopra la lista.
+      : { bottom: "calc(env(safe-area-inset-bottom) + 20px)", right: "20px" };
 
   return (
     <>
@@ -67,12 +68,12 @@ export function MobileChatOverlay({
             style={{
               position: "fixed",
               zIndex: 50,
-              width: "48px",
-              height: "48px",
+              width: "60px",
+              height: "60px",
               ...fabStyle,
             }}
           >
-            {icon ?? <MessageCircle className="h-5 w-5" />}
+            {icon ?? <MessageCircle className="h-7 w-7" />}
           </button>,
           document.body,
         )}

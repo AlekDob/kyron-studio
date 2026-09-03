@@ -1,14 +1,12 @@
 "use client";
-// Testata del pannello Ordini: tile (cliccabili, sono il filtro stato), ricerca
-// e filtri. Resta ferma mentre la lista scorre. Ogni tocco qui e' umano, quindi
-// riporta sempre `source` a "browse": il pannello torna in mano all'operatore.
-import { useEffect, useState } from "react";
-import { Search } from "lucide-react";
-import { Input } from "@/components/ui";
+// Testata del pannello Ordini: tile (cliccabili, sono il filtro stato) e la
+// frase con i chip che tiene tutti gli altri filtri. Resta ferma mentre la
+// lista scorre. Ogni tocco qui e' umano, quindi riporta sempre `source` a
+// "browse": il pannello torna in mano all'operatore.
 import type { OrdersResponse } from "@/lib/gateway";
-import { OrdersFilters, type PortalOption } from "./OrdersFilters";
+import { OrdersSentence } from "./OrdersSentence";
 import { OrdersTiles } from "./OrdersTiles";
-import type { OrdersFilter, StatusBucket } from "./orders-filter";
+import type { OrdersFilter, PortalOption, StatusBucket } from "./orders-filter";
 
 interface Props {
   buckets: OrdersResponse["buckets"]; // KPI contati dal server, stesso calcolo di Nico
@@ -19,36 +17,24 @@ interface Props {
 }
 
 export function OrdersHeader({ buckets, filter, onChange, portals, agents }: Props) {
-  // La ricerca ora rifa' il fetch: si scrive in locale e si spinge dopo 300ms,
-  // altrimenti si chiamerebbe il server a ogni tasto.
-  const [q, setQ] = useState(filter.query);
-  useEffect(() => setQ(filter.query), [filter.query]);
-  useEffect(() => {
-    if (q === filter.query) return;
-    const t = setTimeout(() => onChange({ query: q, source: "browse" }), 300);
-    return () => clearTimeout(t);
-  }, [q, filter.query, onChange]);
-
   const setStatus = (status: StatusBucket) => onChange({ status, source: "browse" });
 
   return (
-    <div className="flex shrink-0 flex-col gap-4 px-5 pb-4 pt-5">
+    <div className="flex shrink-0 flex-col gap-5 px-5 pb-4 pt-5">
       <OrdersTiles buckets={buckets} status={filter.status} onStatus={setStatus} />
 
-      <Input
-        size="sm"
-        placeholder="Cerca per n° ordine, cliente o transazione Stripe…"
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-        iconLeft={<Search size={15} />}
-      />
+      {/* Aria sopra la frase: incollata alle tile sembrava la loro didascalia. */}
+      <div className="pt-2">
+        <OrdersSentence
+          filter={filter}
+          portals={portals}
+          agents={agents}
+          onChange={onChange}
+        />
+      </div>
 
-      <OrdersFilters
-        filter={filter}
-        onChange={onChange}
-        portals={portals}
-        agents={agents}
-      />
+      {/* Stacca i filtri dalla lista: sopra si filtra, sotto si legge. */}
+      <div className="h-px bg-[var(--color-line)]" />
     </div>
   );
 }

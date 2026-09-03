@@ -7,28 +7,16 @@ import type { ReactNode } from "react";
 import { usePointer } from "@/components/ui";
 import { cn } from "@/lib/cn";
 
-// I gradienti stanno qui e solo qui: le tile si scelgono per nome, non per hex.
-// Macchie radiali fuori centro su base chiarissima, cosi' il colore e' denso al
-// centro e si spegne verso i bordi invece di essere un blocco pieno.
-const GRADIENTS = {
-  indaco: `radial-gradient(120% 90% at 18% 12%, #c6ccfb 0%, transparent 62%),
-    radial-gradient(110% 100% at 88% 78%, #aeb6f8 0%, transparent 58%),
-    radial-gradient(90% 80% at 60% 40%, #dfe2fd 0%, transparent 70%), #f5f6fe`,
-  menta: `radial-gradient(120% 90% at 18% 12%, #b7e8cd 0%, transparent 62%),
-    radial-gradient(110% 100% at 88% 78%, #9fdcc0 0%, transparent 58%),
-    radial-gradient(90% 80% at 60% 40%, #d9f2e4 0%, transparent 70%), #f4faf6`,
-  ambra: `radial-gradient(120% 90% at 18% 12%, #fbdcb0 0%, transparent 62%),
-    radial-gradient(110% 100% at 88% 78%, #f6c88f 0%, transparent 58%),
-    radial-gradient(90% 80% at 60% 40%, #fdeacf 0%, transparent 70%), #fdf6ec`,
-  rosa: `radial-gradient(120% 90% at 18% 12%, #f8ccd7 0%, transparent 62%),
-    radial-gradient(110% 100% at 88% 78%, #f3aec2 0%, transparent 58%),
-    radial-gradient(90% 80% at 60% 40%, #fbe0e6 0%, transparent 70%), #fdf1f4`,
-} as const;
+// I gradienti vivono in globals.css come variabili --tile-{tone}: la tile si
+// sceglie per nome e il dark mode li ribalta senza toccare questo file
+// (feature 020).
+const TONES = ["indaco", "menta", "ambra", "rosa"] as const;
 
-export type TileTone = keyof typeof GRADIENTS;
+export type TileTone = (typeof TONES)[number];
 
-/** Posto della tile nel mosaico: min-w-0 o la marquee sotto allarga la colonna. */
-export const TILE_CLASS = "min-w-0 lg:col-span-3";
+/** Posto della tile nel mosaico: min-w-0 o la marquee sotto allarga la colonna.
+ *  Le colonne le decide TileRail, qui non serve piu' un col-span. */
+export const TILE_CLASS = "min-w-0";
 
 export function StatTile({
   tone,
@@ -87,14 +75,15 @@ export function StatTile({
       >
       <motion.div
         className={cn(
-          "relative flex flex-col justify-between overflow-hidden rounded-3xl p-5",
+          // @container: il valore sotto si misura sulla larghezza della tile.
+          "@container relative flex flex-col justify-between overflow-hidden rounded-3xl p-5",
           sm ? "min-h-[120px]" : "min-h-[176px]",
           // Anello quando la tile e' il filtro attivo: dentro il gradiente,
           // cosi' non litiga col tilt del wrapper.
           active && "ring-2 ring-inset ring-[var(--color-accent)]",
         )}
         style={{
-          background: GRADIENTS[tone],
+          background: `var(--tile-${tone})`,
           rotateX,
           rotateY,
           transformStyle: "preserve-3d",
@@ -108,7 +97,9 @@ export function StatTile({
           <p
             className={cn(
               "font-semibold leading-none tracking-tight text-[var(--color-ink)]",
-              sm ? "text-[26px]" : "text-[34px]",
+              // Fluido: un totale lungo (279.099,32 €) in una tile stretta
+              // rimpicciolisce invece di finire tagliato dall'overflow.
+              sm ? "text-[clamp(18px,11cqw,26px)]" : "text-[clamp(24px,12cqw,34px)]",
             )}
           >
             {value}
@@ -126,10 +117,10 @@ export function StatTile({
   );
 }
 
-/** Pastiglia bianca sopra il gradiente. */
+/** Pastiglia sopra il gradiente: paper velato, cosi' funziona anche su tile scura. */
 export function TilePill({ children }: { children: ReactNode }) {
   return (
-    <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-white/70 px-2.5 py-1 text-[11px] font-medium text-[var(--color-ink-soft)] backdrop-blur">
+    <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-[var(--color-paper)]/70 px-2.5 py-1 text-[11px] font-medium text-[var(--color-ink-soft)] backdrop-blur">
       {children}
     </span>
   );
