@@ -31,6 +31,17 @@ nome.
 Il chip e' **uno solo** per la ricerca a mano e per quella dell'agente: entrambe
 scrivono `filter.query`, che vive nell'URL (`?q=`).
 
+## Da telefono niente popover
+
+Sotto i 1024px il campo **prende il posto del chip nella riga**, non si apre un
+pannello. Il popover si chiude su `resize`, e aprire la tastiera del telefono e'
+un `resize`: il campo spariva appena lo toccavi. In riga la lista resta anche
+visibile mentre scrivi, cosa che una sheet dal basso coprirebbe.
+
+Chiude col tasto invio, con Esc o toccando fuori. Alla chiusura quello che hai
+scritto viene rimandato subito: se il campo sparisce prima dei 300ms il timeout
+del debounce verrebbe annullato e la ricerca si perderebbe.
+
 ## Dove
 
 | Sezione | File della frase | Placeholder |
