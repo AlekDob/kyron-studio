@@ -11,7 +11,14 @@ import {
 import type { OrderRow } from "@/lib/gateway";
 import { Pill } from "@/components/ui";
 import { SectionIcon, type Tone } from "./detail-section";
-import { agentName, formatEur, formatTime, paymentBadge, workflowBadge } from "./format";
+import {
+  agentName,
+  formatEur,
+  formatTime,
+  paymentBadge,
+  paymentMethodLabel,
+  workflowBadge,
+} from "./format";
 
 // L'icona della riga dice due cose insieme: la FORMA e' a che punto e' la
 // lavorazione, il COLORE e' come sta il pagamento. Scorrendo la lista si vede
@@ -67,6 +74,9 @@ export function OrderListRow({ order, onSelect }: OrderListRowProps) {
           {order.customerName || order.userEmail || "—"}
           <span className="text-[var(--color-ink-muted)]">
             {" "}· {agentName(order.agent)}
+            {/* Metodo di pagamento accanto a scuola/agente: serve alla
+                contabilizzazione senza aprire il singolo ordine. */}
+            {paymentMethodLabel(order) && ` · ${paymentMethodLabel(order)}`}
           </span>
         </p>
       </div>

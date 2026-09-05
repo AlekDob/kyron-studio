@@ -38,6 +38,14 @@ tags: [orders, ordini, commerciali, portali, saleor]
 > - Cache di processo 60s su `fetchOrdersForRange` (invalidata dalle scritture):
 >   senza, ogni tocco di filtro riscaricava l'intero range da Saleor.
 
+> **Update 2026-09-05 — metodo di pagamento in lista** (FUT-110, chiesto da Miolli).
+> Nella riga della lista ordini, dopo scuola e agente, compare **Bonifico / Carta
+> docente / Stripe**: la contabilizzazione si fa scorrendo la lista, senza aprire il
+> singolo ordine. Nessun dato nuovo dal server — `paymentMethod` c'era gia';
+> l'etichetta sta in `orders/format.ts` (`paymentMethodLabel`). Metodo vuoto con
+> riferimento Stripe = "Stripe"; vuoto e senza psp = niente etichetta (non
+> inventiamo).
+
 > **Update 2026-08-28 (2) — scheda a tab, icone di vetro, note scritte da Nico**
 > (stesso branch). La scheda e' divisa in **Cliente / Pagamento / Prodotti / Note**;
 > lo **stato lavorazione** resta fuori dai tab, e' l'azione piu' frequente. Le due

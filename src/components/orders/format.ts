@@ -143,3 +143,20 @@ function prettify(raw: string): string {
   const s = raw.replace(/_/g, " ").toLowerCase();
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
+
+// Metodo di pagamento in chiaro per la lista ordini (contabilizzazione a colpo
+// d'occhio, senza aprire il dettaglio). Metodo vuoto = incasso online Stripe;
+// se non c'e' nemmeno il riferimento Stripe non inventiamo un'etichetta.
+export function paymentMethodLabel(order: {
+  paymentMethod: string;
+  pspReference: string;
+}): string {
+  switch (order.paymentMethod) {
+    case "bank-transfer":
+      return "Bonifico";
+    case "teacher-card":
+      return "Carta docente";
+    default:
+      return order.pspReference ? "Stripe" : "";
+  }
+}
