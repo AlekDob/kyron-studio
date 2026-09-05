@@ -6,6 +6,8 @@ import {
   PackageOpen,
   ShoppingBag,
   Truck,
+  User,
+  UserRoundCheck,
   type LucideIcon,
 } from "lucide-react";
 import type { OrderRow } from "@/lib/gateway";
@@ -16,7 +18,7 @@ import {
   formatEur,
   formatTime,
   paymentBadge,
-  paymentMethodLabel,
+  paymentMethodBadge,
   workflowBadge,
 } from "./format";
 
@@ -48,6 +50,7 @@ interface OrderListRowProps {
 // Riga ordine cliccabile (apre il drawer). Layout responsive: su mobile le info
 // si impilano, su desktop si distribuiscono in orizzontale.
 export function OrderListRow({ order, onSelect }: OrderListRowProps) {
+  const method = paymentMethodBadge(order);
   return (
     <button
       type="button"
@@ -70,14 +73,27 @@ export function OrderListRow({ order, onSelect }: OrderListRowProps) {
             · {order.portalName}
           </span>
         </div>
-        <p className="mt-0.5 truncate text-sm">
-          {order.customerName || order.userEmail || "—"}
-          <span className="text-[var(--color-ink-muted)]">
-            {" "}· {agentName(order.agent)}
-            {/* Metodo di pagamento accanto a scuola/agente: serve alla
-                contabilizzazione senza aprire il singolo ordine. */}
-            {paymentMethodLabel(order) && ` · ${paymentMethodLabel(order)}`}
+        {/* Riga cliente / agente / pagamento: ogni voce ha la sua icona, cosi'
+            si distinguono di scorcio senza leggere (i puntini le appiattivano).
+            Il metodo di pagamento serve alla contabilizzazione senza aprire
+            il singolo ordine. */}
+        <p className="mt-0.5 flex min-w-0 items-center gap-3 truncate text-sm">
+          <span className="flex min-w-0 items-center gap-1">
+            <User size={13} className="shrink-0 text-[var(--color-ink-muted)]" />
+            <span className="truncate">
+              {order.customerName || order.userEmail || "—"}
+            </span>
           </span>
+          <span className="flex shrink-0 items-center gap-1 text-[var(--color-ink-muted)]">
+            <UserRoundCheck size={13} className="shrink-0" />
+            {agentName(order.agent)}
+          </span>
+          {method && (
+            <span className="flex shrink-0 items-center gap-1 text-[var(--color-ink-muted)]">
+              <method.icon size={13} className="shrink-0" />
+              {method.label}
+            </span>
+          )}
         </p>
       </div>
 

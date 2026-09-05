@@ -1,3 +1,4 @@
+import { CreditCard, Landmark, Ticket, type LucideIcon } from "lucide-react";
 import type { PillProps } from "@/components/ui";
 
 // Punto unico di verita' per formattazione e label degli ordini (DRY).
@@ -144,19 +145,20 @@ function prettify(raw: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-// Metodo di pagamento in chiaro per la lista ordini (contabilizzazione a colpo
-// d'occhio, senza aprire il dettaglio). Metodo vuoto = incasso online Stripe;
-// se non c'e' nemmeno il riferimento Stripe non inventiamo un'etichetta.
-export function paymentMethodLabel(order: {
+// Metodo di pagamento per la lista ordini (contabilizzazione a colpo d'occhio,
+// senza aprire il dettaglio): etichetta + icona che lo distingue di scorcio.
+// Metodo vuoto = incasso online Stripe; se non c'e' nemmeno il riferimento
+// Stripe non inventiamo un'etichetta.
+export function paymentMethodBadge(order: {
   paymentMethod: string;
   pspReference: string;
-}): string {
+}): { label: string; icon: LucideIcon } | null {
   switch (order.paymentMethod) {
     case "bank-transfer":
-      return "Bonifico";
+      return { label: "Bonifico", icon: Landmark };
     case "teacher-card":
-      return "Carta docente";
+      return { label: "Carta docente", icon: Ticket };
     default:
-      return order.pspReference ? "Stripe" : "";
+      return order.pspReference ? { label: "Stripe", icon: CreditCard } : null;
   }
 }
